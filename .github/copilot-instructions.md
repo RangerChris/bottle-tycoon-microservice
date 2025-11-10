@@ -45,9 +45,115 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - [ ] Documentation is updated for any changes made.
 - [ ] Compliance with security measures is confirmed.
 
-## Resources
-- GitHub Copilot Documentation
-- Microservices Best Practices
-- Testing Guidelines
-- Security Best Practices
-- Continuous Integration Resources
+## 🏗️ Technology Stack
+
+### Backend Services
+- **Runtime**: ASP.NET Core 9, C# 13
+- **ORM**: Entity Framework Core
+- **APIs**: Minimal APIs, OpenAPI/Swagger
+- **Message Bus**: MassTransit (RabbitMQ)
+
+### Data & Caching
+- **Primary DB**: PostgreSQL
+- **Cache**: Redis
+- **Message Broker**: RabbitMQ
+
+### Frontend
+- **Framework**: React 19
+- **Styling**: Tailwind CSS + DaisyUI
+- **Data Fetching**: TanStack Query (React Query)
+- **State Management**: Zustand
+- **Charting**: Recharts
+- **Real-time**: Socket.io
+
+### Observability
+- **Distributed Tracing**: OpenTelemetry + Jaeger
+- **Metrics**: Prometheus
+- **Logging**: Structured logging + Loki
+- **Visualization**: Grafana
+- **Correlation**: W3C Trace Context
+
+### Infrastructure
+- **Containerization**: Docker
+- **Orchestration**: Docker Compose
+- **Networking**: Docker network (internal communication)
+
+## 📡 Observability & Monitoring
+
+### Key Monitoring Features
+
+**Distributed Tracing**
+- All requests traced end-to-end via OpenTelemetry
+- View at: http://localhost:16686 (Jaeger UI)
+- See service dependencies, latencies, errors
+
+**Metrics Collection**
+- Prometheus scrapes all services every 15 seconds
+- Pre-built dashboards in Grafana
+- Track request rates, errors, latencies, business metrics
+
+**Structured Logging**
+- All logs queryable in Loki
+- Correlation IDs link related requests
+- Access via Grafana Explore or Loki UI
+
+**Health Checks**
+- Liveness probe: `/health/live` - Is service running?
+- Readiness probe: `/health/ready` - Ready to handle traffic?
+- Dependency checks included
+
+### Grafana Dashboards
+Pre-configured dashboards for:
+- Overall system health
+- Per-service performance
+- Business metrics (credits, deliveries, earnings)
+- Infrastructure health (database, message broker)
+
+Access Grafana: http://localhost:3001 (admin/admin)
+
+
+## 📚 Project Structure
+
+```
+bottle-tycoon-microservice/
+├── docs/
+│   ├── ARCHITECTURE.md           # Detailed architecture docs
+│   ├── SERVICE_SPECS.md          # Service specifications
+│   ├── API_DOCUMENTATION.md      # API reference
+│   ├── OBSERVABILITY.md          # Telemetry setup guide
+│   └── DEPLOYMENT.md             # Production deployment
+├── src/
+│   ├── ApiGateway/
+│   │   ├── ApiGateway.csproj
+│   │   ├── Program.cs
+│   │   ├── Middleware/
+│   │   └── Routes/
+│   ├── GameService/
+│   │   ├── GameService.csproj
+│   │   ├── Models/
+│   │   ├── Services/
+│   │   └── Program.cs
+│   ├── RecyclerService/
+│   ├── TruckService/
+│   ├── HeadquartersService/
+│   ├── RecyclingPlantService/
+│   ├── Shared/                   # Shared DTOs, interfaces
+│   └── Frontend/
+│       ├── src/
+│       │   ├── components/
+│       │   ├── hooks/
+│       │   ├── services/
+│       │   ├── store/
+│       │   └── App.tsx
+│       ├── package.json
+│       └── vite.config.ts
+├── docker-compose.yml            # Full stack orchestration
+├── docker-compose.dev.yml        # Development setup
+├── .env.example                  # Environment variables
+├── Dockerfile                    # Multi-stage build
+├── CONTRIBUTING.md               # Contribution guidelines
+├── LICENSE                       # MIT License
+└── README.md                     # This file
+```
+
+---
