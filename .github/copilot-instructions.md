@@ -12,6 +12,7 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Consistency:** Adhere to established coding styles and conventions to maintain readability and uniformity across the codebase.
 - **Naming Conventions:** Use descriptive names for classes, methods, and variables to enhance code understandability.
 - **Documentation:** Ensure that any code generated or modified with Copilot is well-documented, including comments that explain the purpose and functionality.
+- **Simplicity:** Favor clear and straightforward code over complex or clever solutions. Prioritize maintainability and small methods and classes.
 
 ## Architecture Patterns
 - **Microservices:** Follow microservices architecture where services are independently deployable and scalable, promoting loose coupling.
@@ -50,8 +51,9 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 ### Backend Services
 - **Runtime**: ASP.NET Core 9, C# 13
 - **ORM**: Entity Framework Core
-- **APIs**: Minimal APIs, OpenAPI/Swagger
+- **APIs**: FastEndpoints, OpenAPI/Swagger, Serilog
 - **Message Bus**: MassTransit (RabbitMQ)
+- **Testing**: xUnit (xunit.v3), Moq, Shouldly (v4.3.0)
 
 ### Data & Caching
 - **Primary DB**: PostgreSQL
@@ -77,6 +79,11 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Containerization**: Docker
 - **Orchestration**: Docker Compose
 - **Networking**: Docker network (internal communication)
+
+### Testing
+- **Unit test**: Use xunit.v3 and testcontainers where applicable
+- **Integration test**: Use docker-compose test environment with real dependencies
+- **Test creation**: When working on new features, follow TDD approach: write tests first, then implement minimal code to pass tests, then refactor.
 
 ## 📡 Observability & Monitoring
 
