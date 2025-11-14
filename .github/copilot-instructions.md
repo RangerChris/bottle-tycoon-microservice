@@ -13,11 +13,14 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Naming Conventions:** Use descriptive names for classes, methods, and variables to enhance code understandability.
 - **Documentation:** Ensure that any code generated or modified with Copilot is well-documented, including comments that explain the purpose and functionality.
 - **Simplicity:** Favor clear and straightforward code over complex or clever solutions. Prioritize maintainability and small methods and classes.
+- **Comments:** When creating code, do not add any comments unless absolutely necessary.
 
 ## Architecture Patterns
 - **Microservices:** Follow microservices architecture where services are independently deployable and scalable, promoting loose coupling.
 - **Event-Driven Architecture:** Use event-driven patterns to allow services to communicate asynchronously, enhancing responsiveness and scalability.
 - **API-First Design:** Design APIs first to ensure that all services interact through well-defined interfaces.
+- **Separation of Concerns:** Ensure that each service has a single responsibility, making it easier to manage and evolve.
+- **Project Structure:** Maintain a clear and organized project structure as outlined in the repository documentation based on .
 
 ## Testing Approach
 - **Unit Testing:** Write comprehensive unit tests for all new features and significant changes introduced via Copilot.
@@ -46,7 +49,7 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - [ ] Documentation is updated for any changes made.
 - [ ] Compliance with security measures is confirmed.
 
-## 🏗️ Technology Stack
+## Technology Stack
 
 ### Backend Services
 - **Runtime**: ASP.NET Core 9, C# 13
@@ -85,7 +88,7 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Integration test**: Use docker-compose test environment with real dependencies
 - **Test creation**: When working on new features, follow TDD approach: write tests first, then implement minimal code to pass tests, then refactor.
 
-## 📡 Observability & Monitoring
+## Observability & Monitoring
 
 ### Key Monitoring Features
 
@@ -119,7 +122,7 @@ Pre-configured dashboards for:
 Access Grafana: http://localhost:3001 (admin/admin)
 
 
-## 📚 Project Structure
+## Project Structure
 
 ```
 bottle-tycoon-microservice/

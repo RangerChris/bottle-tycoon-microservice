@@ -37,4 +37,12 @@ Each service can be upgraded 3 times. Each upgrade improves capacity by **+25%**
 - Level 2: 156.25 bottles (+25%)
 - Level 3: 195.3125 bottles (+25%)
 
----
+### UI
+The frontend displays:
+- Current credits
+- Recycler status (current load, capacity)
+- Truck status (current load, capacity)
+- Upgrade options with costs
+- Real-time updates on deliveries and earnings
+- Charts showing earnings over time
+- Buttons for buying upgrades, buying new recyclers/trucks
