@@ -1,0 +1,49 @@
+﻿# Build outputs
+bin/
+obj/
+out/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+docs/
+*.md
+
+# Environment files
+.env*
+
+# Node.js (if any frontend)
+node_modules/
+npm-debug.log*
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Monitoring
+monitoring/
+
+# Logs
+logs/
+*.log
