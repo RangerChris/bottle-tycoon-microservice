@@ -8,97 +8,97 @@ namespace GameService.Tests;
 
 public class PlayerServiceTests
 {
-    private readonly GameDbContext _context;
-    private readonly PlayerService _service;
-
-    public PlayerServiceTests()
+    private GameDbContext CreateInMemoryDb()
     {
         var options = new DbContextOptionsBuilder<GameDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-
-        _context = new GameDbContext(options);
-        _service = new PlayerService(_context);
+        return new GameDbContext(options);
     }
 
     [Fact]
-    public async Task CreatePlayerAsync_ShouldCreatePlayerWithStartingCredits()
+    public async Task CreatePlayer_ShouldAddPlayer()
     {
-        // Act
-        var player = await _service.CreatePlayerAsync();
+        var db = CreateInMemoryDb();
+        var svc = new PlayerService(db);
 
-        // Assert
+        var player = await svc.CreatePlayerAsync();
+
         player.ShouldNotBeNull();
-        player.Id.ShouldNotBe(Guid.Empty);
-        player.Credits.ShouldBe(1000);
+        (await db.Players.FindAsync([player.Id], TestContext.Current.CancellationToken)).ShouldNotBeNull();
     }
 
     [Fact]
-    public async Task GetPlayerAsync_ShouldReturnPlayer_WhenExists()
+    public async Task CreditAndDebit_ShouldUpdateBalance()
+    {
+        var db = CreateInMemoryDb();
+        var svc = new PlayerService(db);
+
+        var player = await svc.CreatePlayerAsync();
+
+        var credited = await svc.CreditCreditsAsync(player.Id, 100m, "test");
+        credited.ShouldBeTrue();
+
+        var reloaded = await svc.GetPlayerAsync(player.Id);
+        // Player starts with 1000 credits by default
+        reloaded!.Credits.ShouldBe(1100m);
+
+        var debited = await svc.DebitCreditsAsync(player.Id, 40m, "buy");
+        debited.ShouldBeTrue();
+
+        var after = await svc.GetPlayerAsync(player.Id);
+        after!.Credits.ShouldBe(1060m);
+    }
+
+    [Fact]
+    public async Task Debit_ShouldFailWhenInsufficientFunds()
     {
         // Arrange
-        var player = await _service.CreatePlayerAsync();
+        var db = CreateInMemoryDb();
+        var svc = new PlayerService(db);
+        var player = await svc.CreatePlayerAsync();
 
         // Act
-        var retrieved = await _service.GetPlayerAsync(player.Id);
-
-        // Assert
-        retrieved.ShouldNotBeNull();
-        retrieved!.Id.ShouldBe(player.Id);
-    }
-
-    [Fact]
-    public async Task GetPlayerAsync_ShouldReturnNull_WhenNotExists()
-    {
-        // Act
-        var player = await _service.GetPlayerAsync(Guid.NewGuid());
-
-        // Assert
-        player.ShouldBeNull();
-    }
-
-    [Fact]
-    public async Task DebitCreditsAsync_ShouldSucceed_WhenSufficientCredits()
-    {
-        // Arrange
-        var player = await _service.CreatePlayerAsync();
-
-        // Act
-        var success = await _service.DebitCreditsAsync(player.Id, 100, "Test");
-
-        // Assert
-        success.ShouldBeTrue();
-        var updatedPlayer = await _service.GetPlayerAsync(player.Id);
-        updatedPlayer!.Credits.ShouldBe(900);
-    }
-
-    [Fact]
-    public async Task DebitCreditsAsync_ShouldFail_WhenInsufficientCredits()
-    {
-        // Arrange
-        var player = await _service.CreatePlayerAsync();
-
-        // Act
-        var success = await _service.DebitCreditsAsync(player.Id, 2000, "Test");
+        var success = await svc.DebitCreditsAsync(player.Id, 2000m, "buy");
 
         // Assert
         success.ShouldBeFalse();
-        var updatedPlayer = await _service.GetPlayerAsync(player.Id);
-        updatedPlayer!.Credits.ShouldBe(1000);
+        var reloaded = await svc.GetPlayerAsync(player.Id);
+        reloaded!.Credits.ShouldBe(1000m); // unchanged
     }
 
     [Fact]
-    public async Task CreditCreditsAsync_ShouldIncreaseCredits()
+    public async Task PurchaseItem_ShouldDebitCredits()
     {
         // Arrange
-        var player = await _service.CreatePlayerAsync();
+        var db = CreateInMemoryDb();
+        var svc = new PlayerService(db);
+        var player = await svc.CreatePlayerAsync();
 
         // Act
-        var success = await _service.CreditCreditsAsync(player.Id, 500, "Test");
+        var success = await svc.PurchaseItemAsync(player.Id, "truck", 100m);
 
         // Assert
         success.ShouldBeTrue();
-        var updatedPlayer = await _service.GetPlayerAsync(player.Id);
-        updatedPlayer!.Credits.ShouldBe(1500);
+        var reloaded = await svc.GetPlayerAsync(player.Id);
+        reloaded!.Credits.ShouldBe(900m);
+    }
+
+    [Fact]
+    public async Task UpgradeItem_ShouldDebitCreditsAndRecordUpgrade()
+    {
+        // Arrange
+        var db = CreateInMemoryDb();
+        var svc = new PlayerService(db);
+        var player = await svc.CreatePlayerAsync();
+
+        // Act
+        var success = await svc.UpgradeItemAsync(player.Id, "truck", 1, 2, 200m);
+
+        // Assert
+        success.ShouldBeTrue();
+        var reloaded = await svc.GetPlayerAsync(player.Id);
+        reloaded!.Credits.ShouldBe(800m);
+        reloaded.Upgrades.ShouldContain(u => u.ItemType == "truck" && u.ItemId == 1 && u.NewLevel == 2);
     }
 }

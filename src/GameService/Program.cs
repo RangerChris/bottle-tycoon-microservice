@@ -8,6 +8,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,41 +26,62 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
 
 // Database
-builder.Services.AddDbContext<GameDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Run migrations on startup (development only)
-if (builder.Environment.IsDevelopment())
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-    using var scope = builder.Services.BuildServiceProvider().CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-    dbContext.Database.Migrate();
+    builder.Services.AddDbContext<GameDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
+else
+{
+    // In Testing environment, use in-memory Sqlite for standalone container startup
+    builder.Services.AddDbContext<GameDbContext>(options =>
+        options.UseSqlite("DataSource=:memory:"));
+}
+
+// Run migrations on startup (development only, not during tests)
+if (builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
+{
+    try
+    {
+        using var scope = builder.Services.BuildServiceProvider().CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<GameDbContext>();
+        dbContext.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "An error occurred while applying database migrations. The application will continue to start, but database functionality may be degraded");
+    }
 }
 
 // Redis
-builder.Services.AddStackExchangeRedisCache(options =>
+builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = builder.Configuration.GetConnectionString("Redis"); });
+
+// MassTransit with RabbitMQ (optional via ENABLE_MESSAGING=false)
+var enableMessaging = builder.Configuration.GetValue<bool?>("ENABLE_MESSAGING") ?? true;
+if (enableMessaging)
 {
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-});
-
-// MassTransit with RabbitMQ
-builder.Services.AddMassTransit(x =>
-{
-    x.AddConsumer<CreditsCreditedConsumer>();
-
-    x.SetKebabCaseEndpointNameFormatter();
-
-    x.UsingRabbitMq((context, cfg) =>
+    builder.Services.AddMassTransit(x =>
     {
-        cfg.Host(builder.Configuration["RabbitMQ:Host"], h =>
-        {
-            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
-            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
-        });
+        x.AddConsumer<CreditsCreditedConsumer>();
 
-        cfg.ConfigureEndpoints(context);
+        x.SetKebabCaseEndpointNameFormatter();
+
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            cfg.Host(builder.Configuration["RabbitMQ:Host"], h =>
+            {
+                h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+                h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+            });
+
+            cfg.ConfigureEndpoints(context);
+        });
     });
-});
+}
+else
+{
+    Log.Information("Messaging disabled via ENABLE_MESSAGING=false; MassTransit will not be started.");
+}
 
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
@@ -76,31 +98,61 @@ builder.Services.AddOpenTelemetry()
         .AddPrometheusExporter());
 
 // Health Checks
-builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!)
-    .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
+var healthChecks = builder.Services.AddHealthChecks();
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    healthChecks
+        .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!)
+        .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
+}
 
 // Business Services
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Add JSON options to avoid serialization cycles
+builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
+
+try
+{
+    var app = builder.Build();
+
+    // Configure the HTTP request pipeline.
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+
+    app.UseHttpsRedirection();
+
+    // OpenTelemetry Prometheus
+    app.UseOpenTelemetryPrometheusScrapingEndpoint();
+
+    // Health Checks
+    app.MapHealthChecks("/health/live", new() { Predicate = _ => false });
+    app.MapHealthChecks("/health/ready");
+
+    app.UseFastEndpoints();
+
+    Log.Information("Starting GameService host");
+    app.Run();
+}
+catch (Exception ex)
+{
+    // Log fatal startup exceptions
+    Log.Fatal(ex, "Host terminated unexpectedly during startup");
+    throw; // rethrow to let the host fail if necessary
+}
+finally
+{
+    // Ensure any buffered logs are written out
+    Log.CloseAndFlush();
 }
 
-app.UseHttpsRedirection();
-
-// OpenTelemetry Prometheus
-app.UseOpenTelemetryPrometheusScrapingEndpoint();
-
-// Health Checks
-app.MapHealthChecks("/health/live", new() { Predicate = _ => false });
-app.MapHealthChecks("/health/ready");
-
-app.UseFastEndpoints();
-
-app.Run();
+public partial class Program
+{
+}

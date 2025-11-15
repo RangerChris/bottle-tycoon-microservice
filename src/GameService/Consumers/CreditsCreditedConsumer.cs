@@ -6,8 +6,8 @@ namespace GameService.Consumers;
 
 public class CreditsCreditedConsumer : IConsumer<CreditsCredited>
 {
-    private readonly IPlayerService _playerService;
     private readonly ILogger<CreditsCreditedConsumer> _logger;
+    private readonly IPlayerService _playerService;
 
     public CreditsCreditedConsumer(IPlayerService playerService, ILogger<CreditsCreditedConsumer> logger)
     {

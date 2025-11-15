@@ -116,8 +116,7 @@ services:
   # Application Services
   gameservice:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./src/GameService
     container_name: bottle-tycoon-gameservice
     environment:
       ASPNETCORE_ENVIRONMENT: Development

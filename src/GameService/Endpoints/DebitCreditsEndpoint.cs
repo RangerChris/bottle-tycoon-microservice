@@ -27,13 +27,21 @@ public class DebitCreditsEndpoint : Endpoint<DebitCreditsRequest, bool>
 
     public override async Task HandleAsync(DebitCreditsRequest req, CancellationToken ct)
     {
+        if (req.Amount <= 0)
+        {
+            AddError("Amount must be positive");
+            await SendErrorsAsync();
+            return;
+        }
+
         var success = await _playerService.DebitCreditsAsync(req.PlayerId, req.Amount, req.Reason);
         if (!success)
         {
             AddError("Insufficient credits or player not found");
-            await SendErrorsAsync(400);
+            await SendErrorsAsync();
             return;
         }
+
         await SendAsync(success, cancellation: ct);
     }
 }

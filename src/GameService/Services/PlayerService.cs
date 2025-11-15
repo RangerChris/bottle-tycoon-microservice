@@ -33,7 +33,9 @@ public class PlayerService : IPlayerService
     {
         var player = await _context.Players.FindAsync(playerId);
         if (player == null || player.Credits < amount)
+        {
             return false;
+        }
 
         player.Credits -= amount;
         player.UpdatedAt = DateTime.UtcNow;
@@ -55,7 +57,9 @@ public class PlayerService : IPlayerService
     {
         var player = await _context.Players.FindAsync(playerId);
         if (player == null)
+        {
             return false;
+        }
 
         player.Credits += amount;
         player.UpdatedAt = DateTime.UtcNow;
@@ -85,6 +89,7 @@ public class PlayerService : IPlayerService
             _context.Upgrades.Add(upgrade);
             await _context.SaveChangesAsync();
         }
+
         return success;
     }
 }

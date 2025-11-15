@@ -2,16 +2,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy the solution file and restore dependencies
-COPY ["bottle-tycoon-microservice.sln", "."]
-COPY ["src/GameService/GameService.csproj", "src/GameService/"]
-COPY ["src/GameService.Tests/GameService.Tests.csproj", "src/GameService.Tests/"]
-RUN dotnet restore "src/GameService/GameService.csproj"
+# Copy the project file and restore dependencies
+COPY ["GameService.csproj", "./"]
+RUN dotnet restore "GameService.csproj"
 
 # Copy the source code and build
-COPY ["src/GameService/", "src/GameService/"]
-COPY ["src/GameService.Tests/", "src/GameService.Tests/"]
-WORKDIR "/src/src/GameService"
+COPY . .
+WORKDIR "/src"
 RUN dotnet build "GameService.csproj" -c Release -o /app/build
 
 # Publish the application
@@ -22,10 +19,6 @@ RUN dotnet publish "GameService.csproj" -c Release -o /app/publish /p:UseAppHost
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-
-# Set environment variables for standalone container startup
-ENV ENABLE_MESSAGING=false
-ENV ASPNETCORE_ENVIRONMENT=Testing
 
 # Expose the port the app runs on
 EXPOSE 80

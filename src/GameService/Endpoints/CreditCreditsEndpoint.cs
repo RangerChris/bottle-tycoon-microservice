@@ -27,13 +27,21 @@ public class CreditCreditsEndpoint : Endpoint<CreditCreditsRequest, bool>
 
     public override async Task HandleAsync(CreditCreditsRequest req, CancellationToken ct)
     {
+        if (req.Amount <= 0)
+        {
+            AddError("Amount must be positive");
+            await SendErrorsAsync();
+            return;
+        }
+
         var success = await _playerService.CreditCreditsAsync(req.PlayerId, req.Amount, req.Reason);
         if (!success)
         {
             AddError("Player not found");
-            await SendErrorsAsync(400);
+            await SendErrorsAsync();
             return;
         }
+
         await SendAsync(success, cancellation: ct);
     }
 }
