@@ -30,7 +30,10 @@ public class DebitCreditsEndpoint : Endpoint<DebitCreditsRequest, bool>
         if (req.Amount <= 0)
         {
             AddError("Amount must be positive");
-            await SendErrorsAsync();
+            var err = ValidationFailures
+                .GroupBy(f => f.PropertyName)
+                .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
+            await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
             return;
         }
 
@@ -38,10 +41,13 @@ public class DebitCreditsEndpoint : Endpoint<DebitCreditsRequest, bool>
         if (!success)
         {
             AddError("Insufficient credits or player not found");
-            await SendErrorsAsync();
+            var err = ValidationFailures
+                .GroupBy(f => f.PropertyName)
+                .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
+            await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
             return;
         }
 
-        await SendAsync(success, cancellation: ct);
+        await Send.ResultAsync(TypedResults.Ok(success));
     }
 }

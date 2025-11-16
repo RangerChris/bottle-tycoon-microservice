@@ -1,6 +1,7 @@
 ﻿using FastEndpoints;
 using GameService.Models;
 using GameService.Services;
+using Microsoft.AspNetCore.Http;
 
 namespace GameService.Endpoints;
 
@@ -22,6 +23,7 @@ public class CreatePlayerEndpoint : EndpointWithoutRequest<Player>
     public override async Task HandleAsync(CancellationToken ct)
     {
         var player = await _playerService.CreatePlayerAsync();
-        await SendCreatedAtAsync<GetPlayerEndpoint>(new { id = player.Id }, player, cancellation: ct);
+        var location = $"/players/{player.Id}";
+        await Send.ResultAsync(TypedResults.Created(location, player));
     }
 }

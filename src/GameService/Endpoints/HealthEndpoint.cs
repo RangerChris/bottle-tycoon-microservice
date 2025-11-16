@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
 
 namespace GameService.Endpoints;
 
@@ -27,7 +28,9 @@ public class HealthEndpoint : EndpointWithoutRequest<HealthEndpoint.HealthRespon
         );
 
         var statusCode = report.Status == HealthStatus.Healthy ? 200 : 503;
-        await SendAsync(response, statusCode, ct);
+        HttpContext.Response.StatusCode = statusCode;
+        HttpContext.Response.ContentType = "application/json";
+        await HttpContext.Response.WriteAsJsonAsync(response, cancellationToken: ct);
     }
 
     public sealed record HealthResponse(string Status, Dictionary<string, string> Checks);

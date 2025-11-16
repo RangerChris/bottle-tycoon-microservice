@@ -12,11 +12,11 @@ public class CreditCreditsRequest
 
 public class CreditCreditsEndpoint : Endpoint<CreditCreditsRequest, bool>
 {
-    private readonly IPlayerService _playerService;
+    private readonly IPlayerService _player_service;
 
     public CreditCreditsEndpoint(IPlayerService playerService)
     {
-        _playerService = playerService;
+        _player_service = playerService;
     }
 
     public override void Configure()
@@ -30,18 +30,24 @@ public class CreditCreditsEndpoint : Endpoint<CreditCreditsRequest, bool>
         if (req.Amount <= 0)
         {
             AddError("Amount must be positive");
-            await SendErrorsAsync();
+            var err = ValidationFailures
+                .GroupBy(f => f.PropertyName)
+                .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
+            await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
             return;
         }
 
-        var success = await _playerService.CreditCreditsAsync(req.PlayerId, req.Amount, req.Reason);
+        var success = await _player_service.CreditCreditsAsync(req.PlayerId, req.Amount, req.Reason);
         if (!success)
         {
             AddError("Player not found");
-            await SendErrorsAsync();
+            var err = ValidationFailures
+                .GroupBy(f => f.PropertyName)
+                .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
+            await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
             return;
         }
 
-        await SendAsync(success, cancellation: ct);
+        await Send.ResultAsync(TypedResults.Ok(success));
     }
 }

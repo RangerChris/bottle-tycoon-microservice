@@ -30,6 +30,6 @@ public class GetPlayerEndpoint : EndpointWithoutRequest<Player>
             return;
         }
 
-        await SendAsync(player, cancellation: ct);
+        await Send.ResultAsync(TypedResults.Ok(player));
     }
 }
