@@ -374,11 +374,11 @@ public class CreateGetPlayerEndpointTests
             if (root.TryGetProperty("errors", out var errors))
             {
                 // If errors is an object and contains empty-string property
-                if (errors.ValueKind == System.Text.Json.JsonValueKind.Object && errors.TryGetProperty("", out var def))
-                {
-                    if (def.ValueKind == System.Text.Json.JsonValueKind.Array && def.GetArrayLength() > 0)
-                        return def[0].GetString() ?? content;
-                }
+                if (errors.ValueKind == System.Text.Json.JsonValueKind.Object
+                    && errors.TryGetProperty("", out var def)
+                    && def.ValueKind == System.Text.Json.JsonValueKind.Array
+                    && def.GetArrayLength() > 0)
+                    return def[0].GetString() ?? content;
 
                 // If errors is an array or object with other keys, try to extract first string value
                 foreach (var prop in errors.EnumerateObject())
