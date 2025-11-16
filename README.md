@@ -6,7 +6,7 @@ Bottle Tycoon is an **educational microservices project** designed to teach mode
 
 ### 🎯 Learning Objectives
 - Build scalable microservices using **ASP.NET Core 9**
-- Implement event-driven architecture with **RabbitMQ[ARCHITECTURE.md](docs/ARCHITECTURE.md)/MassTransit**
+- Implement event-driven architecture with **RabbitMQ**/**MassTransit**
 - Complete observability with **OpenTelemetry, Jaeger, Prometheus, Loki, and Grafana**
 - Container orchestration with **Docker and Docker Compose**
 - Real-time frontend with **React and DaisyUI**
