@@ -38,21 +38,6 @@ else
         options.UseSqlite("DataSource=:memory:"));
 }
 
-// Run migrations on startup (development only, not during tests)
-if (builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
-{
-    try
-    {
-        using var scope = builder.Services.BuildServiceProvider().CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-        dbContext.Database.Migrate();
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "An error occurred while applying database migrations. The application will continue to start, but database functionality may be degraded");
-    }
-}
-
 // Redis
 builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = builder.Configuration.GetConnectionString("Redis"); });
 
@@ -80,7 +65,7 @@ if (enableMessaging)
 }
 else
 {
-    Log.Information("Messaging disabled via ENABLE_MESSAGING=false; MassTransit will not be started.");
+    Log.Information("Messaging disabled via ENABLE_MESSAGING=false; MassTransit will not be started");
 }
 
 // OpenTelemetry
@@ -120,6 +105,21 @@ try
 {
     var app = builder.Build();
 
+    // Apply EF Core migrations using the built app's service provider to avoid duplicating singletons
+    if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+    {
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<GameDbContext>();
+            dbContext.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred while applying database migrations. The application will continue to start, but database functionality may be degraded");
+        }
+    }
+
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
@@ -153,6 +153,6 @@ finally
     Log.CloseAndFlush();
 }
 
-public partial class Program
+public abstract partial class Program
 {
 }
