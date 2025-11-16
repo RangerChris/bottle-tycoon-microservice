@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameService", "src\GameServ
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameService.Tests", "src\GameService.Tests\GameService.Tests.csproj", "{08EADB8E-3DED-4325-B262-9D45ECA5BEDC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecyclerService", "src\RecyclerService\RecyclerService.csproj", "{4801DFC5-8395-477B-8D76-4F30F16AB271}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecyclerService.Tests", "src\RecyclerService.Tests\RecyclerService.Tests.csproj", "{52048476-6FE8-4A8E-B092-E13326329E68}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +30,19 @@ Global
 		{08EADB8E-3DED-4325-B262-9D45ECA5BEDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08EADB8E-3DED-4325-B262-9D45ECA5BEDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08EADB8E-3DED-4325-B262-9D45ECA5BEDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4801DFC5-8395-477B-8D76-4F30F16AB271}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4801DFC5-8395-477B-8D76-4F30F16AB271}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4801DFC5-8395-477B-8D76-4F30F16AB271}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4801DFC5-8395-477B-8D76-4F30F16AB271}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52048476-6FE8-4A8E-B092-E13326329E68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52048476-6FE8-4A8E-B092-E13326329E68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52048476-6FE8-4A8E-B092-E13326329E68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52048476-6FE8-4A8E-B092-E13326329E68}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5A25E094-D430-4FDE-8A78-6C2E03CDA751} = {03DE7836-A683-485A-BF90-6A4A4CD9C658}
 		{08EADB8E-3DED-4325-B262-9D45ECA5BEDC} = {03DE7836-A683-485A-BF90-6A4A4CD9C658}
+		{4801DFC5-8395-477B-8D76-4F30F16AB271} = {03DE7836-A683-485A-BF90-6A4A4CD9C658}
+		{52048476-6FE8-4A8E-B092-E13326329E68} = {03DE7836-A683-485A-BF90-6A4A4CD9C658}
 	EndGlobalSection
 EndGlobal

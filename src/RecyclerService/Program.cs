@@ -1,61 +1,57 @@
-﻿using System.Text.Json.Serialization;
-using FastEndpoints;
-using GameService.Consumers;
-using GameService.Data;
-using GameService.Services;
+﻿using FastEndpoints;
 using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using RecyclerService.Consumers;
+using RecyclerService.Data;
+using RecyclerService.Services;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
-// Add services to the container.
 builder.Services.AddFastEndpoints();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddAuthorization();
+builder.Services.AddSwaggerGen(o =>
+{
+    // Use full type name (including nested type marker '+') as schema id to prevent duplicate short names like "Request"
+    o.CustomSchemaIds(t => t.FullName?.Replace('+', '.') ?? t.Name);
+});
 
 // Database
 if (!builder.Environment.IsEnvironment("Testing"))
 {
-    builder.Services.AddDbContext<GameDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    builder.Services.AddDbContext<RecyclerDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("RecyclerConnection")));
 }
 else
 {
-    // In Testing environment, use in-memory Sqlite for standalone container startup
-    builder.Services.AddDbContext<GameDbContext>(options =>
+    builder.Services.AddDbContext<RecyclerDbContext>(options =>
         options.UseSqlite("DataSource=:memory:"));
 }
 
-// Redis
-builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = builder.Configuration.GetConnectionString("Redis"); });
-
-// MassTransit with RabbitMQ (optional via ENABLE_MESSAGING=false)
+// MassTransit
 var enableMessaging = builder.Configuration.GetValue<bool?>("ENABLE_MESSAGING") ?? true;
 if (enableMessaging)
 {
     builder.Services.AddMassTransit(x =>
     {
-        x.AddConsumer<CreditsCreditedConsumer>();
+        x.AddConsumer<TruckArrivedConsumer>();
+        x.AddConsumer<TruckLoadedConsumer>();
 
         x.SetKebabCaseEndpointNameFormatter();
 
         x.UsingRabbitMq((context, cfg) =>
         {
-            cfg.Host(builder.Configuration["RabbitMQ:Host"], h =>
+            cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq", h =>
             {
                 h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
                 h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
@@ -73,7 +69,7 @@ else
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
-        .AddService(builder.Configuration["OTEL_SERVICE_NAME"] ?? "GameService")
+        .AddService(builder.Configuration["OTEL_SERVICE_NAME"] ?? "RecyclerService")
         .AddEnvironmentVariableDetector())
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation()
@@ -88,32 +84,26 @@ builder.Services.AddOpenTelemetry()
 var healthChecks = builder.Services.AddHealthChecks();
 if (!builder.Environment.IsEnvironment("Testing"))
 {
-    healthChecks
-        .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!)
-        .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
+    var conn = builder.Configuration.GetConnectionString("RecyclerConnection");
+    if (!string.IsNullOrEmpty(conn))
+    {
+        healthChecks.AddNpgSql(conn);
+    }
 }
 
 // Business Services
-builder.Services.AddScoped<IPlayerService, PlayerService>();
-
-// Add JSON options to avoid serialization cycles
-builder.Services.Configure<JsonOptions>(options =>
-{
-    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-});
+builder.Services.AddScoped<IRecyclerService, RecyclerService.Services.RecyclerService>();
 
 try
 {
     var app = builder.Build();
 
-    // Apply EF Core migrations using the built app's service provider to avoid duplicating singletons
     if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
     {
         try
         {
             using var scope = app.Services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<GameDbContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
             dbContext.Database.Migrate();
         }
         catch (Exception ex)
@@ -122,36 +112,34 @@ try
         }
     }
 
-    // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
         app.UseSwaggerUI();
     }
 
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
 
-    // OpenTelemetry Prometheus
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
-    // Health Checks
     app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
     app.MapHealthChecks("/health/ready");
 
     app.UseFastEndpoints();
 
-    Log.Information("Starting GameService host");
+    Log.Information("Starting RecyclerService host");
     app.Run();
 }
 catch (Exception ex)
 {
-    // Log fatal startup exceptions
     Log.Fatal(ex, "Host terminated unexpectedly during startup");
-    throw; // rethrow to let the host fail if necessary
+    throw;
 }
 finally
 {
-    // Ensure any buffered logs are written out
     Log.CloseAndFlush();
 }
 

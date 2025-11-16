@@ -9,8 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-        <PackageReference Include="xunit.v3"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="xunit.v3" />
         <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -19,16 +19,16 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Moq"/>
-        <PackageReference Include="Shouldly"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory"/>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"/>
-        <PackageReference Include="DotNet.Testcontainers"/>
+        <PackageReference Include="Moq" />
+        <PackageReference Include="Shouldly" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+        <PackageReference Include="DotNet.Testcontainers" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\GameService\GameService.csproj"/>
+        <ProjectReference Include="..\RecyclerService\RecyclerService.csproj" />
     </ItemGroup>
 
 </Project>
