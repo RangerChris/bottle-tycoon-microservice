@@ -21,7 +21,7 @@ public class HealthAndMigrationsTests
                 return;
             }
 
-            var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+            await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             {
                 builder.ConfigureAppConfiguration((context, conf) =>
                 {
