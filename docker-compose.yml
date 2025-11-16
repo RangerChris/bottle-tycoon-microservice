@@ -1,0 +1,153 @@
+﻿services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:16-alpine
+    container_name: bottle-tycoon-postgres
+    environment:
+      POSTGRES_DB: gamestate
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bottle-tycoon
+
+  redis:
+    image: redis:7-alpine
+    container_name: bottle-tycoon-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bottle-tycoon
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: bottle-tycoon-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - bottle-tycoon
+
+  # Observability Services
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: bottle-tycoon-jaeger
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    networks:
+      - bottle-tycoon
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bottle-tycoon-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - bottle-tycoon
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: bottle-tycoon-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - bottle-tycoon
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bottle-tycoon-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - bottle-tycoon
+
+  # Application Services
+  gameservice:
+    build:
+      context: ./src/GameService
+    container_name: bottle-tycoon-gameservice
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:80
+      ConnectionStrings__DefaultConnection: Host=postgres;Database=gamestate;Username=postgres;Password=password
+      ConnectionStrings__Redis: redis:6379
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: guest
+      RabbitMQ__Password: guest
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_SERVICE_NAME: GameService
+      OTEL_TRACES_EXPORTER: jaeger
+    ports:
+      - "5001:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    networks:
+      - bottle-tycoon
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  loki_data:
+  grafana_data:
+
+networks:
+  bottle-tycoon:
+    driver: bridge

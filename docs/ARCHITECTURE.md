@@ -95,7 +95,6 @@ flowchart LR
     TS["Truck Service (5003)"]
     HQ["Headquarters (5004)"]
     PS["Recycling Plant (5005)"]
-    AS["Auth Service"]
   end
 
   subgraph Infra
@@ -111,7 +110,6 @@ flowchart LR
   GW --> TS
   GW --> HQ
   GW --> PS
-  GW --> AS
   GS --> PG
   RS --> PG
   TS --> PG
@@ -235,7 +233,6 @@ Resilience patterns:
 ## Security
 
 - Authentication & Authorization
-  - Central Auth Service issues tokens; API Gateway validates JWTs and forwards principal info to services.
   - Enforce role-based access for management endpoints.
 
 - Transport & Secrets

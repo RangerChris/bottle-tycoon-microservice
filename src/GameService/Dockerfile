@@ -1,0 +1,27 @@
+﻿# Use the official .NET 9 SDK image to build the application
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy the project file and restore dependencies
+COPY ["GameService.csproj", "./"]
+RUN dotnet restore "GameService.csproj"
+
+# Copy the source code and build
+COPY . .
+WORKDIR "/src"
+RUN dotnet build "GameService.csproj" -c Release -o /app/build
+
+# Publish the application
+FROM build AS publish
+RUN dotnet publish "GameService.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Use the official ASP.NET Core runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+# Expose the port the app runs on
+EXPOSE 80
+
+# Set the entry point
+ENTRYPOINT ["dotnet", "GameService.dll"]
