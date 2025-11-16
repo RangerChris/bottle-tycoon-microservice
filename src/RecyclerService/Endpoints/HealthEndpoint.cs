@@ -1,7 +1,7 @@
 ﻿using FastEndpoints;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace GameService.Endpoints;
+namespace RecyclerService.Endpoints;
 
 public class HealthEndpoint : EndpointWithoutRequest<HealthEndpoint.HealthResponse>
 {
@@ -16,6 +16,7 @@ public class HealthEndpoint : EndpointWithoutRequest<HealthEndpoint.HealthRespon
     {
         Get("/health");
         AllowAnonymous();
+        Options(x => x.WithTags("Health"));
     }
 
     public override async Task HandleAsync(CancellationToken ct)

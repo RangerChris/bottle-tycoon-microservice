@@ -9,7 +9,8 @@ Bottle Tycoon is an **educational microservices project** designed to teach mode
 - Implement event-driven architecture with **RabbitMQ**/**MassTransit**
 - Complete observability with **OpenTelemetry, Jaeger, Prometheus, Loki, and Grafana**
 - Container orchestration with **Docker and Docker Compose**
-- Real-time frontend with **React and DaisyUI**
+- Real-time frontend with **React and DaisyU[ARCHITECTURE.md](docs/ARCHITECTURE.md)
+[GAME_DESIGN.md](docs/GAME_DESIGN.md)I**
 - Distributed tracing and correlation IDs
 - Health checks and service communication patterns
 - Database per service pattern

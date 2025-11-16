@@ -2,13 +2,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy the project file and restore dependencies
-COPY ["GameService.csproj", "./"]
+COPY Directory.Packages.props ./
+COPY src/GameService/GameService.csproj ./
 RUN dotnet restore "GameService.csproj"
 
-# Copy the source code and build
-COPY . .
-WORKDIR "/src"
+COPY src/GameService/. .
 RUN dotnet build "GameService.csproj" -c Release -o /app/build
 
 # Publish the application

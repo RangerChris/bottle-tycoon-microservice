@@ -1,4 +1,4 @@
-﻿﻿using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using GameService.Tests.TestFixtures;
 using Microsoft.AspNetCore.Hosting;
@@ -13,9 +13,15 @@ public class HealthEndpointTests : IAsyncLifetime
 {
     private readonly TestcontainersFixture _containers = new();
 
-    public ValueTask InitializeAsync() => _containers.InitializeAsync();
+    public ValueTask InitializeAsync()
+    {
+        return _containers.InitializeAsync();
+    }
 
-    public ValueTask DisposeAsync() => _containers.DisposeAsync();
+    public ValueTask DisposeAsync()
+    {
+        return _containers.DisposeAsync();
+    }
 
     [Fact]
     public async Task HealthEndpoint_ShouldReturnHealthyJson()
@@ -31,11 +37,10 @@ public class HealthEndpointTests : IAsyncLifetime
             builder.ConfigureAppConfiguration((context, conf) =>
             {
                 var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection(new[]
-                    {
+                    .AddInMemoryCollection([
                         new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", _containers.Postgres.ConnectionString),
                         new KeyValuePair<string, string?>("ConnectionStrings:Redis", $"localhost:{_containers.Redis.GetMappedPublicPort(6379)}")
-                    })
+                    ])
                     .Build();
                 conf.AddConfiguration(cfg);
             });
@@ -45,7 +50,7 @@ public class HealthEndpointTests : IAsyncLifetime
         var res = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        var content = await res.Content.ReadFromJsonAsync<dynamic>(cancellationToken: TestContext.Current.CancellationToken);
+        var content = await res.Content.ReadFromJsonAsync<dynamic>(TestContext.Current.CancellationToken);
         ((string)content!.status).ShouldBe("Healthy");
     }
 }

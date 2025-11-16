@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using GameService.Data;
 using GameService.Models;
 using Microsoft.AspNetCore.Hosting;
@@ -42,12 +43,12 @@ public class CreateGetPlayerEndpointTests
 
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
-        var created = await createRes.Content.ReadFromJsonAsync<Player>(cancellationToken: TestContext.Current.CancellationToken);
+        var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         var getRes = await client.GetAsync($"/players/{created.Id}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var got = await getRes.Content.ReadFromJsonAsync<Player>(cancellationToken: TestContext.Current.CancellationToken);
+        var got = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         got.ShouldNotBeNull();
         got.Id.ShouldBe(created.Id);
     }
@@ -81,20 +82,20 @@ public class CreateGetPlayerEndpointTests
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
-        var created = await createRes.Content.ReadFromJsonAsync<Player>(cancellationToken: TestContext.Current.CancellationToken);
+        var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Credit credits
         var creditReq = new { Amount = 100m, Reason = "test credit" };
         var creditRes = await client.PostAsJsonAsync($"/players/{created!.Id}/credit", creditReq, TestContext.Current.CancellationToken);
         creditRes.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var creditResult = await creditRes.Content.ReadFromJsonAsync<bool>(cancellationToken: TestContext.Current.CancellationToken);
+        var creditResult = await creditRes.Content.ReadFromJsonAsync<bool>(TestContext.Current.CancellationToken);
         creditResult.ShouldBeTrue();
 
         // Get player and check balance
         var getRes = await client.GetAsync($"/players/{created.Id}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var player = await getRes.Content.ReadFromJsonAsync<Player>(cancellationToken: TestContext.Current.CancellationToken);
+        var player = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         player!.Credits.ShouldBe(1100m); // Starting 1000 + 100
     }
 
@@ -127,20 +128,20 @@ public class CreateGetPlayerEndpointTests
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
-        var created = await createRes.Content.ReadFromJsonAsync<Player>(cancellationToken: TestContext.Current.CancellationToken);
+        var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Debit credits
         var debitReq = new { Amount = 50m, Reason = "test debit" };
         var debitRes = await client.PostAsJsonAsync($"/players/{created!.Id}/debit", debitReq, TestContext.Current.CancellationToken);
         debitRes.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var debitResult = await debitRes.Content.ReadFromJsonAsync<bool>(cancellationToken: TestContext.Current.CancellationToken);
+        var debitResult = await debitRes.Content.ReadFromJsonAsync<bool>(TestContext.Current.CancellationToken);
         debitResult.ShouldBeTrue();
 
         // Get player and check balance
         var getRes = await client.GetAsync($"/players/{created.Id}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var player = await getRes.Content.ReadFromJsonAsync<Player>(cancellationToken: TestContext.Current.CancellationToken);
+        var player = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         player!.Credits.ShouldBe(950m); // Starting 1000 - 50
     }
 
@@ -173,7 +174,7 @@ public class CreateGetPlayerEndpointTests
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
-        var created = await createRes.Content.ReadFromJsonAsync<Player>(cancellationToken: TestContext.Current.CancellationToken);
+        var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Try to debit more than available
@@ -243,7 +244,7 @@ public class CreateGetPlayerEndpointTests
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
-        var created = await createRes.Content.ReadFromJsonAsync<Player>(cancellationToken: TestContext.Current.CancellationToken);
+        var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Try to credit negative amount
@@ -283,7 +284,7 @@ public class CreateGetPlayerEndpointTests
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
-        var created = await createRes.Content.ReadFromJsonAsync<Player>(cancellationToken: TestContext.Current.CancellationToken);
+        var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Try to debit negative amount
@@ -363,43 +364,62 @@ public class CreateGetPlayerEndpointTests
     private static async Task<string> ReadFirstErrorMessage(HttpResponseMessage res)
     {
         var content = await res.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        if (string.IsNullOrWhiteSpace(content)) return string.Empty;
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return string.Empty;
+        }
 
         try
         {
-            using var doc = System.Text.Json.JsonDocument.Parse(content);
+            using var doc = JsonDocument.Parse(content);
             var root = doc.RootElement;
 
             // Common FastEndpoints shape: { errors: { "": ["msg"] } }
             if (root.TryGetProperty("errors", out var errors))
             {
                 // If errors is an object and contains empty-string property
-                if (errors.ValueKind == System.Text.Json.JsonValueKind.Object
+                if (errors.ValueKind == JsonValueKind.Object
                     && errors.TryGetProperty("", out var def)
-                    && def.ValueKind == System.Text.Json.JsonValueKind.Array
+                    && def.ValueKind == JsonValueKind.Array
                     && def.GetArrayLength() > 0)
+                {
                     return def[0].GetString() ?? content;
+                }
 
                 // If errors is an array or object with other keys, try to extract first string value
                 foreach (var prop in errors.EnumerateObject())
                 {
                     var v = prop.Value;
-                    if (v.ValueKind == System.Text.Json.JsonValueKind.Array && v.GetArrayLength() > 0)
+                    if (v.ValueKind == JsonValueKind.Array && v.GetArrayLength() > 0)
+                    {
                         return v[0].GetString() ?? content;
-                    if (v.ValueKind == System.Text.Json.JsonValueKind.String)
+                    }
+
+                    if (v.ValueKind == JsonValueKind.String)
+                    {
                         return v.GetString() ?? content;
+                    }
                 }
             }
 
             // ProblemDetails shape: { title: "..", detail: ".." }
-            if (root.TryGetProperty("detail", out var detail)) return detail.GetString() ?? content;
-            if (root.TryGetProperty("title", out var title)) return title.GetString() ?? content;
+            if (root.TryGetProperty("detail", out var detail))
+            {
+                return detail.GetString() ?? content;
+            }
+
+            if (root.TryGetProperty("title", out var title))
+            {
+                return title.GetString() ?? content;
+            }
 
             // Fallback: if root is an array or string
-            if (root.ValueKind == System.Text.Json.JsonValueKind.Array && root.GetArrayLength() > 0 && root[0].ValueKind == System.Text.Json.JsonValueKind.String)
+            if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0 && root[0].ValueKind == JsonValueKind.String)
+            {
                 return root[0].GetString() ?? content;
+            }
         }
-        catch (System.Text.Json.JsonException)
+        catch (JsonException)
         {
             // Not JSON, fall through
         }

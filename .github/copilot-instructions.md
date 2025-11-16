@@ -21,6 +21,7 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **API-First Design:** Design APIs first to ensure that all services interact through well-defined interfaces.
 - **Separation of Concerns:** Ensure that each service has a single responsibility, making it easier to manage and evolve.
 - **Project Structure:** Maintain a clear and organized project structure as outlined in the repository documentation based on .
+- **Package Management:** Use centralized package management for dependencies to ensure consistency across services.
 
 ## Testing Approach
 - **Unit Testing:** Write comprehensive unit tests for all new features and significant changes introduced via Copilot.
@@ -32,10 +33,8 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Dependency Management:** Regularly update dependencies and utilize tools to monitor vulnerabilities in third-party libraries.
 - **Security Best Practices:** Follow security best practices, including input validation and proper authentication mechanisms.
 
-## Development Workflow
-- **Branching Strategy:** Utilize feature branches for new developments and keep the main branch stable.
-- **Pull Requests:** Ensure all changes are submitted through pull requests for review and discussion.
-- **Continuous Integration:** Integrate CI/CD pipelines to automate testing and deployment processes.
+## MCP
+- **Context7:** Use context7 MCP server if possible to enhance Copilot's understanding of the codebase or the specific nugetpackage/API.
 
 ## Observability Requirements
 - **Logging:** Implement structured logging across services to facilitate performance tracking and issue diagnostics.

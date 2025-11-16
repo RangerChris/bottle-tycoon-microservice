@@ -19,6 +19,25 @@
     networks:
       - bottle-tycoon
 
+  recyclerpostgres:
+    image: postgres:16-alpine
+    container_name: bottle-tycoon-recycler-postgres
+    environment:
+      POSTGRES_DB: recyclerstate
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - recycler_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bottle-tycoon
+
   redis:
     image: redis:7-alpine
     container_name: bottle-tycoon-redis
@@ -114,8 +133,8 @@
   # Application Services
   gameservice:
     build:
-      context: ./src/GameService
-    container_name: bottle-tycoon-gameservice
+      context: .
+      dockerfile: src/GameService/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
@@ -141,8 +160,35 @@
     networks:
       - bottle-tycoon
 
+  recyclerservice:
+    build:
+      context: .
+      dockerfile: src/RecyclerService/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:80
+      ConnectionStrings__RecyclerConnection: Host=recyclerpostgres;Database=recyclerstate;Username=postgres;Password=password
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: guest
+      RabbitMQ__Password: guest
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_SERVICE_NAME: RecyclerService
+      ENABLE_MESSAGING: "true"
+    ports:
+      - "5002:80"
+    depends_on:
+      recyclerpostgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    networks:
+      - bottle-tycoon
+
 volumes:
   postgres_data:
+  recycler_postgres_data:
   redis_data:
   rabbitmq_data:
   loki_data:

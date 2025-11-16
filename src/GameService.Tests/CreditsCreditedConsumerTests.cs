@@ -1,4 +1,4 @@
-﻿﻿using GameService.Consumers;
+﻿using GameService.Consumers;
 using GameService.Events;
 using GameService.Services;
 using MassTransit;

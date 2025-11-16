@@ -1,7 +1,6 @@
 ﻿using FastEndpoints;
 using GameService.Models;
 using GameService.Services;
-using Microsoft.AspNetCore.Http;
 
 namespace GameService.Endpoints;
 
