@@ -123,7 +123,9 @@ try
     }
 
     // Configure the HTTP request pipeline.
-    if (app.Environment.IsDevelopment())
+    var swaggerEnabled = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing");
+
+    if (swaggerEnabled)
     {
         app.UseSwagger();
         app.UseSwaggerUI();
@@ -139,6 +141,8 @@ try
     app.MapHealthChecks("/health/ready");
 
     app.UseFastEndpoints();
+
+    app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Text("GameService OK"));
 
     Log.Information("Starting GameService host");
     app.Run();

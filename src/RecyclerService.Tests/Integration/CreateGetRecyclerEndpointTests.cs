@@ -225,8 +225,11 @@ public class CreateGetRecyclerEndpointTests : IAsyncLifetime
     }
 
     public sealed record CreateRequest(Guid Id, string Name, int Capacity, string? Location);
+
     public sealed record CreateResponse(Guid Id, string Name, int Capacity, int CurrentLoad, string? Location);
+
     public sealed record GetResponse(Guid Id, string Name, int CurrentLoad, int Capacity);
+
     public sealed record VisitorRequest
     {
         public int Bottles { get; set; }

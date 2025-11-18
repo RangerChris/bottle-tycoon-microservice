@@ -112,6 +112,8 @@ try
         }
     }
 
+    var swaggerEnabled = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing");
+
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -129,6 +131,8 @@ try
     app.MapHealthChecks("/health/ready");
 
     app.UseFastEndpoints();
+
+    app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Text("RecyclerService OK"));
 
     Log.Information("Starting RecyclerService host");
     app.Run();

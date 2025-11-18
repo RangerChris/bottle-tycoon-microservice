@@ -177,9 +177,9 @@ public class RecyclerServiceTests
         loggerMock.Verify(l => l.Log(
             LogLevel.Information,
             It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("Visitor") && o.ToString().Contains("arrived")),
-            It.IsAny<Exception>(),
-            It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+            It.Is<It.IsAnyType>((o, t) => o.ToString()!.Contains("Visitor") && o.ToString()!.Contains("arrived")),
+            It.IsAny<Exception?>(),
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
     }
 
     [Fact]
@@ -201,8 +201,8 @@ public class RecyclerServiceTests
         loggerMock.Verify(l => l.Log(
             LogLevel.Information,
             It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((o, t) => o.ToString().Contains("reached capacity")),
-            It.IsAny<Exception>(),
-            It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+            It.Is<It.IsAnyType>((o, t) => o.ToString()!.Contains("reached capacity")),
+            It.IsAny<Exception?>(),
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
     }
 }

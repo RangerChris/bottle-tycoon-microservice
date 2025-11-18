@@ -21,14 +21,13 @@
         </PackageReference>
         <PackageReference Include="Moq"/>
         <PackageReference Include="Shouldly"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"/>
         <PackageReference Include="DotNet.Testcontainers"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RecyclerService\RecyclerService.csproj"/>
+        <ProjectReference Include="..\TruckService\TruckService.csproj"/>
     </ItemGroup>
 
 </Project>
