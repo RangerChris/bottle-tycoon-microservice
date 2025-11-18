@@ -13,4 +13,8 @@ public class TruckEntity
     public string Model { get; set; } = string.Empty;
 
     public bool IsActive { get; set; }
+
+    public int CapacityLevel { get; set; }
+    public double CurrentLoadUnits { get; set; }
+    public decimal TotalEarnings { get; set; }
 }

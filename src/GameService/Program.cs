@@ -50,6 +50,7 @@ if (enableMessaging)
     builder.Services.AddMassTransit(x =>
     {
         x.AddConsumer<CreditsCreditedConsumer>();
+        x.AddConsumer<DeliveryCompletedConsumer>();
 
         x.SetKebabCaseEndpointNameFormatter();
 

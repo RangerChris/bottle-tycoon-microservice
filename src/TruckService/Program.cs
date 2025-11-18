@@ -38,6 +38,16 @@ else
 }
 
 builder.Services.AddScoped<ITruckRepository, EfTruckRepository>();
+builder.Services.AddScoped<ILoadProvider, RandomLoadProvider>();
+builder.Services.AddScoped<ITruckManager, TruckManager>(sp =>
+{
+    var repo = sp.GetRequiredService<ITruckRepository>();
+    var db = sp.GetRequiredService<TruckDbContext>();
+    var load = sp.GetRequiredService<ILoadProvider>();
+    var logger = sp.GetRequiredService<ILogger<TruckManager>>();
+    return new TruckManager(repo, db, load, logger);
+});
+builder.Services.AddScoped<IRouteWorker, RouteWorker>();
 builder.Services.AddFastEndpoints()
     .SwaggerDocument();
 builder.Services.AddEndpointsApiExplorer();
