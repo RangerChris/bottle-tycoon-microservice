@@ -63,6 +63,8 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: RangerChris/bottle-tycoon-microservice
           files: TestResults/**/coverage.cobertura.xml
           flags: unittests
           # do not fail the job if Codecov upload fails (e.g., missing token for private repos)
