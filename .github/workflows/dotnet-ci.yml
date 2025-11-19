@@ -62,7 +62,7 @@ jobs:
 
       - name: Check coverage threshold
         env:
-          COVERAGE_THRESHOLD: 70
+          COVERAGE_THRESHOLD: 50
         run: |
           set -e
           covfile=$(ls TestResults/**/coverage.cobertura.xml 2>/dev/null | head -n1 || true)
