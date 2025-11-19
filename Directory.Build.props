@@ -1,0 +1,25 @@
+﻿<Project>
+    <PropertyGroup>
+        <!-- Repository-wide required TargetFramework -->
+        <EnforceTargetFramework>net9.0</EnforceTargetFramework>
+    </PropertyGroup>
+
+    <!--
+      Ensure every project explicitly targets the enforced framework.
+      This target runs before builds and fails fast with a clear message if a project
+      uses a different framework or doesn't declare any TargetFramework.
+    -->
+    <Target Name="EnsureRepoTargetFramework" BeforeTargets="PrepareForBuild">
+        <!-- If a single TargetFramework is set but doesn't match -->
+        <Error Condition="'$(TargetFramework)' != '' and '$(TargetFramework)' != '$(EnforceTargetFramework)'"
+               Text="ERROR: Project '$(MSBuildProjectName)' targets '$(TargetFramework)'. Repository enforces '$(EnforceTargetFramework)'. Update the project file to target $(EnforceTargetFramework)."/>
+
+        <!-- If multiple target frameworks are set but do not include the enforced one -->
+        <Error Condition="'$(TargetFrameworks)' != '' and $([System.String]::IndexOf('$(TargetFrameworks)', '$(EnforceTargetFramework)')) == -1"
+               Text="ERROR: Project '$(MSBuildProjectName)' targets '$(TargetFrameworks)' which does not include '$(EnforceTargetFramework)'. Update the project file to include $(EnforceTargetFramework)."/>
+
+        <!-- If neither TargetFramework nor TargetFrameworks is set -->
+        <Error Condition="'$(TargetFramework)' == '' and '$(TargetFrameworks)' == ''"
+               Text="ERROR: Project '$(MSBuildProjectName)' does not declare a TargetFramework. Repository enforces '$(EnforceTargetFramework)'."/>
+    </Target>
+</Project>
