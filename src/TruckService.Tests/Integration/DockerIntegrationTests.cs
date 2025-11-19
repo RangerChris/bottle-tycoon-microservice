@@ -23,6 +23,7 @@ public class DockerIntegrationTests
             UseShellExecute = false,
             CreateNoWindow = true
         });
+        Debug.Assert(up != null, nameof(up) + " != null");
         await up.WaitForExitAsync(TestContext.Current.CancellationToken);
         if (up.ExitCode != 0)
         {
@@ -47,6 +48,7 @@ public class DockerIntegrationTests
                 }
                 catch
                 {
+                    // ignored
                 }
 
                 await Task.Delay(2000, TestContext.Current.CancellationToken);
@@ -61,7 +63,7 @@ public class DockerIntegrationTests
             var create = new { Id = Guid.NewGuid(), LicensePlate = "INT-1", Model = "M", IsActive = true };
             var createRes = await client.PostAsJsonAsync("/trucks", create, cancellationToken: TestContext.Current.CancellationToken);
             createRes.EnsureSuccessStatusCode();
-            var created = await createRes.Content.ReadFromJsonAsync<object>(cancellationToken: TestContext.Current.CancellationToken);
+            await createRes.Content.ReadFromJsonAsync<object>(cancellationToken: TestContext.Current.CancellationToken);
 
             // Dispatch
             var dispatch = new { TruckId = create.Id, RecyclerId = Guid.NewGuid(), DistanceKm = 10.0 };
@@ -97,6 +99,7 @@ public class DockerIntegrationTests
                 UseShellExecute = false,
                 CreateNoWindow = true
             });
+            Debug.Assert(down != null, nameof(down) + " != null");
             await down.WaitForExitAsync(TestContext.Current.CancellationToken);
         }
     }
