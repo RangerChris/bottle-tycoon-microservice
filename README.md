@@ -1,6 +1,7 @@
 # Bottle Tycoon Microservice: Learn Microservices, Observability, and .NET 9
 
-[![.NET CI](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml)
+[![.NET CI](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml)  
+[![coverage](https://img.shields.io/codecov/c/github/rangerchris/bottle-tycoon-microservice?logo=codecov&style=flat-square)](https://codecov.io/gh/rangerchris/bottle-tycoon-microservice)
 
 ## 🎮 Project Overview
 

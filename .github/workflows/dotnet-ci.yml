@@ -60,9 +60,17 @@ jobs:
         run: |
           reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura"
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: TestResults/**/coverage.cobertura.xml
+          flags: unittests
+          # do not fail the job if Codecov upload fails (e.g., missing token for private repos)
+          fail_ci_if_error: false
+
       - name: Check coverage threshold
         env:
-          COVERAGE_THRESHOLD: 50
+          COVERAGE_THRESHOLD: 70
         run: |
           set -e
           covfile=$(ls TestResults/**/coverage.cobertura.xml 2>/dev/null | head -n1 || true)
