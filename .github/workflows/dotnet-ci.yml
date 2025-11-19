@@ -28,11 +28,18 @@ jobs:
           fi
         shell: bash
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ steps.get-dotnet-version.outputs.dotnet-version }}
-          cache: 'nuget'
 
       - name: Restore
         run: dotnet restore
