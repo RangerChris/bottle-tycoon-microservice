@@ -1,0 +1,89 @@
+﻿name: .NET CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect .NET SDK version
+        id: get-dotnet-version
+        run: |
+          if [ -f global.json ]; then
+            ver=$(grep -Po '(?<="version": ")[^\"]+' global.json || true)
+            if [ -z "$ver" ]; then
+              ver="10.0.x"
+            fi
+            echo "dotnet-version=$ver" >> $GITHUB_OUTPUT
+          else
+            echo "dotnet-version=10.0.x" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ steps.get-dotnet-version.outputs.dotnet-version }}
+          cache: 'nuget'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run tests with coverage
+        run: |
+          dotnet test bottle-tycoon-microservice.sln --configuration Release --no-build --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+      - name: Install reportgenerator tool
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.1.23 || true
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Generate coverage reports
+        run: |
+          reportgenerator -reports:TestResults/**/coverage.cobertura.xml -targetdir:coverage-report -reporttypes:Html;Cobertura
+
+      - name: Check coverage threshold
+        env:
+          COVERAGE_THRESHOLD: 70
+        run: |
+          set -e
+          covfile=$(ls TestResults/**/coverage.cobertura.xml 2>/dev/null | head -n1 || true)
+          if [ -z "$covfile" ]; then
+            echo "No cobertura coverage file found under TestResults/; failing" >&2
+            exit 1
+          fi
+          echo "Using coverage file: $covfile"
+          line_rate=$(grep -oP 'line-rate="\K[0-9]*\.?[0-9]+' "$covfile" | head -n1 || true)
+          if [ -z "$line_rate" ]; then
+            echo "Could not find line-rate in $covfile" >&2
+            exit 1
+          fi
+          percent=$(awk "BEGIN { printf \"%.0f\", $line_rate * 100 }")
+          echo "Line coverage: $percent% (threshold: $COVERAGE_THRESHOLD%)"
+          if [ "$percent" -lt "$COVERAGE_THRESHOLD" ]; then
+            echo "Coverage $percent% is below threshold $COVERAGE_THRESHOLD%" >&2
+            exit 1
+          fi
+
+      - name: Upload coverage report (HTML)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report
+
+      - name: Upload coverage (Cobertura xml)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-cobertura
+          path: TestResults/**/coverage.cobertura.xml

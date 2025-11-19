@@ -1,5 +1,7 @@
 # Bottle Tycoon Microservice: Learn Microservices, Observability, and .NET 9
 
+[![.NET CI](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml)
+
 ## 🎮 Project Overview
 
 Bottle Tycoon is an **educational microservices project** designed to teach modern software architecture principles through a fun, interactive game. Manage a virtual bottle recycling network with multiple microservices, each handling different business domains, all monitored with OpenTelemetry for complete observability.
