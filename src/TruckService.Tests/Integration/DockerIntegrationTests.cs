@@ -61,13 +61,13 @@ public class DockerIntegrationTests
 
             // Create a truck
             var create = new { Id = Guid.NewGuid(), LicensePlate = "INT-1", Model = "M", IsActive = true };
-            var createRes = await client.PostAsJsonAsync("/trucks", create, cancellationToken: TestContext.Current.CancellationToken);
+            var createRes = await client.PostAsJsonAsync("/trucks", create, TestContext.Current.CancellationToken);
             createRes.EnsureSuccessStatusCode();
-            await createRes.Content.ReadFromJsonAsync<object>(cancellationToken: TestContext.Current.CancellationToken);
+            await createRes.Content.ReadFromJsonAsync<object>(TestContext.Current.CancellationToken);
 
             // Dispatch
             var dispatch = new { TruckId = create.Id, RecyclerId = Guid.NewGuid(), DistanceKm = 10.0 };
-            var dispatchRes = await client.PostAsJsonAsync($"/api/v1/trucks/{create.Id}/dispatch", dispatch, cancellationToken: TestContext.Current.CancellationToken);
+            var dispatchRes = await client.PostAsJsonAsync($"/api/v1/trucks/{create.Id}/dispatch", dispatch, TestContext.Current.CancellationToken);
             dispatchRes.EnsureSuccessStatusCode();
 
             // Trigger worker to process queued delivery
@@ -77,14 +77,14 @@ public class DockerIntegrationTests
             // Fetch history
             var historyRes = await client.GetAsync($"/api/v1/trucks/{create.Id}/history", TestContext.Current.CancellationToken);
             historyRes.EnsureSuccessStatusCode();
-            var history = await historyRes.Content.ReadFromJsonAsync<object[]>(cancellationToken: TestContext.Current.CancellationToken);
+            var history = await historyRes.Content.ReadFromJsonAsync<object[]>(TestContext.Current.CancellationToken);
             history.ShouldNotBeNull();
             history.Length.ShouldBeGreaterThan(0);
 
             // Fetch earnings
             var earningsRes = await client.GetAsync($"/api/v1/trucks/{create.Id}/earnings", TestContext.Current.CancellationToken);
             earningsRes.EnsureSuccessStatusCode();
-            var earnings = await earningsRes.Content.ReadFromJsonAsync<decimal>(cancellationToken: TestContext.Current.CancellationToken);
+            var earnings = await earningsRes.Content.ReadFromJsonAsync<decimal>(TestContext.Current.CancellationToken);
             earnings.ShouldBeGreaterThanOrEqualTo(0);
         }
         finally

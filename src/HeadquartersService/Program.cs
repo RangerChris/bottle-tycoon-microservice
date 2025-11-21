@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using FastEndpoints.Swagger;
+using HeadquartersService.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -32,6 +33,9 @@ builder.Services.AddOpenTelemetry()
         .AddPrometheusExporter());
 
 builder.Services.AddHealthChecks();
+builder.Services.AddSingleton<IDispatchQueue, DispatchQueue>();
+builder.Services.AddSingleton<IFleetService, FleetService>();
+builder.Services.AddHostedService<DispatchProcessor>();
 
 try
 {
@@ -72,4 +76,6 @@ finally
     Log.CloseAndFlush();
 }
 
-public abstract partial class Program { }
+public abstract partial class Program
+{
+}
