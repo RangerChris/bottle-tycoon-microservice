@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using FastEndpoints;
 using GameService.Consumers;
 using GameService.Data;
@@ -160,6 +161,11 @@ finally
     Log.CloseAndFlush();
 }
 
+public abstract partial class Program
+{
+}
+
+[ExcludeFromCodeCoverage]
 public abstract partial class Program
 {
 }
