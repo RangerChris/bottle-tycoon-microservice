@@ -1,4 +1,5 @@
-﻿using FastEndpoints;
+﻿using System.Diagnostics.CodeAnalysis;
+using FastEndpoints;
 using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -34,8 +35,19 @@ if (!builder.Environment.IsEnvironment("Testing"))
 }
 else
 {
-    builder.Services.AddDbContext<RecyclerDbContext>(options =>
-        options.UseSqlite("DataSource=:memory:"));
+    // When running tests, allow choosing an in-memory provider via configuration for reliability in tests
+    // Default to using the in-memory provider for the Testing environment unless explicitly disabled by configuration.
+    var useInMemory = builder.Configuration.GetValue<bool?>("USE_INMEMORY") ?? true;
+    if (useInMemory)
+    {
+        builder.Services.AddDbContext<RecyclerDbContext>(options =>
+            options.UseInMemoryDatabase("RecyclerService_TestDb"));
+    }
+    else
+    {
+        // If tests intentionally set USE_INMEMORY=false, they are expected to register the DbContext themselves.
+    }
+    // Test projects may still override the DbContext registration using ConfigureTestServices or ConfigureServices in the test host.
 }
 
 // MassTransit
@@ -112,6 +124,21 @@ try
         }
     }
 
+    // In testing environment ensure the database schema exists (useful for in-memory sqlite or in-memory provider)
+    if (app.Environment.IsEnvironment("Testing"))
+    {
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
+            dbContext.Database.EnsureCreated();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred while ensuring database creation in Testing environment");
+        }
+    }
+
     var swaggerEnabled = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing");
 
     if (app.Environment.IsDevelopment())
@@ -147,6 +174,11 @@ finally
     Log.CloseAndFlush();
 }
 
+public abstract partial class Program
+{
+}
+
+[ExcludeFromCodeCoverage]
 public abstract partial class Program
 {
 }

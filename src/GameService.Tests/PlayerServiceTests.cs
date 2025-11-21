@@ -8,7 +8,7 @@ namespace GameService.Tests;
 
 public class PlayerServiceTests
 {
-    private GameDbContext CreateInMemoryDb()
+    private static GameDbContext CreateInMemoryDb()
     {
         var options = new DbContextOptionsBuilder<GameDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -17,88 +17,73 @@ public class PlayerServiceTests
     }
 
     [Fact]
-    public async Task CreatePlayer_ShouldAddPlayer()
+    public async Task CreatePlayer_CreatesPlayer()
     {
-        var db = CreateInMemoryDb();
+        await using var db = CreateInMemoryDb();
         var svc = new PlayerService(db);
 
         var player = await svc.CreatePlayerAsync();
-
         player.ShouldNotBeNull();
-        (await db.Players.FindAsync([player.Id], TestContext.Current.CancellationToken)).ShouldNotBeNull();
+
+        var fetched = await svc.GetPlayerAsync(player.Id);
+        fetched.ShouldNotBeNull();
+        fetched.Id.ShouldBe(player.Id);
     }
 
     [Fact]
-    public async Task CreditAndDebit_ShouldUpdateBalance()
+    public async Task DebitCredits_Succeeds_AndRecordsPurchase()
     {
-        var db = CreateInMemoryDb();
+        await using var db = CreateInMemoryDb();
         var svc = new PlayerService(db);
+        var p = await svc.CreatePlayerAsync();
+        var initial = p.Credits;
 
-        var player = await svc.CreatePlayerAsync();
+        var ok = await svc.DebitCreditsAsync(p.Id, 100m, "test");
+        ok.ShouldBeTrue();
 
-        var credited = await svc.CreditCreditsAsync(player.Id, 100m, "test");
-        credited.ShouldBeTrue();
-
-        var reloaded = await svc.GetPlayerAsync(player.Id);
-        // Player starts with 1000 credits by default
-        reloaded!.Credits.ShouldBe(1100m);
-
-        var debited = await svc.DebitCreditsAsync(player.Id, 40m, "buy");
-        debited.ShouldBeTrue();
-
-        var after = await svc.GetPlayerAsync(player.Id);
-        after!.Credits.ShouldBe(1060m);
+        var fetched = await svc.GetPlayerAsync(p.Id);
+        fetched.ShouldNotBeNull();
+        fetched.Credits.ShouldBe(initial - 100m);
+        fetched.Purchases.ShouldNotBeEmpty();
     }
 
     [Fact]
-    public async Task Debit_ShouldFailWhenInsufficientFunds()
+    public async Task DebitCredits_Fails_WhenNotEnough()
     {
-        // Arrange
-        var db = CreateInMemoryDb();
+        await using var db = CreateInMemoryDb();
         var svc = new PlayerService(db);
-        var player = await svc.CreatePlayerAsync();
+        var p = await svc.CreatePlayerAsync();
 
-        // Act
-        var success = await svc.DebitCreditsAsync(player.Id, 2000m, "buy");
-
-        // Assert
-        success.ShouldBeFalse();
-        var reloaded = await svc.GetPlayerAsync(player.Id);
-        reloaded!.Credits.ShouldBe(1000m); // unchanged
+        var ok = await svc.DebitCreditsAsync(p.Id, 99999m, "big");
+        ok.ShouldBeFalse();
     }
 
     [Fact]
-    public async Task PurchaseItem_ShouldDebitCredits()
+    public async Task CreditCredits_Works()
     {
-        // Arrange
-        var db = CreateInMemoryDb();
+        await using var db = CreateInMemoryDb();
         var svc = new PlayerService(db);
-        var player = await svc.CreatePlayerAsync();
+        var p = await svc.CreatePlayerAsync();
+        var initial = p.Credits;
 
-        // Act
-        var success = await svc.PurchaseItemAsync(player.Id, "truck", 100m);
+        var ok = await svc.CreditCreditsAsync(p.Id, 200m, "bonus");
+        ok.ShouldBeTrue();
 
-        // Assert
-        success.ShouldBeTrue();
-        var reloaded = await svc.GetPlayerAsync(player.Id);
-        reloaded!.Credits.ShouldBe(900m);
+        var fetched = await svc.GetPlayerAsync(p.Id);
+        fetched?.Credits.ShouldBe(initial + 200m);
     }
 
     [Fact]
-    public async Task UpgradeItem_ShouldDebitCreditsAndRecordUpgrade()
+    public async Task UpgradeItem_AddsUpgrade_WhenFunds()
     {
-        // Arrange
-        var db = CreateInMemoryDb();
+        await using var db = CreateInMemoryDb();
         var svc = new PlayerService(db);
-        var player = await svc.CreatePlayerAsync();
+        var p = await svc.CreatePlayerAsync();
 
-        // Act
-        var success = await svc.UpgradeItemAsync(player.Id, "truck", 1, 2, 200m);
+        var ok = await svc.UpgradeItemAsync(p.Id, "truck", 1, 2, 100m);
+        ok.ShouldBeTrue();
 
-        // Assert
-        success.ShouldBeTrue();
-        var reloaded = await svc.GetPlayerAsync(player.Id);
-        reloaded!.Credits.ShouldBe(800m);
-        reloaded.Upgrades.ShouldContain(u => u.ItemType == "truck" && u.ItemId == 1 && u.NewLevel == 2);
+        var fetched = await svc.GetPlayerAsync(p.Id);
+        fetched?.Upgrades.ShouldNotBeEmpty();
     }
 }

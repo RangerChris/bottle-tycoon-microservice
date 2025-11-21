@@ -1,4 +1,5 @@
-﻿using FastEndpoints;
+﻿using System.Diagnostics.CodeAnalysis;
+using FastEndpoints;
 using FastEndpoints.Swagger;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.Sqlite;
@@ -97,6 +98,11 @@ app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Te
 Log.Information("Starting TruckService host");
 app.Run();
 
+public abstract partial class Program
+{
+}
+
+[ExcludeFromCodeCoverage]
 public abstract partial class Program
 {
 }

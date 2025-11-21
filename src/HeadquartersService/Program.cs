@@ -1,4 +1,5 @@
-﻿using FastEndpoints;
+﻿using System.Diagnostics.CodeAnalysis;
+using FastEndpoints;
 using FastEndpoints.Swagger;
 using HeadquartersService.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -76,6 +77,11 @@ finally
     Log.CloseAndFlush();
 }
 
+public abstract partial class Program
+{
+}
+
+[ExcludeFromCodeCoverage]
 public abstract partial class Program
 {
 }
