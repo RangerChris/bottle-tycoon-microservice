@@ -1,5 +1,5 @@
 ﻿using MassTransit;
-using RecyclerService.Events;
+using Shared.Events;
 
 namespace RecyclerService.Consumers;
 
@@ -14,7 +14,7 @@ public class TruckLoadedConsumer : IConsumer<TruckLoaded>
 
     public async Task Consume(ConsumeContext<TruckLoaded> context)
     {
-        _logger.LogInformation("Received TruckLoaded for Recycler {RecyclerId} from Truck {TruckId} - Loaded {LoadedBottles}", context.Message.RecyclerId, context.Message.TruckId, context.Message.LoadedBottles);
+        _logger.LogInformation("Received TruckLoaded for Recycler {RecyclerId} from Truck {TruckId} - Loaded {Load}", context.Message.RecyclerId, context.Message.TruckId, string.Join(", ", context.Message.LoadByType.Select(kv => $"{kv.Key}:{kv.Value}")));
         await Task.CompletedTask;
     }
 }

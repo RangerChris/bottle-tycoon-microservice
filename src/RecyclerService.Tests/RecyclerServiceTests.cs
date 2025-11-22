@@ -24,7 +24,8 @@ public class RecyclerServiceTests
     public async Task GetByIdAsync_ShouldReturnRecycler_WhenExists()
     {
         var db = CreateInMemoryDb();
-        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100, CurrentLoad = 0 };
+        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100 };
+        recycler.SetBottleInventory(new Dictionary<string, int>());
         db.Recyclers.Add(recycler);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -52,14 +53,17 @@ public class RecyclerServiceTests
     public async Task VisitorArrivedAsync_ShouldAddVisitorAndIncreaseLoad()
     {
         var db = CreateInMemoryDb();
-        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100, CurrentLoad = 10 };
+        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100 };
+        recycler.SetBottleInventory(new Dictionary<string, int> { { "Regular", 10 } });
         db.Recyclers.Add(recycler);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var publisherMock = new Mock<IPublishEndpoint>();
         var service = new Services.RecyclerService(db, publisherMock.Object, Mock.Of<ILogger<Services.RecyclerService>>());
 
-        var visitor = new Visitor { Bottles = 25, VisitorType = "Regular" };
+        var visitor = new Visitor();
+        visitor.SetBottleCounts(new Dictionary<string, int> { { "Regular", 25 } });
+        visitor.VisitorType = "Regular";
 
         var result = await service.VisitorArrivedAsync(recycler.Id, visitor, TestContext.Current.CancellationToken);
 
@@ -80,14 +84,17 @@ public class RecyclerServiceTests
     public async Task VisitorArrivedAsync_ShouldPublishEvent_WhenRecyclerBecomesFull()
     {
         var db = CreateInMemoryDb();
-        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100, CurrentLoad = 80 };
+        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100 };
+        recycler.SetBottleInventory(new Dictionary<string, int> { { "Regular", 80 } });
         db.Recyclers.Add(recycler);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var publisherMock = new Mock<IPublishEndpoint>();
         var service = new Services.RecyclerService(db, publisherMock.Object, Mock.Of<ILogger<Services.RecyclerService>>());
 
-        var visitor = new Visitor { Bottles = 25, VisitorType = "Regular" };
+        var visitor = new Visitor();
+        visitor.SetBottleCounts(new Dictionary<string, int> { { "Regular", 25 } });
+        visitor.VisitorType = "Regular";
 
         var result = await service.VisitorArrivedAsync(recycler.Id, visitor, TestContext.Current.CancellationToken);
 
@@ -107,7 +114,9 @@ public class RecyclerServiceTests
         var publisherMock = new Mock<IPublishEndpoint>();
         var service = new Services.RecyclerService(db, publisherMock.Object, Mock.Of<ILogger<Services.RecyclerService>>());
 
-        var visitor = new Visitor { Bottles = 10, VisitorType = "Regular" };
+        var visitor = new Visitor();
+        visitor.SetBottleCounts(new Dictionary<string, int> { { "Regular", 10 } });
+        visitor.VisitorType = "Regular";
 
         await Should.ThrowAsync<KeyNotFoundException>(() =>
             service.VisitorArrivedAsync(Guid.NewGuid(), visitor));
@@ -117,14 +126,17 @@ public class RecyclerServiceTests
     public async Task VisitorArrivedAsync_ShouldSetVisitorIdAndArrivedAt_WhenNotProvided()
     {
         var db = CreateInMemoryDb();
-        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100, CurrentLoad = 0 };
+        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100 };
+        recycler.SetBottleInventory(new Dictionary<string, int>());
         db.Recyclers.Add(recycler);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var publisherMock = new Mock<IPublishEndpoint>();
         var service = new Services.RecyclerService(db, publisherMock.Object, Mock.Of<ILogger<Services.RecyclerService>>());
 
-        var visitor = new Visitor { Bottles = 15, VisitorType = "Premium" };
+        var visitor = new Visitor();
+        visitor.SetBottleCounts(new Dictionary<string, int> { { "Premium", 15 } });
+        visitor.VisitorType = "Premium";
 
         await service.VisitorArrivedAsync(recycler.Id, visitor, TestContext.Current.CancellationToken);
 
@@ -139,7 +151,8 @@ public class RecyclerServiceTests
     public async Task VisitorArrivedAsync_ShouldUseProvidedVisitorIdAndArrivedAt()
     {
         var db = CreateInMemoryDb();
-        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100, CurrentLoad = 0 };
+        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100 };
+        recycler.SetBottleInventory(new Dictionary<string, int>());
         db.Recyclers.Add(recycler);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -148,7 +161,10 @@ public class RecyclerServiceTests
 
         var customId = Guid.NewGuid();
         var customTime = DateTimeOffset.UtcNow.AddMinutes(-5);
-        var visitor = new Visitor { Id = customId, Bottles = 20, VisitorType = "Regular", ArrivedAt = customTime };
+        var visitor = new Visitor { Id = customId };
+        visitor.SetBottleCounts(new Dictionary<string, int> { { "Regular", 20 } });
+        visitor.VisitorType = "Regular";
+        visitor.ArrivedAt = customTime;
 
         await service.VisitorArrivedAsync(recycler.Id, visitor, TestContext.Current.CancellationToken);
 
@@ -162,7 +178,8 @@ public class RecyclerServiceTests
     public async Task VisitorArrivedAsync_ShouldLogInformation()
     {
         var db = CreateInMemoryDb();
-        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100, CurrentLoad = 10 };
+        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100 };
+        recycler.SetBottleInventory(new Dictionary<string, int> { { "Regular", 10 } });
         db.Recyclers.Add(recycler);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -170,7 +187,10 @@ public class RecyclerServiceTests
         var loggerMock = new Mock<ILogger<Services.RecyclerService>>();
         var service = new Services.RecyclerService(db, publisherMock.Object, loggerMock.Object);
 
-        var visitor = new Visitor { Id = Guid.NewGuid(), Bottles = 25, VisitorType = "Regular", ArrivedAt = DateTimeOffset.UtcNow };
+        var visitor = new Visitor { Id = Guid.NewGuid() };
+        visitor.SetBottleCounts(new Dictionary<string, int> { { "Regular", 25 } });
+        visitor.VisitorType = "Regular";
+        visitor.ArrivedAt = DateTimeOffset.UtcNow;
 
         await service.VisitorArrivedAsync(recycler.Id, visitor, TestContext.Current.CancellationToken);
 
@@ -186,7 +206,8 @@ public class RecyclerServiceTests
     public async Task VisitorArrivedAsync_ShouldLogWhenFull()
     {
         var db = CreateInMemoryDb();
-        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100, CurrentLoad = 90 };
+        var recycler = new Recycler { Id = Guid.NewGuid(), Name = "Test Recycler", Capacity = 100 };
+        recycler.SetBottleInventory(new Dictionary<string, int> { { "Regular", 90 } });
         db.Recyclers.Add(recycler);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -194,7 +215,9 @@ public class RecyclerServiceTests
         var loggerMock = new Mock<ILogger<Services.RecyclerService>>();
         var service = new Services.RecyclerService(db, publisherMock.Object, loggerMock.Object);
 
-        var visitor = new Visitor { Bottles = 15, VisitorType = "Regular" };
+        var visitor = new Visitor();
+        visitor.SetBottleCounts(new Dictionary<string, int> { { "Regular", 15 } });
+        visitor.VisitorType = "Regular";
 
         await service.VisitorArrivedAsync(recycler.Id, visitor, TestContext.Current.CancellationToken);
 

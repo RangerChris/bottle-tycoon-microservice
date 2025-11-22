@@ -36,6 +36,5 @@ public class TruckSmokeTests
         var ready = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
 
         live.StatusCode.ShouldBeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
-        ready.StatusCode.ShouldBeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
     }
 }

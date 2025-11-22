@@ -27,8 +27,11 @@ public class TruckManagerExtraTests
     public async Task GetFleetSummary_ReturnsTrucks()
     {
         var repoMock = new Mock<ITruckRepository>();
-        repoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new[] { new TruckDto { Id = Guid.NewGuid(), LicensePlate = "A", Model = "M", IsActive = true } });
         var db = CreateInMemoryDb(out var conn);
+        // seed a truck in db
+        var truck = new TruckEntity { Id = Guid.NewGuid(), LicensePlate = "A", Model = "M", IsActive = true, CapacityLevel = 0 };
+        db.Trucks.Add(truck);
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         var loadProvider = new TestLoadProvider(1, 1, 1);
         var logger = new Mock<ILogger<TruckManager>>();
         var manager = new TruckManager(repoMock.Object, db, loadProvider, logger.Object);

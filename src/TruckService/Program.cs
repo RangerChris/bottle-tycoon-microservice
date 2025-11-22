@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using FastEndpoints.Swagger;
+using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using TruckService.Data;
 using TruckService.Services;
@@ -53,7 +55,46 @@ builder.Services.AddFastEndpoints()
     .SwaggerDocument();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHealthChecks();
+
+var hc = builder.Services.AddHealthChecks();
+if (isTesting)
+{
+    hc.AddCheck("self", () => HealthCheckResult.Healthy());
+}
+else
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        hc.AddNpgSql(connectionString);
+        hc.AddRabbitMQ();
+    }
+}
+
+// MassTransit
+var enableMessaging = builder.Configuration.GetValue<bool?>("ENABLE_MESSAGING") ?? true;
+if (enableMessaging)
+{
+    builder.Services.AddMassTransit(x =>
+    {
+        x.SetKebabCaseEndpointNameFormatter();
+
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq", h =>
+            {
+                h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+                h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+            });
+
+            cfg.ConfigureEndpoints(context);
+        });
+    });
+}
+else
+{
+    Log.Information("Messaging disabled via ENABLE_MESSAGING=false; MassTransit will not be started");
+}
 
 var app = builder.Build();
 

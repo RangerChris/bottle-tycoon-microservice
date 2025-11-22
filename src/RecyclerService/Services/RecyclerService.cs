@@ -39,8 +39,14 @@ public class RecyclerService : IRecyclerService
 
         _db.Visitors.Add(visitor);
 
-        // Increase current load by the number of bottles (this is a simplification)
-        recycler.CurrentLoad += visitor.Bottles;
+        // Increase current load by the number of bottles by type
+        var recyclerInventory = recycler.GetBottleInventory();
+        var visitorCounts = visitor.GetBottleCounts();
+        foreach (var kv in visitorCounts)
+        {
+            recyclerInventory[kv.Key] = recyclerInventory.GetValueOrDefault(kv.Key) + kv.Value;
+        }
+        recycler.SetBottleInventory(recyclerInventory);
 
         await _db.SaveChangesAsync(ct);
 
