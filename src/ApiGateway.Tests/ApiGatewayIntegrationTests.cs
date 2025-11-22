@@ -25,7 +25,7 @@ public class ApiGatewayWebApplicationFactory : WebApplicationFactory<TestStartup
         builder.ConfigureAppConfiguration(config =>
         {
             config.AddJsonFile("appsettings.json");
-            config.AddInMemoryCollection(new Dictionary<string, string>
+            config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:Redis"] = $"localhost:{_redisContainer.GetMappedPublicPort(6379)}",
                 ["RabbitMQ:Host"] = $"localhost:{_rabbitMqContainer.GetMappedPublicPort(5672)}",

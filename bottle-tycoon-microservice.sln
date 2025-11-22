@@ -28,8 +28,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecyclingPlantService.Tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway", "src\ApiGateway\ApiGateway.csproj", "{E2379AF6-6AC7-4F3F-A617-7316AD528F40}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway.Tests", "src\ApiGateway.Tests\ApiGateway.Tests.csproj", "{00000000-0000-0000-0000-000000000000}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway.Tests", "src\ApiGateway.Tests\ApiGateway.Tests.csproj", "{EBBB5DDB-26ED-494C-B6D2-A455890FADD8}"
 EndProject
 Global
