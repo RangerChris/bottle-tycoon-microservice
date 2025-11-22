@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using RecyclerService.Consumers;
-using RecyclerService.Data;
-using RecyclerService.Services;
+using RecyclingPlantService.Consumers;
+using RecyclingPlantService.Data;
+using RecyclingPlantService.Services;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,8 +30,8 @@ builder.Services.AddSwaggerGen(o =>
 // Database
 if (!builder.Environment.IsEnvironment("Testing"))
 {
-    builder.Services.AddDbContext<RecyclerDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("RecyclerConnection")));
+    builder.Services.AddDbContext<RecyclingPlantDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("RecyclingPlantConnection")));
 }
 else
 {
@@ -40,8 +40,8 @@ else
     var useInMemory = builder.Configuration.GetValue<bool?>("USE_INMEMORY") ?? true;
     if (useInMemory)
     {
-        builder.Services.AddDbContext<RecyclerDbContext>(options =>
-            options.UseInMemoryDatabase("RecyclerService_TestDb"));
+        builder.Services.AddDbContext<RecyclingPlantDbContext>(options =>
+            options.UseInMemoryDatabase("RecyclingPlantService_TestDb"));
     }
     // If tests intentionally set USE_INMEMORY=false, they are expected to register the DbContext themselves.
     // Test projects may still override the DbContext registration using ConfigureTestServices or ConfigureServices in the test host.
@@ -53,7 +53,6 @@ if (enableMessaging)
 {
     builder.Services.AddMassTransit(x =>
     {
-        x.AddConsumer<TruckArrivedConsumer>();
         x.AddConsumer<TruckLoadedConsumer>();
 
         x.SetKebabCaseEndpointNameFormatter();
@@ -78,7 +77,7 @@ else
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
-        .AddService(builder.Configuration["OTEL_SERVICE_NAME"] ?? "RecyclerService")
+        .AddService(builder.Configuration["OTEL_SERVICE_NAME"] ?? "RecyclingPlantService")
         .AddEnvironmentVariableDetector())
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation()
@@ -93,7 +92,7 @@ builder.Services.AddOpenTelemetry()
 var healthChecks = builder.Services.AddHealthChecks();
 if (!builder.Environment.IsEnvironment("Testing"))
 {
-    var conn = builder.Configuration.GetConnectionString("RecyclerConnection");
+    var conn = builder.Configuration.GetConnectionString("RecyclingPlantConnection");
     if (!string.IsNullOrEmpty(conn))
     {
         healthChecks.AddNpgSql(conn);
@@ -101,7 +100,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 }
 
 // Business Services
-builder.Services.AddScoped<IRecyclerService, RecyclerService.Services.RecyclerService>();
+builder.Services.AddScoped<IRecyclingPlantService, RecyclingPlantService.Services.RecyclingPlantService>();
 
 try
 {
@@ -112,7 +111,7 @@ try
         try
         {
             using var scope = app.Services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             dbContext.Database.Migrate();
         }
         catch (Exception ex)
@@ -127,7 +126,7 @@ try
         try
         {
             using var scope = app.Services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             dbContext.Database.EnsureCreated();
         }
         catch (Exception ex)
@@ -156,9 +155,9 @@ try
 
     app.UseFastEndpoints();
 
-    app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Text("RecyclerService OK"));
+    app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Text("RecyclingPlantService OK"));
 
-    Log.Information("Starting RecyclerService host");
+    Log.Information("Starting RecyclingPlantService host");
     app.Run();
 }
 catch (Exception ex)

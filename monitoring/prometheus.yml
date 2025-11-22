@@ -17,6 +17,12 @@ scrape_configs:
     metrics_path: '/metrics'
     scrape_interval: 15s
 
+  - job_name: 'recyclingplantservice'
+    static_configs:
+      - targets: ['recyclingplantservice:80']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
   - job_name: 'jaeger'
     static_configs:
       - targets: ['jaeger:14268']

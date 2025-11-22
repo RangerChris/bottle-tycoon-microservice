@@ -34,9 +34,7 @@
         <PackageReference Include="AspNetCore.HealthChecks.Redis"/>
         <PackageReference Include="prometheus-net.AspNetCore"/>
     </ItemGroup>
-
     <ItemGroup>
         <ProjectReference Include="..\Shared\Shared.csproj"/>
     </ItemGroup>
-
 </Project>
