@@ -1,8 +1,6 @@
 ﻿using AspNetCoreRateLimit;
 using FastEndpoints;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -26,24 +24,6 @@ builder.Services.AddFastEndpoints(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
-
-// JWT Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.Authority = builder.Configuration["Jwt:Authority"];
-        options.Audience = builder.Configuration["Jwt:Audience"];
-        options.RequireHttpsMetadata = false; // For development
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"]
-        };
-    });
 
 // Rate Limiting
 builder.Services.AddMemoryCache();
@@ -90,7 +70,7 @@ try
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
-    var swaggerEnabled = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing");
+    var swaggerEnabled = app.Environment.IsDevelopment();
 
     if (swaggerEnabled)
     {
@@ -103,9 +83,6 @@ try
     // Rate Limiting
     app.UseIpRateLimiting();
 
-    // Authentication & Authorization
-    app.UseAuthentication();
-    app.UseAuthorization();
 
     // OpenTelemetry Prometheus
     app.MapPrometheusScrapingEndpoint();
@@ -119,7 +96,7 @@ try
 
     app.UseFastEndpoints();
 
-    app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Text("ApiGateway OK"));
+    app.MapGet("/", () => "ApiGateway OK");
 
     Log.Information("Starting ApiGateway host");
     app.Run();
@@ -132,3 +109,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+public partial class Program { }

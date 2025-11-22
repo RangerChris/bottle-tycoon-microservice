@@ -9,7 +9,7 @@ using Xunit;
 
 namespace ApiGateway.Tests;
 
-public class ApiGatewayWebApplicationFactory : WebApplicationFactory<TestStartup>
+public class ApiGatewayWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly IContainer _rabbitMqContainer;
     private readonly IContainer _redisContainer;
@@ -87,7 +87,7 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
     public async Task HealthCheck_ShouldReturnOk()
     {
         // Act
-        var response = await _client!.GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        var response = await _client!.GetAsync("/health/live", TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.OK);

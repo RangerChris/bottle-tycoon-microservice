@@ -230,20 +230,6 @@ Resilience patterns:
 - Idempotency keys for critical operations (crediting accounts, delivery processing).
 - Poison message handling and dead-letter queues for RabbitMQ.
 
-## Security
-
-- Authentication & Authorization
-  - Enforce role-based access for management endpoints.
-
-- Transport & Secrets
-  - TLS in transit for production (between services and external endpoints).
-  - Don’t store secrets in source. Use environment secrets (Docker secrets, Kubernetes Secrets, Vault).
-
-- Network segmentation
-  - Limit direct access to databases; only allow service network access.
-
-- Input validation
-  - Validate all incoming requests and message payloads at the boundary.
 
 ## Configuration & Environment variables
 

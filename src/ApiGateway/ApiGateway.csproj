@@ -24,7 +24,6 @@
         <PackageReference Include="AspNetCore.HealthChecks.RabbitMQ"/>
         <PackageReference Include="AspNetCore.HealthChecks.Redis"/>
         <PackageReference Include="Swashbuckle.AspNetCore"/>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer"/>
         <PackageReference Include="AspNetCoreRateLimit"/>
         <PackageReference Include="RabbitMQ.Client"/>
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore"/>
