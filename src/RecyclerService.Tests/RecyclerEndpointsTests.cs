@@ -43,7 +43,7 @@ public class RecyclerEndpointsTests
         var getRes = await client.GetAsync($"/recyclers/{id}", CancellationToken.None);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        var dto = await getRes.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: Xunit.TestContext.Current.CancellationToken);
+        var dto = await getRes.Content.ReadFromJsonAsync<JsonElement>(Xunit.TestContext.Current.CancellationToken);
         dto.GetProperty("name").GetString().ShouldBe("Test Recycler");
         dto.GetProperty("capacity").GetInt32().ShouldBe(100);
     }
@@ -71,7 +71,7 @@ public class RecyclerEndpointsTests
         var visRes = await client.PostAsJsonAsync($"/recyclers/{id}/visitors", visitorReq, CancellationToken.None);
         visRes.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        var resBody = await visRes.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: Xunit.TestContext.Current.CancellationToken);
+        var resBody = await visRes.Content.ReadFromJsonAsync<JsonElement>(Xunit.TestContext.Current.CancellationToken);
         resBody.GetProperty("currentLoad").GetInt32().ShouldBe(5);
         resBody.GetProperty("capacity").GetInt32().ShouldBe(10);
     }
