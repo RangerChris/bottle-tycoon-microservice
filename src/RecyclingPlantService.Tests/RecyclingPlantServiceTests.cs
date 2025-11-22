@@ -1,14 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using RecyclingPlantService.Data;
-using Moq;
 using Microsoft.Extensions.Logging;
+using Moq;
+using RecyclingPlantService.Data;
 using Xunit;
 
 public class RecyclingPlantServiceTests
 {
     private readonly RecyclingPlantDbContext _dbContext;
-    private readonly RecyclingPlantService.Services.RecyclingPlantService _service;
     private readonly Mock<ILogger<RecyclingPlantService.Services.RecyclingPlantService>> _loggerMock;
+    private readonly RecyclingPlantService.Services.RecyclingPlantService _service;
 
     public RecyclingPlantServiceTests()
     {

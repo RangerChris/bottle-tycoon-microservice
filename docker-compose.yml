@@ -233,6 +233,34 @@
     networks:
       - bottle-tycoon
 
+  headquartersservice:
+    build:
+      context: .
+      dockerfile: src/HeadquartersService/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:80
+      ConnectionStrings__DefaultConnection: Host=postgres;Database=gamestate;Username=postgres;Password=password
+      ConnectionStrings__Redis: redis:6379
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: guest
+      RabbitMQ__Password: guest
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_SERVICE_NAME: HeadquartersService
+    ports:
+      - "5004:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    networks:
+      - bottle-tycoon
+
   recyclingplantservice:
     build:
       context: .
@@ -251,6 +279,31 @@
       - "5005:80"
     depends_on:
       recyclingplantpostgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    networks:
+      - bottle-tycoon
+
+  apigateway:
+    build:
+      context: .
+      dockerfile: src/ApiGateway/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:80
+      ConnectionStrings__Redis: redis:6379
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: guest
+      RabbitMQ__Password: guest
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_SERVICE_NAME: ApiGateway
+    ports:
+      - "5000:80"
+    depends_on:
+      redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
