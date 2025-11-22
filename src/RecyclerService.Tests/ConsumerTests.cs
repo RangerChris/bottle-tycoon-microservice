@@ -4,6 +4,7 @@ using Moq;
 using RecyclerService.Consumers;
 using RecyclerService.Events;
 using RecyclerService.Services;
+using Shared.Events;
 using Xunit;
 
 namespace RecyclerService.Tests;
@@ -38,7 +39,7 @@ public class ConsumerTests
         var logger = new Mock<ILogger<TruckLoadedConsumer>>();
         var consumer = new TruckLoadedConsumer(logger.Object);
 
-        var msg = new TruckLoaded(TestContext.RandomGuid(), TestContext.RandomGuid(), 5, DateTimeOffset.UtcNow);
+        var msg = new TruckLoaded(TestContext.RandomGuid(), TestContext.RandomGuid(), Guid.Empty, new Dictionary<string, int> { { "glass", 5 } }, 10m, DateTimeOffset.UtcNow);
         var ctx = new Mock<ConsumeContext<TruckLoaded>>();
         ctx.SetupGet(x => x.Message).Returns(msg);
 

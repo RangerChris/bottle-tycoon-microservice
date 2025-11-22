@@ -24,7 +24,9 @@ public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, V
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
         var recyclerId = Route<Guid>("id");
-        var visitor = new Visitor { Bottles = req.Bottles, VisitorType = req.VisitorType };
+        var visitor = new Visitor();
+        visitor.SetBottleCounts(new Dictionary<string, int> { { "Regular", req.Bottles } });
+        visitor.VisitorType = req.VisitorType;
         try
         {
             var recycler = await _service.VisitorArrivedAsync(recyclerId, visitor, ct);

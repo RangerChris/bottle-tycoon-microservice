@@ -1,4 +1,5 @@
 ﻿using System.Data.Common;
+using MassTransit;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -49,7 +50,8 @@ public class RouteWorkerTests
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var logger = new Mock<ILogger<RouteWorker>>();
-        var worker = new RouteWorker(db, logger.Object);
+        var publishEndpoint = new Mock<IPublishEndpoint>();
+        var worker = new RouteWorker(db, logger.Object, publishEndpoint.Object);
 
         await worker.RunOnceAsync(TestContext.Current.CancellationToken);
 
@@ -60,7 +62,7 @@ public class RouteWorkerTests
 
         var truckAfter = await db.Trucks.FindAsync(new object[] { truck.Id }, TestContext.Current.CancellationToken);
         truckAfter?.TotalEarnings.ShouldBe(35m);
-        truckAfter?.CurrentLoadUnits.ShouldBe(0);
+        truckAfter?.GetCurrentLoadByType().ShouldBeEmpty();
 
         await conn.CloseAsync();
     }

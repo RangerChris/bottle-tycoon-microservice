@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 namespace RecyclerService.Models;
 
@@ -8,8 +9,20 @@ public class Visitor
 
     public Guid RecyclerId { get; set; }
     public string? VisitorType { get; set; }
-    public int Bottles { get; set; }
+    public string BottleCountsJson { get; set; } = "{}";
     public DateTimeOffset ArrivedAt { get; set; }
 
     public Recycler? Recycler { get; set; }
+
+    public Dictionary<string, int> GetBottleCounts()
+    {
+        return JsonSerializer.Deserialize<Dictionary<string, int>>(BottleCountsJson) ?? new Dictionary<string, int>();
+    }
+
+    public void SetBottleCounts(Dictionary<string, int> counts)
+    {
+        BottleCountsJson = JsonSerializer.Serialize(counts);
+    }
+
+    public int Bottles => GetBottleCounts().Values.Sum();
 }

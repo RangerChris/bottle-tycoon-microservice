@@ -28,7 +28,6 @@ public class CreateRecyclerEndpoint : Endpoint<CreateRecyclerEndpoint.Request, C
             Id = req.Id == Guid.Empty ? Guid.NewGuid() : req.Id,
             Name = req.Name,
             Capacity = req.Capacity,
-            CurrentLoad = 0,
             Location = req.Location,
             CreatedAt = DateTimeOffset.UtcNow
         };

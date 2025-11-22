@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using Shared.Events;
 using TruckService.Data;
 
 namespace TruckService.Services;
@@ -7,11 +9,13 @@ public class RouteWorker : IRouteWorker
 {
     private readonly TruckDbContext _db;
     private readonly ILogger<RouteWorker> _logger;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public RouteWorker(TruckDbContext db, ILogger<RouteWorker> logger)
+    public RouteWorker(TruckDbContext db, ILogger<RouteWorker> logger, IPublishEndpoint publishEndpoint)
     {
         _db = db;
         _logger = logger;
+        _publishEndpoint = publishEndpoint;
     }
 
     // Advances queued deliveries through the simple state machine synchronously for tests
@@ -31,6 +35,19 @@ public class RouteWorker : IRouteWorker
         delivery.State = "Loaded";
         await _db.SaveChangesAsync(ct);
 
+        // Publish TruckLoaded event
+        var loadByType = delivery.GetLoadByType();
+        var operatingCost = delivery.OperatingCost; // assuming cost is per delivery
+        var truckLoaded = new TruckLoaded(
+            delivery.TruckId,
+            delivery.RecyclerId,
+            Guid.Empty, // PlayerId not known here, perhaps need to add
+            loadByType,
+            operatingCost,
+            DateTimeOffset.UtcNow
+        );
+        await _publishEndpoint.Publish(truckLoaded);
+
         delivery.State = "AtPlant";
         await _db.SaveChangesAsync(ct);
 
@@ -43,7 +60,7 @@ public class RouteWorker : IRouteWorker
         if (truck != null)
         {
             truck.TotalEarnings += delivery.NetProfit;
-            truck.CurrentLoadUnits = 0; // after delivery truck empty
+            truck.SetCurrentLoadByType(new Dictionary<string, int>()); // empty after delivery
             await _db.SaveChangesAsync(ct);
         }
 
