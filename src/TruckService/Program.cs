@@ -102,7 +102,17 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
-    db.Database.EnsureCreated();
+
+    // If using the Npgsql provider (Postgres) apply migrations so schema is created/updated.
+    // Otherwise (sqlite/in-memory) use EnsureCreated for quick local/test setup.
+    if (db.Database.ProviderName?.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
+    {
+        db.Database.Migrate();
+    }
+    else
+    {
+        db.Database.EnsureCreated();
+    }
 
     // seed known truck used by tests
     if (isTesting && !db.Trucks.Any(t => t.Id == Guid.Parse("11111111-1111-1111-1111-111111111111")))

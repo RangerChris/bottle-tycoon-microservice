@@ -1,17 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Net;
-using System.Threading.Tasks;
-using System.Threading;
+﻿using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 
@@ -113,18 +106,18 @@ namespace ApiGateway.Tests
         [Fact]
         public async Task Gateway_root_returns_ok()
         {
-            var resp = await _client!.GetAsync("/");
+            var resp = await _client!.GetAsync("/", TestContext.Current.CancellationToken);
             resp.EnsureSuccessStatusCode();
-            var body = await resp.Content.ReadAsStringAsync();
+            var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Assert.Contains("ApiGateway", body);
         }
 
         [Fact]
         public async Task Gateway_metrics_available()
         {
-            var resp = await _client!.GetAsync("/metrics");
+            var resp = await _client!.GetAsync("/metrics", TestContext.Current.CancellationToken);
             resp.EnsureSuccessStatusCode();
-            var body = await resp.Content.ReadAsStringAsync();
+            var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Assert.Contains("# TYPE", body);
         }
 
@@ -136,9 +129,9 @@ namespace ApiGateway.Tests
         [InlineData("recyclingplantservice")]
         public async Task Proxied_service_health_live(string service)
         {
-            var resp = await _client!.GetAsync($"/api/{service}/health/live");
+            var resp = await _client!.GetAsync($"/api/{service}/health/live", TestContext.Current.CancellationToken);
             resp.EnsureSuccessStatusCode();
-            var body = await resp.Content.ReadAsStringAsync();
+            var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Assert.Equal("Healthy", body);
         }
 
