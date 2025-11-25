@@ -1,0 +1,103 @@
+﻿name: Integration tests - API Gateway
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure docker-compose is available
+        run: |
+          docker-compose version
+
+      - name: Build and start stack
+        run: |
+          docker-compose up -d --build
+
+      - name: Show containers
+        run: docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+      - name: Wait for RabbitMQ (up to 3 minutes)
+        run: |
+          set -e
+          timeout_seconds=180
+          interval=5
+          start_time=$(date +%s)
+          echo "Waiting for RabbitMQ on localhost:5672..."
+          while : ; do
+            # Test port 5672 availability from the runner
+            if bash -c "</dev/tcp/localhost/5672" >/dev/null 2>&1; then
+              echo "RabbitMQ port 5672 is open"
+              break
+            fi
+            now=$(date +%s)
+            elapsed=$((now - start_time))
+            if [ $elapsed -ge $timeout_seconds ]; then
+              echo "Timed out waiting for RabbitMQ after ${timeout_seconds}s"
+              docker-compose logs --no-color
+              exit 1
+            fi
+            sleep $interval
+          done
+
+      - name: Wait for Gateway to respond (up to 2 minutes)
+        run: |
+          set -e
+          endpoints=("http://localhost:5000/" "http://localhost:5000/api/gameservice/health/live")
+          for ep in "${endpoints[@]}"; do
+            echo "Waiting for $ep"
+            start_time=$(date +%s)
+            timeout_seconds=120
+            interval=3
+            while : ; do
+              if curl -fsS -o /dev/null "$ep"; then
+                echo "$ep is reachable"
+                break
+              fi
+              now=$(date +%s)
+              elapsed=$((now - start_time))
+              if [ $elapsed -ge $timeout_seconds ]; then
+                echo "Timed out waiting for $ep"
+                docker-compose logs --no-color
+                exit 1
+              fi
+              sleep $interval
+            done
+          done
+
+      - name: Probe proxied endpoints
+        run: |
+          set -e
+          probes=(
+            "http://localhost:5000/"
+            "http://localhost:5000/api/gameservice/health/live"
+            "http://localhost:5000/api/recyclerservice/health/live"
+            "http://localhost:5000/api/truckservice/health/live"
+            "http://localhost:5000/api/headquartersservice/health/live"
+            "http://localhost:5000/api/recyclingplantservice/health/live"
+          )
+
+          for url in "${probes[@]}"; do
+            echo "Probing $url"
+            if curl -fsS -m 10 "$url" -o -; then
+              echo "OK: $url"
+            else
+              echo "FAILED: $url"
+              docker-compose logs --no-color
+              exit 1
+            fi
+          done
+
+      - name: Tear down stack (always)
+        if: always()
+        run: |
+          docker-compose down -v

@@ -4,6 +4,7 @@
 The purpose of these guidelines is to provide a comprehensive framework for using GitHub Copilot effectively within the bottle-tycoon-microservice repository. This document outlines best practices and strategies to integrate Copilot into our development workflow.
 
 ## How Copilot Should Help
+- **Answers:** Do not explain anything unless the user asks for it.
 - **Code Suggestions:** Copilot assists by providing intelligent code completion and suggestions, allowing developers to focus on higher-level design rather than syntax.
 - **Faster Iteration:** By generating boilerplate code and repetitive patterns, Copilot speeds up the coding process and enhances productivity.
 - **Error Reduction:** With the AI's context awareness, Copilot helps decrease common coding errors, improving overall code quality.
@@ -14,6 +15,7 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Documentation:** Ensure that any code generated or modified with Copilot is well-documented, including comments that explain the purpose and functionality.
 - **Simplicity:** Favor clear and straightforward code over complex or clever solutions. Prioritize maintainability and small methods and classes.
 - **Comments:** When creating code, do not add any comments unless absolutely necessary.
+- **Terminal:** When using Copilot in the terminal, assume that it is running in a PowerShell environment on a Windows 11 PC. You can not use && to chain commands. Multiline commands should be separated by semicolons (;).
 
 ## Architecture Patterns
 - **Microservices:** Follow microservices architecture where services are independently deployable and scalable, promoting loose coupling.
