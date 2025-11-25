@@ -15,10 +15,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Docker Compose plugin (apt)
+      - name: Install Docker Compose plugin (official binary)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose-plugin
+          set -euo pipefail
+          echo "Checking docker compose..."
+          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            echo "docker compose already available"
+            exit 0
+          fi
+          ARCH=$(uname -m)
+          case "$ARCH" in
+            x86_64|amd64) DOCKER_ARCH=amd64 ;;
+            aarch64|arm64) DOCKER_ARCH=arm64 ;;
+            *) echo "Unsupported arch: $ARCH"; exit 1 ;;
+          esac
+          COMPOSE_VER="v2.18.1"
+          PLUGINDIR=/usr/local/lib/docker/cli-plugins
+          sudo mkdir -p ${PLUGINDIR}
+          sudo curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VER}/docker-compose-linux-${DOCKER_ARCH}" -o ${PLUGINDIR}/docker-compose
+          sudo chmod +x ${PLUGINDIR}/docker-compose
+          echo "Installed docker compose plugin:"
+          docker compose version
 
       - name: Ensure docker compose is available
         run: |
