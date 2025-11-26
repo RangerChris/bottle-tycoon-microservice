@@ -16,6 +16,8 @@ public class Recycler
 
     public ICollection<Visitor> Visitors { get; set; } = new List<Visitor>();
 
+    public int CurrentLoad => GetBottleInventory().Values.Sum();
+
     public Dictionary<string, int> GetBottleInventory()
     {
         return JsonSerializer.Deserialize<Dictionary<string, int>>(BottleInventoryJson) ?? new Dictionary<string, int>();
@@ -25,6 +27,4 @@ public class Recycler
     {
         BottleInventoryJson = JsonSerializer.Serialize(inventory);
     }
-
-    public int CurrentLoad => GetBottleInventory().Values.Sum();
 }

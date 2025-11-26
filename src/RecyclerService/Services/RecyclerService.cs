@@ -46,6 +46,7 @@ public class RecyclerService : IRecyclerService
         {
             recyclerInventory[kv.Key] = recyclerInventory.GetValueOrDefault(kv.Key) + kv.Value;
         }
+
         recycler.SetBottleInventory(recyclerInventory);
 
         await _db.SaveChangesAsync(ct);

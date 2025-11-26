@@ -17,10 +17,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container.
-builder.Services.AddFastEndpoints(options =>
-{
-    options.Assemblies = [typeof(Program).Assembly];
-});
+builder.Services.AddFastEndpoints(options => { options.Assemblies = [typeof(Program).Assembly]; });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
@@ -110,4 +107,6 @@ finally
     Log.CloseAndFlush();
 }
 
-public partial class Program { }
+public partial class Program
+{
+}

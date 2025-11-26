@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
 using TruckService.Data;
-using TruckService.Models;
 using TruckService.Services;
 using Xunit;
 

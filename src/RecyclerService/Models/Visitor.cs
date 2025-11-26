@@ -14,6 +14,8 @@ public class Visitor
 
     public Recycler? Recycler { get; set; }
 
+    public int Bottles => GetBottleCounts().Values.Sum();
+
     public Dictionary<string, int> GetBottleCounts()
     {
         return JsonSerializer.Deserialize<Dictionary<string, int>>(BottleCountsJson) ?? new Dictionary<string, int>();
@@ -23,6 +25,4 @@ public class Visitor
     {
         BottleCountsJson = JsonSerializer.Serialize(counts);
     }
-
-    public int Bottles => GetBottleCounts().Values.Sum();
 }
