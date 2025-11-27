@@ -67,13 +67,10 @@ try
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
-    var swaggerEnabled = app.Environment.IsDevelopment();
+    var swaggerEnabled = true;
 
-    if (swaggerEnabled)
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+    app.UseSwagger();
+    app.UseSwaggerUI();
 
     app.UseHttpsRedirection();
 

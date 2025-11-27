@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using GameService.Tests.TestFixtures;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Shouldly;
@@ -23,13 +24,17 @@ public class HealthAndMigrationsTests
 
             await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             {
+                builder.UseEnvironment("Development");
                 builder.ConfigureAppConfiguration((context, conf) =>
                 {
                     var cfg = new ConfigurationBuilder()
-                        .AddInMemoryCollection([
+                        .AddInMemoryCollection(new[]
+                        {
                             new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", containers.Postgres.ConnectionString),
-                            new KeyValuePair<string, string?>("ConnectionStrings:Redis", $"localhost:{containers.Redis.GetMappedPublicPort(6379)}")
-                        ])
+                            new KeyValuePair<string, string?>("ConnectionStrings:Redis", $"localhost:{containers.Redis.GetMappedPublicPort(6379)}"),
+                            new KeyValuePair<string, string?>("APPLY_MIGRATIONS", "true"),
+                            new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false")
+                        })
                         .Build();
                     conf.AddConfiguration(cfg);
                 });

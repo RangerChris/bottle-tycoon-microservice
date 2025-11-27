@@ -1,45 +1,26 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using GameService.Data;
 using GameService.Models;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using GameService.Tests.TestFixtures;
 using Shouldly;
 using Xunit;
 
 namespace GameService.Tests;
 
-public class CreateGetPlayerEndpointTests
+public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
 {
+    private readonly SharedTestHostFixture _fixture;
+
+    public CreateGetPlayerEndpointTests(SharedTestHostFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
     [Fact]
     public async Task CreatePlayer_ThenGetPlayer_ShouldReturnPlayer()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<GameDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-                services.AddDbContext<GameDbContext>(options => options.UseSqlite(connection));
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-                db.Database.EnsureCreated();
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -56,28 +37,7 @@ public class CreateGetPlayerEndpointTests
     [Fact]
     public async Task CreditCredits_ShouldIncreasePlayerBalance()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<GameDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-                services.AddDbContext<GameDbContext>(options => options.UseSqlite(connection));
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-                db.Database.EnsureCreated();
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
@@ -87,7 +47,7 @@ public class CreateGetPlayerEndpointTests
 
         // Credit credits
         var creditReq = new { Amount = 100m, Reason = "test credit" };
-        var creditRes = await client.PostAsJsonAsync($"/players/{created!.Id}/credit", creditReq, TestContext.Current.CancellationToken);
+        var creditRes = await client.PostAsJsonAsync($"/players/{created.Id}/credit", creditReq, TestContext.Current.CancellationToken);
         creditRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var creditResult = await creditRes.Content.ReadFromJsonAsync<bool>(TestContext.Current.CancellationToken);
         creditResult.ShouldBeTrue();
@@ -102,28 +62,7 @@ public class CreateGetPlayerEndpointTests
     [Fact]
     public async Task DebitCredits_ShouldDecreasePlayerBalance()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<GameDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-                services.AddDbContext<GameDbContext>(options => options.UseSqlite(connection));
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-                db.Database.EnsureCreated();
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
@@ -133,7 +72,7 @@ public class CreateGetPlayerEndpointTests
 
         // Debit credits
         var debitReq = new { Amount = 50m, Reason = "test debit" };
-        var debitRes = await client.PostAsJsonAsync($"/players/{created!.Id}/debit", debitReq, TestContext.Current.CancellationToken);
+        var debitRes = await client.PostAsJsonAsync($"/players/{created.Id}/debit", debitReq, TestContext.Current.CancellationToken);
         debitRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var debitResult = await debitRes.Content.ReadFromJsonAsync<bool>(TestContext.Current.CancellationToken);
         debitResult.ShouldBeTrue();
@@ -148,28 +87,7 @@ public class CreateGetPlayerEndpointTests
     [Fact]
     public async Task DebitCredits_InsufficientFunds_ShouldReturnError()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<GameDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-                services.AddDbContext<GameDbContext>(options => options.UseSqlite(connection));
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-                db.Database.EnsureCreated();
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
@@ -179,7 +97,7 @@ public class CreateGetPlayerEndpointTests
 
         // Try to debit more than available
         var debitReq = new { Amount = 2000m, Reason = "test debit" };
-        var debitRes = await client.PostAsJsonAsync($"/players/{created!.Id}/debit", debitReq, TestContext.Current.CancellationToken);
+        var debitRes = await client.PostAsJsonAsync($"/players/{created.Id}/debit", debitReq, TestContext.Current.CancellationToken);
         debitRes.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var errorMsg = await ReadFirstErrorMessage(debitRes);
         errorMsg.ShouldContain("Insufficient credits");
@@ -188,28 +106,7 @@ public class CreateGetPlayerEndpointTests
     [Fact]
     public async Task GetPlayer_NonExistentPlayer_ReturnsNotFound()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<GameDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-                services.AddDbContext<GameDbContext>(options => options.UseSqlite(connection));
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-                db.Database.EnsureCreated();
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var response = await client.GetAsync($"/players/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -218,28 +115,7 @@ public class CreateGetPlayerEndpointTests
     [Fact]
     public async Task CreditCredits_InvalidAmount_ReturnsError()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<GameDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-                services.AddDbContext<GameDbContext>(options => options.UseSqlite(connection));
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-                db.Database.EnsureCreated();
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
@@ -249,7 +125,7 @@ public class CreateGetPlayerEndpointTests
 
         // Try to credit negative amount
         var creditReq = new { Amount = -100m, Reason = "invalid" };
-        var creditRes = await client.PostAsJsonAsync($"/players/{created!.Id}/credit", creditReq, TestContext.Current.CancellationToken);
+        var creditRes = await client.PostAsJsonAsync($"/players/{created.Id}/credit", creditReq, TestContext.Current.CancellationToken);
         creditRes.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var errorMsg = await ReadFirstErrorMessage(creditRes);
         errorMsg.ShouldContain("Amount must be positive");
@@ -258,28 +134,7 @@ public class CreateGetPlayerEndpointTests
     [Fact]
     public async Task DebitCredits_InvalidAmount_ReturnsError()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<GameDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-                services.AddDbContext<GameDbContext>(options => options.UseSqlite(connection));
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-                db.Database.EnsureCreated();
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         // Create player
         var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
@@ -289,7 +144,7 @@ public class CreateGetPlayerEndpointTests
 
         // Try to debit negative amount
         var debitReq = new { Amount = -50m, Reason = "invalid" };
-        var debitRes = await client.PostAsJsonAsync($"/players/{created!.Id}/debit", debitReq, TestContext.Current.CancellationToken);
+        var debitRes = await client.PostAsJsonAsync($"/players/{created.Id}/debit", debitReq, TestContext.Current.CancellationToken);
         debitRes.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var errorMsg = await ReadFirstErrorMessage(debitRes);
         errorMsg.ShouldContain("Amount must be positive");
@@ -298,28 +153,7 @@ public class CreateGetPlayerEndpointTests
     [Fact]
     public async Task CreditCredits_NonExistentPlayer_ReturnsError()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<GameDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-                services.AddDbContext<GameDbContext>(options => options.UseSqlite(connection));
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-                db.Database.EnsureCreated();
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var creditReq = new { Amount = 100m, Reason = "test" };
         var creditRes = await client.PostAsJsonAsync($"/players/{Guid.NewGuid()}/credit", creditReq, TestContext.Current.CancellationToken);
@@ -331,28 +165,7 @@ public class CreateGetPlayerEndpointTests
     [Fact]
     public async Task DebitCredits_NonExistentPlayer_ReturnsError()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<GameDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                var connection = new SqliteConnection("DataSource=:memory:");
-                connection.Open();
-                services.AddDbContext<GameDbContext>(options => options.UseSqlite(connection));
-                var sp = services.BuildServiceProvider();
-                using var scope = sp.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-                db.Database.EnsureCreated();
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var debitReq = new { Amount = 50m, Reason = "test" };
         var debitRes = await client.PostAsJsonAsync($"/players/{Guid.NewGuid()}/debit", debitReq, TestContext.Current.CancellationToken);

@@ -21,30 +21,19 @@ builder.Host.UseSerilog();
 
 builder.Services.AddFastEndpoints();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(o =>
-{
-    // Use full type name (including nested type marker '+') as schema id to prevent duplicate short names like "Request"
-    o.CustomSchemaIds(t => t.FullName?.Replace('+', '.') ?? t.Name);
-});
+builder.Services.AddSwaggerGen(o => { o.CustomSchemaIds(t => t.FullName?.Replace('+', '.') ?? t.Name); });
 
-// Database
-if (!builder.Environment.IsEnvironment("Testing"))
+// Database: prefer Postgres connection if configured, otherwise use InMemory for local/dev/test reliability
+var rpConn = builder.Configuration.GetConnectionString("RecyclingPlantConnection");
+if (!string.IsNullOrEmpty(rpConn))
 {
     builder.Services.AddDbContext<RecyclingPlantDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("RecyclingPlantConnection")));
+        options.UseNpgsql(rpConn));
 }
 else
 {
-    // When running tests, allow choosing an in-memory provider via configuration for reliability in tests
-    // Default to using the in-memory provider for the Testing environment unless explicitly disabled by configuration.
-    var useInMemory = builder.Configuration.GetValue<bool?>("USE_INMEMORY") ?? true;
-    if (useInMemory)
-    {
-        builder.Services.AddDbContext<RecyclingPlantDbContext>(options =>
-            options.UseInMemoryDatabase("RecyclingPlantService_TestDb"));
-    }
-    // If tests intentionally set USE_INMEMORY=false, they are expected to register the DbContext themselves.
-    // Test projects may still override the DbContext registration using ConfigureTestServices or ConfigureServices in the test host.
+    builder.Services.AddDbContext<RecyclingPlantDbContext>(options =>
+        options.UseInMemoryDatabase("RecyclingPlantService_Db"));
 }
 
 // MassTransit
@@ -106,47 +95,31 @@ try
 {
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+    // Apply migrations if using Postgres, otherwise EnsureCreated for in-memory
+    try
     {
-        try
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+        if (dbContext.Database.ProviderName?.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
         {
-            using var scope = app.Services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             dbContext.Database.Migrate();
         }
-        catch (Exception ex)
+        else
         {
-            Log.Error(ex, "An error occurred while applying database migrations. The application will continue to start, but database functionality may be degraded");
-        }
-    }
-
-    // In testing environment ensure the database schema exists (useful for in-memory sqlite or in-memory provider)
-    if (app.Environment.IsEnvironment("Testing"))
-    {
-        try
-        {
-            using var scope = app.Services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             dbContext.Database.EnsureCreated();
         }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "An error occurred while ensuring database creation in Testing environment");
-        }
     }
-
-    var swaggerEnabled = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing");
-
-    if (app.Environment.IsDevelopment())
+    catch (Exception ex)
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
+        Log.Error(ex, "An error occurred while initializing the database");
     }
 
-    if (!app.Environment.IsDevelopment())
-    {
-        app.UseHttpsRedirection();
-    }
+    var swaggerEnabled = true;
+
+    app.UseSwagger();
+    app.UseSwaggerUI();
+
+    app.UseHttpsRedirection();
 
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
 

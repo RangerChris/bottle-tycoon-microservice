@@ -5,7 +5,6 @@ using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using TruckService.Data;
 using TruckService.Services;
@@ -29,10 +28,11 @@ if (isTesting)
 }
 else
 {
-    var pg = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (!string.IsNullOrEmpty(pg))
+    // Choose DB provider by configuration: prefer Postgres when DefaultConnection present, otherwise fall back to SQLite file.
+    var pgConn = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrEmpty(pgConn))
     {
-        builder.Services.AddDbContext<TruckDbContext>(o => o.UseNpgsql(pg));
+        builder.Services.AddDbContext<TruckDbContext>(o => o.UseNpgsql(pgConn));
     }
     else
     {
@@ -57,11 +57,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var hc = builder.Services.AddHealthChecks();
-if (isTesting)
-{
-    hc.AddCheck("self", () => HealthCheckResult.Healthy());
-}
-else
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     if (!string.IsNullOrEmpty(connectionString))
@@ -104,7 +99,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
 
     // If using the Npgsql provider (Postgres) apply migrations so schema is created/updated.
-    // Otherwise (sqlite/in-memory) use EnsureCreated for quick local/test setup.
+    // Otherwise (sqlite) use EnsureCreated for quick local/test setup.
     if (db.Database.ProviderName?.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
     {
         db.Database.Migrate();
@@ -113,22 +108,9 @@ using (var scope = app.Services.CreateScope())
     {
         db.Database.EnsureCreated();
     }
-
-    // seed known truck used by tests
-    if (isTesting && !db.Trucks.Any(t => t.Id == Guid.Parse("11111111-1111-1111-1111-111111111111")))
-    {
-        db.Trucks.Add(new TruckEntity
-        {
-            Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-            LicensePlate = "TRK-001",
-            Model = "Model-A",
-            IsActive = true
-        });
-        db.SaveChanges();
-    }
 }
 
-var swaggerEnabled = app.Environment.IsDevelopment() || isTesting;
+var swaggerEnabled = true; // same for all environments
 
 if (swaggerEnabled)
 {

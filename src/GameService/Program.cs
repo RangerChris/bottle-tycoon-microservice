@@ -29,17 +29,31 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
 
-// Database
-if (!builder.Environment.IsEnvironment("Testing"))
+// Database provider selection (default to Npgsql). Tests can override by setting DatabaseProvider=Sqlite and ConnectionStrings:DefaultConnection appropriately.
+var providerAlreadyRegistered = builder.Services.Any(sd =>
+    sd.ServiceType == typeof(DbContextOptions<GameDbContext>)
+    || sd.ServiceType == typeof(GameDbContext)
+    || sd.ImplementationType == typeof(GameDbContext));
+var providerRegistered = false;
+
+// If running under the WebApplicationFactory test host with environment "Testing", do not register a provider here; tests will register Sqlite.
+if (!builder.Environment.IsEnvironment("Testing") && !providerAlreadyRegistered)
 {
-    builder.Services.AddDbContext<GameDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-}
-else
-{
-    // In Testing environment, use in-memory Sqlite for standalone container startup
-    builder.Services.AddDbContext<GameDbContext>(options =>
-        options.UseSqlite("DataSource=:memory:"));
+    var dbProvider = (builder.Configuration["DatabaseProvider"] ?? "Npgsql").Trim();
+    if (string.Equals(dbProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
+    {
+        // Use SQLite (tests can provide connection string or use in-memory)
+        var sqliteConn = builder.Configuration.GetConnectionString("DefaultConnection") ?? "DataSource=:memory:";
+        builder.Services.AddDbContext<GameDbContext>(options => options.UseSqlite(sqliteConn));
+    }
+    else
+    {
+        // Default to Postgres
+        builder.Services.AddDbContext<GameDbContext>(options =>
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    }
+
+    providerRegistered = true;
 }
 
 // Redis
@@ -89,12 +103,14 @@ builder.Services.AddOpenTelemetry()
 
 // Health Checks
 var healthChecks = builder.Services.AddHealthChecks();
-if (!builder.Environment.IsEnvironment("Testing"))
+// Only add NpgSql health check when the Postgres provider was actually registered
+if (providerRegistered && string.Equals((builder.Configuration["DatabaseProvider"] ?? "Npgsql").Trim(), "Npgsql", StringComparison.OrdinalIgnoreCase))
 {
-    healthChecks
-        .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!)
-        .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
+    healthChecks.AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!);
 }
+
+// Redis health check always added (if connection string missing it may throw during runtime)
+healthChecks.AddRedis(builder.Configuration.GetConnectionString("Redis")!);
 
 // Business Services
 builder.Services.AddScoped<IPlayerService, PlayerService>();
@@ -111,9 +127,8 @@ try
     var app = builder.Build();
 
     // Apply EF Core migrations using the built app's service provider to avoid duplicating singletons
-    // By default apply migrations on startup for all environments except "Testing".
-    // This can be disabled by setting configuration key APPLY_MIGRATIONS=false.
-    if (!app.Environment.IsEnvironment("Testing") && builder.Configuration.GetValue<bool?>("APPLY_MIGRATIONS") != false)
+    // Apply migrations when configuration key APPLY_MIGRATIONS is not explicitly false.
+    if (builder.Configuration.GetValue<bool?>("APPLY_MIGRATIONS") != false)
     {
         try
         {
@@ -198,7 +213,7 @@ try
     }
 
     // Configure the HTTP request pipeline.
-    var swaggerEnabled = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing");
+    var swaggerEnabled = true;
 
     if (swaggerEnabled)
     {

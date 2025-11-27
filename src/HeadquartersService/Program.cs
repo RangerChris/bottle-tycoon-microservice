@@ -42,18 +42,12 @@ try
 {
     var app = builder.Build();
 
-    var swaggerEnabled = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing");
+    var swaggerEnabled = true;
 
-    if (swaggerEnabled)
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+    app.UseSwagger();
+    app.UseSwaggerUI();
 
-    if (!app.Environment.IsDevelopment())
-    {
-        app.UseHttpsRedirection();
-    }
+    app.UseHttpsRedirection();
 
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
