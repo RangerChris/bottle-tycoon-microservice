@@ -107,19 +107,112 @@ try
 {
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
-    {
         try
         {
             using var scope = app.Services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
-            dbContext.Database.Migrate();
+
+            // Log DB connection string for visibility
+            try
+            {
+                var conn = dbContext.Database.GetDbConnection().ConnectionString;
+                Log.Information("RecyclerService will attempt migrations using connection: {Conn}", conn);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to read DB connection string for logging");
+            }
+
+            // Ensure schema exists first (safe in dev/non-testing) to avoid "relation does not exist" during early requests
+            try
+            {
+                dbContext.Database.EnsureCreated();
+                Log.Information("Database.EnsureCreated() executed at startup");
+            }
+            catch (Exception ensureEx)
+            {
+                Log.Warning(ensureEx, "EnsureCreated() failed during startup; will continue with migration attempts");
+            }
+
+            // Retry logic for applying migrations (helps when DB may be starting concurrently)
+            var maxAttempts = builder.Configuration.GetValue<int?>("DB_MIGRATION_MAX_ATTEMPTS") ?? 6;
+            var retryDelaySeconds = builder.Configuration.GetValue<int?>("DB_MIGRATION_RETRY_DELAY_SECONDS") ?? 5;
+
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    // Try to open a connection to ensure database is reachable before migrating
+                    try
+                    {
+                        var connObj = dbContext.Database.GetDbConnection();
+                        connObj.Open();
+                        connObj.Close();
+                    }
+                    catch (Exception connEx)
+                    {
+                        Log.Warning(connEx, "Database connection check failed on attempt {Attempt}/{Max}", attempt, maxAttempts);
+                    }
+
+                    List<string> pendingList;
+                    try
+                    {
+                        pendingList = dbContext.Database.GetPendingMigrations().ToList();
+                    }
+                    catch (Exception pendEx)
+                    {
+                        Log.Warning(pendEx, "Failed to enumerate pending migrations on attempt {Attempt}/{Max}", attempt, maxAttempts);
+                        pendingList = new List<string>();
+                    }
+
+                    if (pendingList.Count > 0)
+                    {
+                        Log.Information("Applying {Count} pending migrations: {Names}", pendingList.Count, string.Join(',', pendingList));
+                    }
+
+                    dbContext.Database.Migrate();
+
+                    Log.Information("Database migrations applied successfully");
+                    break;
+                }
+                catch (Exception migrateEx)
+                {
+                    Log.Warning(migrateEx, "Migration attempt {Attempt}/{Max} failed", attempt, maxAttempts);
+
+                    if (attempt == maxAttempts)
+                    {
+                        Log.Error(migrateEx, "All migration attempts failed");
+
+                        // Fallback: attempt to create database schema if migrations couldn't be applied
+                        try
+                        {
+                            Log.Information("Attempting fallback Database.EnsureCreated() to create schema");
+                            dbContext.Database.EnsureCreated();
+                            Log.Information("Database.EnsureCreated() succeeded");
+                        }
+                        catch (Exception ensureEx)
+                        {
+                            Log.Error(ensureEx, "Database.EnsureCreated() fallback also failed");
+                        }
+
+                        break;
+                    }
+
+                    try
+                    {
+                        Thread.Sleep(retryDelaySeconds * 1000);
+                    }
+                    catch (Exception sleepEx)
+                    {
+                        Log.Warning(sleepEx, "Sleep interrupted during migration retry wait");
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred while applying database migrations. The application will continue to start, but database functionality may be degraded");
+            Log.Error(ex, "An error occurred while attempting database migrations during startup. The application will continue to start, but database functionality may be degraded");
         }
-    }
 
     // In testing environment ensure the database schema exists (useful for in-memory sqlite or in-memory provider)
     if (app.Environment.IsEnvironment("Testing"))
