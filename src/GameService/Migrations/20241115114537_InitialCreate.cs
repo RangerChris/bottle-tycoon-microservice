@@ -11,7 +11,7 @@ namespace GameService.Data.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Players",
+                name: "players",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -21,11 +21,11 @@ namespace GameService.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Players", x => x.Id);
+                    table.PrimaryKey("PK_players", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Purchases",
+                name: "purchases",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -36,17 +36,17 @@ namespace GameService.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Purchases", x => x.Id);
+                    table.PrimaryKey("PK_purchases", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Purchases_Players_PlayerId",
+                        name: "FK_purchases_players_PlayerId",
                         column: x => x.PlayerId,
-                        principalTable: "Players",
+                        principalTable: "players",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Upgrades",
+                name: "upgrades",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -59,23 +59,23 @@ namespace GameService.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Upgrades", x => x.Id);
+                    table.PrimaryKey("PK_upgrades", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Upgrades_Players_PlayerId",
+                        name: "FK_upgrades_players_PlayerId",
                         column: x => x.PlayerId,
-                        principalTable: "Players",
+                        principalTable: "players",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Purchases_PlayerId",
-                table: "Purchases",
+                name: "IX_purchases_PlayerId",
+                table: "purchases",
                 column: "PlayerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Upgrades_PlayerId",
-                table: "Upgrades",
+                name: "IX_upgrades_PlayerId",
+                table: "upgrades",
                 column: "PlayerId");
         }
 
@@ -83,13 +83,13 @@ namespace GameService.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Purchases");
+                name: "purchases");
 
             migrationBuilder.DropTable(
-                name: "Upgrades");
+                name: "upgrades");
 
             migrationBuilder.DropTable(
-                name: "Players");
+                name: "players");
         }
     }
 }

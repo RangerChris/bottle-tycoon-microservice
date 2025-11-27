@@ -120,10 +120,11 @@ try
             using var scope = app.Services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<GameDbContext>();
 
+            // Rely on EF Core migrations to create schema; do not use EnsureCreated or custom SQL fallbacks.
             // Wait for the database to accept connections (helps when starting with Docker Compose)
             var dbConnection = dbContext.Database.GetDbConnection();
             var connectionString = dbConnection.ConnectionString;
-            var maxAttempts = 30;
+            var maxAttempts = builder.Configuration.GetValue<int?>("DB_MIGRATION_MAX_ATTEMPTS") ?? 30;
             var attempt = 0;
             var connected = false;
             while (attempt < maxAttempts && !connected)
@@ -159,86 +160,34 @@ try
                     Log.Information("Applying DB initialization in {Env}", app.Environment.EnvironmentName);
                 }
 
-                // If running in Development (used by Docker Compose here), ensure the DB is created
-                // This avoids relying on compiled migrations being discovered inside the container image
-                if (app.Environment.IsDevelopment())
+                // Retry migration/apply loop
+                var migrationAttempts = 0;
+                var migrationMax = builder.Configuration.GetValue<int?>("DB_MIGRATION_MAX_ATTEMPTS") ?? 6;
+                var migrationDelay = builder.Configuration.GetValue<int?>("DB_MIGRATION_RETRY_DELAY_SECONDS") ?? 5;
+                for (migrationAttempts = 1; migrationAttempts <= migrationMax; migrationAttempts++)
                 {
-                    var created = dbContext.Database.EnsureCreated();
-                    Log.Information(created ? "Database created via EnsureCreated" : "Database already existed (EnsureCreated)");
-                }
-                else
-                {
-                    var compiledMigrations = dbContext.Database.GetMigrations();
-                    if (compiledMigrations != null && compiledMigrations.Any())
+                    try
                     {
+                        var pending = dbContext.Database.GetPendingMigrations()?.ToList() ?? new List<string>();
+                        Log.Information("GameService: Pending migrations count: {Count}; Names: {Names}", pending.Count, string.Join(',', pending));
+
+                        // Attempt to apply EF Core migrations; do not fall back to custom SQL
                         dbContext.Database.Migrate();
-                        Log.Information("Database migrations applied successfully");
+                        Log.Information("GameService: Database migrations applied successfully");
+
+                        break; // success
                     }
-                    else
+                    catch (Exception migrateEx)
                     {
-                        var created = dbContext.Database.EnsureCreated();
-                        Log.Information(created ? "Database created via EnsureCreated" : "Database already existed (EnsureCreated)");
+                        Log.Warning(migrateEx, "GameService: Migration attempt {Attempt}/{Max} failed", migrationAttempts, migrationMax);
+                        if (migrationAttempts == migrationMax)
+                        {
+                            Log.Error(migrateEx, "GameService: All migration attempts failed; migrations must be applied manually");
+                            break;
+                        }
+
+                        Thread.Sleep(migrationDelay * 1000);
                     }
-                }
-
-                // Double-check that the Players table exists; if not, apply EF generated create script as a fallback
-                try
-                {
-                    using var checkConn = new NpgsqlConnection(connectionString);
-                    checkConn.Open();
-                    // Check for either lowercase or quoted-cased table name in pg_tables
-                    using var cmd = new NpgsqlCommand("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('players','Players') LIMIT 1", checkConn);
-                    var existsName = cmd.ExecuteScalar() as string;
-                    if (string.IsNullOrEmpty(existsName))
-                    {
-                        Log.Warning("Players table not found; creating schema via generated SQL script");
-                        var script = dbContext.Database.GenerateCreateScript();
-                        dbContext.Database.ExecuteSqlRaw(script);
-                        Log.Information("Database schema created via generated SQL script");
-
-                        // As a final fallback (robust for Docker startup ordering), ensure key tables exist using explicit SQL
-                        var createPlayersSql = @"CREATE TABLE IF NOT EXISTS public.players (
-    ""Id"" uuid PRIMARY KEY,
-    ""Credits"" numeric(18,2) NOT NULL,
-    ""CreatedAt"" timestamp with time zone NOT NULL,
-    ""UpdatedAt"" timestamp with time zone NOT NULL
-);";
-
-                        var createPurchasesSql = @"CREATE TABLE IF NOT EXISTS public.purchases (
-    ""Id"" uuid PRIMARY KEY,
-    ""PlayerId"" uuid NOT NULL,
-    ""ItemType"" text NOT NULL,
-    ""Amount"" numeric(18,2) NOT NULL,
-    ""PurchasedAt"" timestamp with time zone NOT NULL
-);
-CREATE INDEX IF NOT EXISTS IX_Purchases_PlayerId ON public.purchases (""PlayerId"");
-ALTER TABLE IF EXISTS public.purchases ADD CONSTRAINT IF NOT EXISTS FK_Purchases_Players_PlayerId FOREIGN KEY (""PlayerId"") REFERENCES public.players(""Id"") ON DELETE CASCADE;";
-
-                        var createUpgradesSql = @"CREATE TABLE IF NOT EXISTS public.upgrades (
-    ""Id"" uuid PRIMARY KEY,
-    ""PlayerId"" uuid NOT NULL,
-    ""ItemType"" text NOT NULL,
-    ""ItemId"" integer NOT NULL,
-    ""NewLevel"" integer NOT NULL,
-    ""Cost"" numeric(18,2) NOT NULL,
-    ""UpgradedAt"" timestamp with time zone NOT NULL
-);
-CREATE INDEX IF NOT EXISTS IX_Upgrades_PlayerId ON public.upgrades (""PlayerId"");
-ALTER TABLE IF EXISTS public.upgrades ADD CONSTRAINT IF NOT EXISTS FK_Upgrades_Players_PlayerId FOREIGN KEY (""PlayerId"") REFERENCES public.players(""Id"") ON DELETE CASCADE;";
-
-                        using var createCmd = new NpgsqlCommand(createPlayersSql, checkConn);
-                        createCmd.ExecuteNonQuery();
-                        using var createCmd2 = new NpgsqlCommand(createPurchasesSql, checkConn);
-                        createCmd2.ExecuteNonQuery();
-                        using var createCmd3 = new NpgsqlCommand(createUpgradesSql, checkConn);
-                        createCmd3.ExecuteNonQuery();
-
-                        Log.Information("Database schema ensured via explicit CREATE TABLE statements");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to verify/create Players table via fallback script");
                 }
             }
         }

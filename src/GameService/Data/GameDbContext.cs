@@ -24,12 +24,14 @@ public class GameDbContext : DbContext
     {
         modelBuilder.Entity<Player>(entity =>
         {
+            entity.ToTable("players");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Credits).HasPrecision(18, 2);
         });
 
         modelBuilder.Entity<Purchase>(entity =>
         {
+            entity.ToTable("purchases");
             entity.HasKey(e => e.Id);
             entity.HasOne(e => e.Player).WithMany(p => p.Purchases).HasForeignKey(e => e.PlayerId);
             entity.Property(e => e.Amount).HasPrecision(18, 2);
@@ -37,6 +39,7 @@ public class GameDbContext : DbContext
 
         modelBuilder.Entity<Upgrade>(entity =>
         {
+            entity.ToTable("upgrades");
             entity.HasKey(e => e.Id);
             entity.HasOne(e => e.Player).WithMany(p => p.Upgrades).HasForeignKey(e => e.PlayerId);
         });

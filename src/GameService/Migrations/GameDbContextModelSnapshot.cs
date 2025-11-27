@@ -42,7 +42,7 @@ namespace GameService.Data
 
                     b.HasKey("Id");
 
-                    b.ToTable("Players");
+                    b.ToTable("players");
                 });
 
             modelBuilder.Entity("GameService.Models.Purchase", b =>
@@ -69,7 +69,7 @@ namespace GameService.Data
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("Purchases");
+                    b.ToTable("purchases");
                 });
 
             modelBuilder.Entity("GameService.Models.Upgrade", b =>
@@ -102,7 +102,7 @@ namespace GameService.Data
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("Upgrades");
+                    b.ToTable("upgrades");
                 });
 
             modelBuilder.Entity("GameService.Models.Purchase", b =>
