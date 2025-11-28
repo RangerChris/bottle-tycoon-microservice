@@ -50,7 +50,7 @@ if (!builder.Environment.IsEnvironment("Testing") && !providerAlreadyRegistered)
     {
         // Default to Postgres
         builder.Services.AddDbContext<GameDbContext>(options =>
-            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(builder.Configuration.GetConnectionString("GameStateConnection") ?? builder.Configuration.GetConnectionString("DefaultConnection")));
     }
 
     providerRegistered = true;
@@ -183,8 +183,6 @@ try
                 {
                     try
                     {
-                        var pending = dbContext.Database.GetPendingMigrations()?.ToList() ?? new List<string>();
-                        Log.Information("GameService: Pending migrations count: {Count}; Names: {Names}", pending.Count, string.Join(',', pending));
 
                         // Attempt to apply EF Core migrations; do not fall back to custom SQL
                         dbContext.Database.Migrate();

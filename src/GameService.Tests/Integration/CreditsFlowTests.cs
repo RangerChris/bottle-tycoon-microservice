@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using GameService.Models;
 using GameService.Tests.TestFixtures;
@@ -39,15 +39,15 @@ public class CreditsFlowTests
 
             var client = factory.CreateClient();
 
-            var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
+            var createRes = await client.PostAsync("/player", null, TestContext.Current.CancellationToken);
             createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
             var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
             created.ShouldNotBeNull();
 
-            var creditRes = await client.PostAsJsonAsync($"/players/{created.Id}/credit", new { Amount = 50m, Reason = "test" }, TestContext.Current.CancellationToken);
+            var creditRes = await client.PostAsJsonAsync($"/player/{created.Id}/deposit", new { Amount = 50m, Reason = "test" }, TestContext.Current.CancellationToken);
             creditRes.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-            var getRes = await client.GetAsync($"/players/{created.Id}", TestContext.Current.CancellationToken);
+            var getRes = await client.GetAsync($"/player/{created.Id}", TestContext.Current.CancellationToken);
             getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
             var player = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
             player!.Credits.ShouldBe(50m);

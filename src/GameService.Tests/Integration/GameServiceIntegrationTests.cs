@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GameService.Tests.TestFixtures;
@@ -81,7 +81,7 @@ public class GameServiceIntegrationTests : IAsyncLifetime
         var client = factory.CreateClient();
 
         // Create a new player via API
-        var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
+        var createRes = await client.PostAsync("/player", null, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = await createRes.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         created.ValueKind.ShouldBe(JsonValueKind.Object);
@@ -89,14 +89,14 @@ public class GameServiceIntegrationTests : IAsyncLifetime
         var createdId = Guid.Parse(idProp.GetString()!);
 
         // Get seeded player
-        var getRes = await client.GetAsync($"/players/{aliceId}", TestContext.Current.CancellationToken);
+        var getRes = await client.GetAsync($"/player/{aliceId}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var got = await getRes.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         got.ValueKind.ShouldBe(JsonValueKind.Object);
         got.GetProperty("Id").GetGuid().ShouldBe(aliceId);
 
         // Ensure seeded higher credits player exists
-        var getResBob = await client.GetAsync($"/players/{bobId}", TestContext.Current.CancellationToken);
+        var getResBob = await client.GetAsync($"/player/{bobId}", TestContext.Current.CancellationToken);
         getResBob.StatusCode.ShouldBe(HttpStatusCode.OK);
         var gotBob = await getResBob.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         gotBob.GetProperty("Credits").GetDecimal().ShouldBe(1200);

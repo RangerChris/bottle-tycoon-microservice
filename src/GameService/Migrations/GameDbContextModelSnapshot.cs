@@ -10,7 +10,7 @@ using GameService.Data;
 
 #nullable disable
 
-namespace GameService.Data
+namespace GameService.Data.Migrations
 {
     [DbContext(typeof(GameDbContext))]
     partial class GameDbContextModelSnapshot : ModelSnapshot
@@ -29,6 +29,9 @@ namespace GameService.Data
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("Credits")
                         .HasPrecision(18, 2)
@@ -107,31 +110,20 @@ namespace GameService.Data
 
             modelBuilder.Entity("GameService.Models.Purchase", b =>
                 {
-                    b.HasOne("GameService.Models.Player", "Player")
-                        .WithMany("Purchases")
+                    b.HasOne("GameService.Models.Player", null)
+                        .WithMany()
                         .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Player");
                 });
 
             modelBuilder.Entity("GameService.Models.Upgrade", b =>
                 {
-                    b.HasOne("GameService.Models.Player", "Player")
-                        .WithMany("Upgrades")
+                    b.HasOne("GameService.Models.Player", null)
+                        .WithMany()
                         .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Player");
-                });
-
-            modelBuilder.Entity("GameService.Models.Player", b =>
-                {
-                    b.Navigation("Purchases");
-
-                    b.Navigation("Upgrades");
                 });
 #pragma warning restore 612, 618
         }

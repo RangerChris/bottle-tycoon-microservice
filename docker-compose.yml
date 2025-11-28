@@ -10,9 +10,8 @@
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gamestate"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,7 +30,7 @@
     volumes:
       - recycler_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d recyclerstate"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,7 +49,7 @@
     volumes:
       - recyclingplant_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d recyclingplantstate"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -157,7 +156,7 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__DefaultConnection: Host=postgres;Database=gamestate;Username=postgres;Password=password
+      ConnectionStrings__DefaultConnection: Host=bottle-tycoon-postgres;Database=gamestate;Username=postgres;Password=password
       ConnectionStrings__Redis: redis:6379
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: guest
@@ -186,11 +185,11 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__RecyclerConnection: Host=recyclerpostgres;Database=recyclerstate;Username=postgres;Password=password
-      RabbitMQ__Host: rabbitmq
+      ConnectionStrings__RecyclerConnection: Host=bottle-tycoon-recycler-postgres;Database=recyclerstate;Username=postgres;Password=password
+      RabbitMQ__Host: bottle-tycoon-rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: RecyclerService
       ENABLE_MESSAGING: "true"
     ports:
@@ -212,12 +211,12 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__DefaultConnection: Host=postgres;Database=gamestate;Username=postgres;Password=password
-      ConnectionStrings__Redis: redis:6379
-      RabbitMQ__Host: rabbitmq
+      ConnectionStrings__DefaultConnection: Host=bottle-tycoon-postgres;Database=gamestate;Username=postgres;Password=password
+      ConnectionStrings__Redis: bottle-tycoon-redis:6379
+      RabbitMQ__Host: bottle-tycoon-rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: TruckService
     ports:
       - "5003:80"
@@ -240,12 +239,12 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__DefaultConnection: Host=postgres;Database=gamestate;Username=postgres;Password=password
-      ConnectionStrings__Redis: redis:6379
-      RabbitMQ__Host: rabbitmq
+      ConnectionStrings__DefaultConnection: Host=bottle-tycoon-postgres;Database=gamestate;Username=postgres;Password=password
+      ConnectionStrings__Redis: bottle-tycoon-redis:6379
+      RabbitMQ__Host: bottle-tycoon-rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: HeadquartersService
     ports:
       - "5004:80"
@@ -268,7 +267,7 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__RecyclingPlantConnection: Host=recyclingplantpostgres;Database=recyclingplantstate;Username=postgres;Password=password
+      ConnectionStrings__RecyclingPlantConnection: Host=bottle-tycoon-recyclingplant-postgres;Database=recyclingplantstate;Username=postgres;Password=password
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
@@ -294,11 +293,11 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__Redis: redis:6379
-      RabbitMQ__Host: rabbitmq
+      ConnectionStrings__Redis: bottle-tycoon-redis:6379
+      RabbitMQ__Host: bottle-tycoon-rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: ApiGateway
     ports:
       - "5000:80"

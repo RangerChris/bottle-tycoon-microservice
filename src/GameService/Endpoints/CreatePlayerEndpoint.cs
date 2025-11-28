@@ -4,7 +4,7 @@ using GameService.Services;
 
 namespace GameService.Endpoints;
 
-public class CreatePlayerEndpoint : EndpointWithoutRequest<Player>
+public class CreatePlayerEndpoint : Endpoint<Player, Player>
 {
     private readonly IPlayerService _playerService;
 
@@ -15,14 +15,14 @@ public class CreatePlayerEndpoint : EndpointWithoutRequest<Player>
 
     public override void Configure()
     {
-        Post("/players");
+        Post("/player");
         AllowAnonymous();
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(Player req, CancellationToken ct)
     {
-        var player = await _playerService.CreatePlayerAsync();
-        var location = $"/players/{player.Id}";
+        var player = await _playerService.CreatePlayerAsync(req);
+        var location = $"/player/{player.Id}";
         await Send.ResultAsync(TypedResults.Created(location, player));
     }
 }

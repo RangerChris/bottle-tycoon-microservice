@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GameService.Models;
@@ -22,12 +22,12 @@ public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
     {
         var client = _fixture.Client;
 
-        var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
+        var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
-        var getRes = await client.GetAsync($"/players/{created.Id}", TestContext.Current.CancellationToken);
+        var getRes = await client.GetAsync($"/player/{created.Id}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var got = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         got.ShouldNotBeNull();
@@ -40,20 +40,20 @@ public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
         var client = _fixture.Client;
 
         // Create player
-        var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
+        var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Credit credits
         var creditReq = new { Amount = 100m, Reason = "test credit" };
-        var creditRes = await client.PostAsJsonAsync($"/players/{created.Id}/credit", creditReq, TestContext.Current.CancellationToken);
+        var creditRes = await client.PostAsJsonAsync($"/player/{created.Id}/deposit", creditReq, TestContext.Current.CancellationToken);
         creditRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var creditResult = await creditRes.Content.ReadFromJsonAsync<bool>(TestContext.Current.CancellationToken);
         creditResult.ShouldBeTrue();
 
         // Get player and check balance
-        var getRes = await client.GetAsync($"/players/{created.Id}", TestContext.Current.CancellationToken);
+        var getRes = await client.GetAsync($"/player/{created.Id}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var player = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         player!.Credits.ShouldBe(1100m); // Starting 1000 + 100
@@ -65,20 +65,20 @@ public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
         var client = _fixture.Client;
 
         // Create player
-        var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
+        var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Debit credits
         var debitReq = new { Amount = 50m, Reason = "test debit" };
-        var debitRes = await client.PostAsJsonAsync($"/players/{created.Id}/debit", debitReq, TestContext.Current.CancellationToken);
+        var debitRes = await client.PostAsJsonAsync($"/player/{created.Id}/deduct", debitReq, TestContext.Current.CancellationToken);
         debitRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var debitResult = await debitRes.Content.ReadFromJsonAsync<bool>(TestContext.Current.CancellationToken);
         debitResult.ShouldBeTrue();
 
         // Get player and check balance
-        var getRes = await client.GetAsync($"/players/{created.Id}", TestContext.Current.CancellationToken);
+        var getRes = await client.GetAsync($"/player/{created.Id}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var player = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         player!.Credits.ShouldBe(950m); // Starting 1000 - 50
@@ -90,14 +90,14 @@ public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
         var client = _fixture.Client;
 
         // Create player
-        var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
+        var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Try to debit more than available
         var debitReq = new { Amount = 2000m, Reason = "test debit" };
-        var debitRes = await client.PostAsJsonAsync($"/players/{created.Id}/debit", debitReq, TestContext.Current.CancellationToken);
+        var debitRes = await client.PostAsJsonAsync($"/player/{created.Id}/deduct", debitReq, TestContext.Current.CancellationToken);
         debitRes.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var errorMsg = await ReadFirstErrorMessage(debitRes);
         errorMsg.ShouldContain("Insufficient credits");
@@ -108,7 +108,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
     {
         var client = _fixture.Client;
 
-        var response = await client.GetAsync($"/players/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
+        var response = await client.GetAsync($"/player/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
@@ -118,14 +118,14 @@ public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
         var client = _fixture.Client;
 
         // Create player
-        var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
+        var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Try to credit negative amount
         var creditReq = new { Amount = -100m, Reason = "invalid" };
-        var creditRes = await client.PostAsJsonAsync($"/players/{created.Id}/credit", creditReq, TestContext.Current.CancellationToken);
+        var creditRes = await client.PostAsJsonAsync($"/player/{created.Id}/deposit", creditReq, TestContext.Current.CancellationToken);
         creditRes.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var errorMsg = await ReadFirstErrorMessage(creditRes);
         errorMsg.ShouldContain("Amount must be positive");
@@ -137,14 +137,14 @@ public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
         var client = _fixture.Client;
 
         // Create player
-        var createRes = await client.PostAsync("/players", null, TestContext.Current.CancellationToken);
+        var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();
 
         // Try to debit negative amount
         var debitReq = new { Amount = -50m, Reason = "invalid" };
-        var debitRes = await client.PostAsJsonAsync($"/players/{created.Id}/debit", debitReq, TestContext.Current.CancellationToken);
+        var debitRes = await client.PostAsJsonAsync($"/player/{created.Id}/deduct", debitReq, TestContext.Current.CancellationToken);
         debitRes.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var errorMsg = await ReadFirstErrorMessage(debitRes);
         errorMsg.ShouldContain("Amount must be positive");
@@ -156,7 +156,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
         var client = _fixture.Client;
 
         var creditReq = new { Amount = 100m, Reason = "test" };
-        var creditRes = await client.PostAsJsonAsync($"/players/{Guid.NewGuid()}/credit", creditReq, TestContext.Current.CancellationToken);
+        var creditRes = await client.PostAsJsonAsync($"/player/{Guid.NewGuid()}/deposit", creditReq, TestContext.Current.CancellationToken);
         creditRes.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var errorMsg = await ReadFirstErrorMessage(creditRes);
         errorMsg.ShouldContain("Player not found");
@@ -168,10 +168,36 @@ public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
         var client = _fixture.Client;
 
         var debitReq = new { Amount = 50m, Reason = "test" };
-        var debitRes = await client.PostAsJsonAsync($"/players/{Guid.NewGuid()}/debit", debitReq, TestContext.Current.CancellationToken);
+        var debitRes = await client.PostAsJsonAsync($"/player/{Guid.NewGuid()}/deduct", debitReq, TestContext.Current.CancellationToken);
         debitRes.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var errorMsg = await ReadFirstErrorMessage(debitRes);
         errorMsg.ShouldContain("Insufficient credits or player not found");
+    }
+
+    [Fact]
+    public async Task GetAllPlayers_ReturnsAllPlayers()
+    {
+        var client = _fixture.Client;
+
+        // Create a few players
+        var createRes1 = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
+        createRes1.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var player1 = await createRes1.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
+        player1.ShouldNotBeNull();
+
+        var createRes2 = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
+        createRes2.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var player2 = await createRes2.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
+        player2.ShouldNotBeNull();
+
+        // Get all players
+        var getAllRes = await client.GetAsync("/player", TestContext.Current.CancellationToken);
+        getAllRes.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var players = await getAllRes.Content.ReadFromJsonAsync<List<Player>>(TestContext.Current.CancellationToken);
+        players.ShouldNotBeNull();
+        players.Count.ShouldBeGreaterThanOrEqualTo(2);
+        players.ShouldContain(p => p.Id == player1.Id);
+        players.ShouldContain(p => p.Id == player2.Id);
     }
 
     private static async Task<string> ReadFirstErrorMessage(HttpResponseMessage res)

@@ -21,7 +21,7 @@ public class DebitCreditsEndpoint : Endpoint<DebitCreditsRequest, bool>
 
     public override void Configure()
     {
-        Post("/players/{PlayerId}/debit");
+        Post("/player/{PlayerId}/deduct");
         AllowAnonymous();
     }
 

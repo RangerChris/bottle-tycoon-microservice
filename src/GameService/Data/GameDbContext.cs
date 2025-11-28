@@ -33,7 +33,7 @@ public class GameDbContext : DbContext
         {
             entity.ToTable("purchases");
             entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.Player).WithMany(p => p.Purchases).HasForeignKey(e => e.PlayerId);
+            entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId);
             entity.Property(e => e.Amount).HasPrecision(18, 2);
         });
 
@@ -41,7 +41,7 @@ public class GameDbContext : DbContext
         {
             entity.ToTable("upgrades");
             entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.Player).WithMany(p => p.Upgrades).HasForeignKey(e => e.PlayerId);
+            entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId);
         });
     }
 }

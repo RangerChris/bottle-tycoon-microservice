@@ -102,7 +102,7 @@ try
         var dbContext = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
         if (dbContext.Database.ProviderName?.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
         {
-            dbContext.Database.Migrate();
+            dbContext.Database.EnsureCreated();
         }
         else
         {
