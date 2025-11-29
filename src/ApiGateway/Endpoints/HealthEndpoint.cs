@@ -21,10 +21,7 @@ public class HealthEndpoint : Endpoint<EmptyRequest, HealthResponse>
     public override async Task HandleAsync(EmptyRequest req, CancellationToken ct)
     {
         var report = await _healthService.CheckHealthAsync(ct);
-        var response = new HealthResponse(
-            report.Status.ToString(),
-            report.Entries.ToDictionary(e => e.Key, e => e.Value.Status.ToString())
-        );
+        var response = new HealthResponse(report.Status.ToString(), new Dictionary<string, string>());
 
         var statusCode = report.Status == HealthStatus.Healthy ? 200 : 503;
         HttpContext.Response.StatusCode = statusCode;

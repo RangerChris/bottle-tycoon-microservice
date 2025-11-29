@@ -29,3 +29,10 @@ CREATE TABLE IF NOT EXISTS public.upgrades (
 );
 
 CREATE INDEX IF NOT EXISTS IX_Upgrades_PlayerId ON public.upgrades (PlayerId);
+
+-- Create EF Migrations History table (used by EF Core to track applied migrations)
+CREATE TABLE IF NOT EXISTS public."__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT PK___EFMigrationsHistory PRIMARY KEY ("MigrationId")
+);

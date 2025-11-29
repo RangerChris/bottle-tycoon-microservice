@@ -2,8 +2,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TruckService.Data;
 
 #nullable disable
@@ -17,82 +15,36 @@ namespace TruckService.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.11")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            modelBuilder.Entity("TruckService.Data.TruckEntity", b =>
+            {
+                b.Property<Guid>("Id").HasColumnType("uuid");
+                b.Property<string>("LicensePlate").IsRequired().HasColumnType("text");
+                b.Property<string>("Model").IsRequired().HasColumnType("text");
+                b.Property<int>("CapacityLevel").HasColumnType("integer");
+                b.Property<string>("CurrentLoadByTypeJson").IsRequired().HasColumnType("text");
+                b.Property<decimal>("TotalEarnings").HasColumnType("numeric");
+                b.Property<bool>("IsActive").HasColumnType("boolean");
+                b.HasKey("Id");
+                b.ToTable("trucks");
+            });
 
             modelBuilder.Entity("TruckService.Data.DeliveryEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("GrossEarnings")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("LoadByTypeJson")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("NetProfit")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("OperatingCost")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid>("RecyclerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("TruckId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("deliveries");
-                });
-
-            modelBuilder.Entity("TruckService.Data.TruckEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("CapacityLevel")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("CurrentLoadByTypeJson")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("LicensePlate")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("TotalEarnings")
-                        .HasColumnType("numeric");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("trucks");
-                });
+            {
+                b.Property<Guid>("Id").HasColumnType("uuid");
+                b.Property<Guid>("TruckId").HasColumnType("uuid");
+                b.Property<Guid>("RecyclerId").HasColumnType("uuid");
+                b.Property<string>("State").IsRequired().HasColumnType("text");
+                b.Property<decimal>("GrossEarnings").HasColumnType("numeric");
+                b.Property<decimal>("NetProfit").HasColumnType("numeric");
+                b.Property<decimal>("OperatingCost").HasColumnType("numeric");
+                b.Property<string>("LoadByTypeJson").IsRequired().HasColumnType("text");
+                b.Property<DateTimeOffset>("Timestamp").HasColumnType("timestamp with time zone");
+                b.HasKey("Id");
+                b.ToTable("deliveries");
+            });
 #pragma warning restore 612, 618
         }
     }

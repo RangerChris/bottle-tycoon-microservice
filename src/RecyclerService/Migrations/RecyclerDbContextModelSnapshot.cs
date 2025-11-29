@@ -2,8 +2,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RecyclerService.Data;
 
 #nullable disable
@@ -17,91 +15,34 @@ namespace RecyclerService.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.11")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
             modelBuilder.Entity("RecyclerService.Models.Recycler", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Capacity")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<int>("CurrentLoad")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
-
-                    b.Property<DateTimeOffset?>("LastEmptiedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Location")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CurrentLoad");
-
-                    b.ToTable("Recyclers");
-                });
+            {
+                b.Property<Guid>("Id").HasColumnType("uuid");
+                b.Property<string>("Name").HasColumnType("character varying(200)").HasMaxLength(200);
+                b.Property<int>("Capacity").HasColumnType("integer");
+                b.Property<int>("CurrentLoad").HasColumnType("integer").HasDefaultValue(0);
+                b.Property<string>("Location").HasColumnType("text");
+                b.Property<DateTimeOffset>("CreatedAt").HasColumnType("timestamp with time zone").HasDefaultValueSql("now()");
+                b.Property<DateTimeOffset?>("LastEmptiedAt").HasColumnType("timestamp with time zone");
+                b.HasKey("Id");
+                b.HasIndex("CurrentLoad");
+                b.ToTable("Recyclers");
+            });
 
             modelBuilder.Entity("RecyclerService.Models.Visitor", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("ArrivedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<int>("Bottles")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("RecyclerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("VisitorType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RecyclerId");
-
-                    b.ToTable("Visitors");
-                });
-
-            modelBuilder.Entity("RecyclerService.Models.Visitor", b =>
-                {
-                    b.HasOne("RecyclerService.Models.Recycler", "Recycler")
-                        .WithMany("Visitors")
-                        .HasForeignKey("RecyclerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Recycler");
-                });
-
-            modelBuilder.Entity("RecyclerService.Models.Recycler", b =>
-                {
-                    b.Navigation("Visitors");
-                });
+            {
+                b.Property<Guid>("Id").HasColumnType("uuid");
+                b.Property<Guid>("RecyclerId").HasColumnType("uuid");
+                b.Property<string>("VisitorType").HasColumnType("character varying(50)").HasMaxLength(50);
+                b.Property<int>("Bottles").HasColumnType("integer");
+                b.Property<DateTimeOffset>("ArrivedAt").HasColumnType("timestamp with time zone").HasDefaultValueSql("now()");
+                b.HasKey("Id");
+                b.HasIndex("RecyclerId");
+                b.ToTable("Visitors");
+            });
 #pragma warning restore 612, 618
         }
     }

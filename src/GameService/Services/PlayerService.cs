@@ -26,10 +26,18 @@ public class PlayerService : IPlayerService
     public async Task<Player> CreatePlayerAsync(Player? player = null)
     {
         var p = player ?? new Player();
-        if (p.Id == Guid.Empty) p.Id = Guid.NewGuid();
+        if (p.Id == Guid.Empty)
+        {
+            p.Id = Guid.NewGuid();
+        }
+
         p.CreatedAt = DateTime.UtcNow;
         p.UpdatedAt = DateTime.UtcNow;
-        if (p.Credits == 0) p.Credits = 1000;
+        if (p.Credits == 0)
+        {
+            p.Credits = 1000;
+        }
+
         _context.Players.Add(p);
         await _context.SaveChangesAsync();
         return p;

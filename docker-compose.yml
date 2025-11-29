@@ -10,6 +10,7 @@
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d gamestate"]
       interval: 10s
@@ -156,7 +157,7 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__DefaultConnection: Host=bottle-tycoon-postgres;Database=gamestate;Username=postgres;Password=password
+      ConnectionStrings__GameStateConnection: Host=bottle-tycoon-postgres;Database=gamestate;Username=postgres;Password=password
       ConnectionStrings__Redis: redis:6379
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: guest

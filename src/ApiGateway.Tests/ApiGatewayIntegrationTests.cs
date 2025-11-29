@@ -57,10 +57,17 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
             _stubHosts.Add(host);
         }
 
+        CreateFactory();
+
+        _client = _factory?.CreateClient();
+    }
+
+    private void CreateFactory()
+    {
         // Create WebApplicationFactory for ApiGateway and override configuration
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.ConfigureAppConfiguration((context, conf) =>
+            builder.ConfigureAppConfiguration((_, conf) =>
             {
                 var dict = new Dictionary<string, string?>();
                 // Override reverse proxy cluster destinations to point to the stub hosts
@@ -75,10 +82,8 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
             });
 
             // Replace health checks for Redis and RabbitMQ to simple healthy checks to avoid dependency timing issues
-            builder.ConfigureServices(services => { services.AddHealthChecks().AddCheck("dummy", () => HealthCheckResult.Healthy()); });
+            builder.ConfigureServices(dummyServices => { dummyServices.AddHealthChecks().AddCheck("dummy", () => HealthCheckResult.Healthy()); });
         });
-
-        _client = _factory.CreateClient();
     }
 
     public async ValueTask DisposeAsync()
@@ -90,7 +95,7 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
 
         if (_factory != null)
         {
-            _factory.Dispose();
+            await _factory.DisposeAsync();
         }
 
         foreach (var host in _stubHosts)
@@ -101,6 +106,7 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
             }
             catch
             {
+                // ignored
             }
 
             host.Dispose();
@@ -110,12 +116,12 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Gateway_root_returns_ok()
+    public async Task Gateway_swagger_available()
     {
-        var resp = await _client!.GetAsync("/", TestContext.Current.CancellationToken);
+        var resp = await _client!.GetAsync("/swagger", TestContext.Current.CancellationToken);
         resp.EnsureSuccessStatusCode();
         var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("ApiGateway", body);
+        Assert.Contains("swagger-ui", body);
     }
 
     [Fact]

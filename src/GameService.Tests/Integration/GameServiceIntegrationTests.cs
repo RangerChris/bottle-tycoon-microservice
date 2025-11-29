@@ -67,7 +67,7 @@ public class GameServiceIntegrationTests : IAsyncLifetime
                 var cfg = new ConfigurationBuilder()
                     .AddInMemoryCollection(new[]
                     {
-                        new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", _containers.Postgres.ConnectionString),
+                        new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", _containers.Postgres.ConnectionString),
                         new KeyValuePair<string, string?>("ConnectionStrings:Redis", $"localhost:{_containers.Redis.GetMappedPublicPort(6379)}"),
                         new KeyValuePair<string, string?>("APPLY_MIGRATIONS", "true"),
                         new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false")

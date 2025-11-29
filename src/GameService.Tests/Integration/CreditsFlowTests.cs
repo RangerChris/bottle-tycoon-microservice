@@ -29,7 +29,7 @@ public class CreditsFlowTests
                 {
                     var cfg = new ConfigurationBuilder()
                         .AddInMemoryCollection([
-                            new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", containers.Postgres.ConnectionString),
+                            new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", containers.Postgres.ConnectionString),
                             new KeyValuePair<string, string?>("ConnectionStrings:Redis", $"localhost:{containers.Redis.GetMappedPublicPort(6379)}")
                         ])
                         .Build();

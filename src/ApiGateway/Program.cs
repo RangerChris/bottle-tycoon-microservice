@@ -66,17 +66,11 @@ try
 {
     var app = builder.Build();
 
-    // Configure the HTTP request pipeline.
-    var swaggerEnabled = true;
-
     app.UseSwagger();
     app.UseSwaggerUI();
 
     app.UseHttpsRedirection();
-
-    // Rate Limiting
     app.UseIpRateLimiting();
-
 
     // OpenTelemetry Prometheus
     app.MapPrometheusScrapingEndpoint();
@@ -89,8 +83,6 @@ try
     app.MapReverseProxy();
 
     app.UseFastEndpoints();
-
-    app.MapGet("/", () => "ApiGateway OK");
 
     Log.Information("Starting ApiGateway host");
     app.Run();

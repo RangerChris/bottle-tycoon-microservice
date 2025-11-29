@@ -38,7 +38,7 @@ public class HealthEndpointTests : IAsyncLifetime
             {
                 var cfg = new ConfigurationBuilder()
                     .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", _containers.Postgres.ConnectionString),
+                        new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", _containers.Postgres.ConnectionString),
                         new KeyValuePair<string, string?>("ConnectionStrings:Redis", $"localhost:{_containers.Redis.GetMappedPublicPort(6379)}")
                     ])
                     .Build();
