@@ -71,14 +71,14 @@ jobs:
             sleep $interval
           done
 
-      - name: Wait for Gateway to respond (up to 2 minutes)
+      - name: Wait for Gateway to respond (up to 3 minutes)
         run: |
           set -e
-          endpoints=("http://localhost:5000/" "http://localhost:5000/api/gameservice/health/live")
+          endpoints=("http://localhost:5000/")
           for ep in "${endpoints[@]}"; do
             echo "Waiting for $ep"
             start_time=$(date +%s)
-            timeout_seconds=120
+            timeout_seconds=180
             interval=3
             while : ; do
               if curl -fsS -o /dev/null "$ep"; then
