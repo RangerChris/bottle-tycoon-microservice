@@ -272,6 +272,43 @@ public class RecyclingPlantEndpointsTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DeliveriesEndpoint_DefaultPaging_ShouldReturnResults()
+    {
+        if (!_containers.IsAvailable)
+        {
+            return;
+        }
+
+        var aliceId = Guid.NewGuid();
+        var bobId = Guid.NewGuid();
+        await SeedDatabaseAsync(_containers.Postgres.ConnectionString, aliceId, bobId);
+
+        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((context, conf) =>
+            {
+                var cfg = new ConfigurationBuilder()
+                    .AddInMemoryCollection([
+                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclingPlantConnection", _containers.Postgres.ConnectionString),
+                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false")
+                    ])
+                    .Build();
+
+                conf.AddConfiguration(cfg);
+            });
+        });
+
+        var client = factory.CreateClient();
+        var res = await client.GetAsync("/api/v1/recycling-plant/deliveries", TestContext.Current.CancellationToken);
+        res.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var list = await res.Content.ReadFromJsonAsync<IEnumerable<JsonElement>>(TestContext.Current.CancellationToken);
+        list.ShouldNotBeNull();
+        list!.Any().ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task PlayerEarningsEndpoints_ReturnsDataAndCorrectTotals()
     {
         if (!_containers.IsAvailable)
