@@ -212,9 +212,8 @@ Dashboards:
 - Grafana dashboards for system health, per-service latency/error trends, business KPIs, and infrastructure metrics.
 
 ## Health checks
-
+- Readiness: `/health` — service check for itself and all dependant services and resources/databases.
 - Liveness: `/health/live` — service process is running.
-- Readiness: `/health/ready` — service ready to serve traffic (DB/Rabbit/Redis connections healthy).
 
 Health checks should be lightweight and safe to call frequently.
 

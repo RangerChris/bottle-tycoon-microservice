@@ -1,16 +1,24 @@
 ﻿using FastEndpoints;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using HealthChecks.UI.Client;
+using System.Text.Json;
 
 namespace ApiGateway.Endpoints;
 
 public class HealthEndpoint : Endpoint<EmptyRequest>
 {
-    private readonly HealthCheckService _healthService;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public HealthEndpoint(HealthCheckService healthService)
+    private static readonly string[] ServiceNames = new[]
     {
-        _healthService = healthService;
+        "gameservice",
+        "recyclerservice",
+        "truckservice",
+        "headquartersservice",
+        "recyclingplantservice"
+    };
+
+    public HealthEndpoint(IHttpClientFactory httpClientFactory)
+    {
+        _httpClientFactory = httpClientFactory;
     }
 
     public override void Configure()
@@ -21,11 +29,45 @@ public class HealthEndpoint : Endpoint<EmptyRequest>
 
     public override async Task HandleAsync(EmptyRequest req, CancellationToken ct)
     {
-        var report = await _healthService.CheckHealthAsync(ct);
+        var client = _httpClientFactory.CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(5);
 
-        var statusCode = report.Status == HealthStatus.Unhealthy ? 503 : 200;
-        HttpContext.Response.StatusCode = statusCode;
+        var results = new Dictionary<string, string>();
+        var anyUnhealthy = false;
+
+        foreach (var svc in ServiceNames)
+        {
+            try
+            {
+                var url = $"http://{svc}/health/live";
+                using var resp = await client.GetAsync(url, ct);
+                if (resp.IsSuccessStatusCode)
+                {
+                    results[svc] = "Healthy";
+                }
+                else
+                {
+                    results[svc] = $"Unhealthy ({(int)resp.StatusCode})";
+                    anyUnhealthy = true;
+                }
+            }
+            catch (Exception)
+            {
+                results[svc] = "Unreachable";
+                anyUnhealthy = true;
+            }
+        }
+
+        var overallStatus = anyUnhealthy ? "Unhealthy" : "Healthy";
+        HttpContext.Response.StatusCode = anyUnhealthy ? 503 : 200;
         HttpContext.Response.ContentType = "application/json";
-        await UIResponseWriter.WriteHealthCheckUIResponse(HttpContext, report);
+
+        var payload = new
+        {
+            status = overallStatus,
+            services = results
+        };
+
+        await JsonSerializer.SerializeAsync(HttpContext.Response.Body, payload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }, ct);
     }
 }
