@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RecyclingPlantService.Data;
@@ -13,20 +14,36 @@ namespace RecyclingPlantService.Tests.Integration;
 
 public class RecyclingPlantEndpointsInMemoryTests
 {
-    private WebApplicationFactory<Program> CreateFactory()
+    private WebApplicationFactory<Program> CreateFactory(string? dbName = null)
     {
+        var uniqueDb = dbName ?? Guid.NewGuid().ToString();
+
         return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
             builder.ConfigureAppConfiguration((_, conf) =>
             {
                 var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection([
+                    .AddInMemoryCollection(new[]
+                    {
                         new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false")
-                    ])
+                    })
                     .Build();
 
                 conf.AddConfiguration(cfg);
+            });
+
+            // Ensure each factory uses its own InMemory database instance to avoid cross-test pollution
+            builder.ConfigureServices(services =>
+            {
+                // remove existing DbContext registration if present
+                var existing = services.Where(d => d.ServiceType == typeof(DbContextOptions<RecyclingPlantDbContext>)).ToList();
+                foreach (var d in existing)
+                {
+                    services.Remove(d);
+                }
+
+                services.AddDbContext<RecyclingPlantDbContext>(options => options.UseInMemoryDatabase(uniqueDb));
             });
         });
     }
@@ -46,10 +63,9 @@ public class RecyclingPlantEndpointsInMemoryTests
             return true;
         }
 
-        var target = name.ToLowerInvariant();
         foreach (var p in el.EnumerateObject())
         {
-            if (p.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || p.Name.ToLowerInvariant() == target)
+            if (p.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
             {
                 value = p.Value;
                 return true;
@@ -78,7 +94,7 @@ public class RecyclingPlantEndpointsInMemoryTests
         }
         else
         {
-            Assert.Fail("Missing 'status' property in response (any casing)");
+            Assert.True(false, "Missing 'status' property in response (any casing)");
         }
 
         if (TryGetPropertyCaseInsensitive(body, "timestamp", out var tsEl))
@@ -86,11 +102,11 @@ public class RecyclingPlantEndpointsInMemoryTests
             var ts = tsEl.ValueKind == JsonValueKind.String ? tsEl.GetString() : tsEl.ToString();
             ts.ShouldNotBeNull();
             // ensure it's a valid DateTimeOffset
-            DateTimeOffset.Parse(ts);
+            DateTimeOffset.Parse(ts!);
         }
         else
         {
-            Assert.Fail("Missing 'timestamp' property in response (any casing)");
+            Assert.True(false, "Missing 'timestamp' property in response (any casing)");
         }
     }
 
@@ -99,13 +115,16 @@ public class RecyclingPlantEndpointsInMemoryTests
     {
         await using var factory = CreateFactory();
 
-        // Seed data
+        // Seed data into isolated in-memory DB
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
-            db.PlantDeliveries.AddRange(new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-1) },
+            db.PlantDeliveries.AddRange(new[]
+            {
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-1) },
                 new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 2, MetalCount = 1, PlasticCount = 0, GrossEarnings = 10.5m, OperatingCost = 2m, NetEarnings = 8.5m, DeliveredAt = DateTimeOffset.UtcNow },
-                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 0, MetalCount = 3, PlasticCount = 2, GrossEarnings = 11.5m, OperatingCost = 1m, NetEarnings = 10.5m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-2) });
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 0, MetalCount = 3, PlasticCount = 2, GrossEarnings = 11.5m, OperatingCost = 1m, NetEarnings = 10.5m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-2) }
+            });
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
@@ -113,12 +132,12 @@ public class RecyclingPlantEndpointsInMemoryTests
         var res = await client.GetAsync("/api/v1/recycling-plant/deliveries?page=1&pageSize=10", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        var list = await res.Content.ReadFromJsonAsync<IEnumerable<JsonElement>>(TestContext.Current.CancellationToken);
-        var jsonElements = list?.ToList();
+        var jsonElements = await res.Content.ReadFromJsonAsync<IEnumerable<JsonElement>>(TestContext.Current.CancellationToken);
         jsonElements.ShouldNotBeNull();
         var items = jsonElements.ToList();
         items.Count.ShouldBe(3);
 
+        // Ensure ordered by DeliveredAt desc
         DateTimeOffset? prev = null;
         foreach (var item in items)
         {
@@ -143,7 +162,6 @@ public class RecyclingPlantEndpointsInMemoryTests
 
                 prev = cur;
             }
-            // ignore items without a timestamp property
         }
     }
 
@@ -189,8 +207,11 @@ public class RecyclingPlantEndpointsInMemoryTests
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
-            db.PlantDeliveries.AddRange(new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 2, MetalCount = 1, PlasticCount = 0, GrossEarnings = 0m, OperatingCost = 0m, NetEarnings = 0m, DeliveredAt = DateTimeOffset.UtcNow },
-                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 0, MetalCount = 2, PlasticCount = 3, GrossEarnings = 0m, OperatingCost = 0m, NetEarnings = 0m, DeliveredAt = DateTimeOffset.UtcNow });
+            db.PlantDeliveries.AddRange(new[]
+            {
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 2, MetalCount = 1, PlasticCount = 0, GrossEarnings = 0m, OperatingCost = 0m, NetEarnings = 0m, DeliveredAt = DateTimeOffset.UtcNow },
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 0, MetalCount = 2, PlasticCount = 3, GrossEarnings = 0m, OperatingCost = 0m, NetEarnings = 0m, DeliveredAt = DateTimeOffset.UtcNow }
+            });
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
@@ -219,12 +240,17 @@ public class RecyclingPlantEndpointsInMemoryTests
             var a = Guid.NewGuid();
             var b = Guid.NewGuid();
             var c = Guid.NewGuid();
-            db.PlayerEarnings.AddRange(new PlayerEarnings { PlayerId = a, TotalEarnings = 100m }, new PlayerEarnings { PlayerId = b, TotalEarnings = 300m }, new PlayerEarnings { PlayerId = c, TotalEarnings = 200m });
+            db.PlayerEarnings.AddRange(new[]
+            {
+                new PlayerEarnings { PlayerId = a, TotalEarnings = 100m },
+                new PlayerEarnings { PlayerId = b, TotalEarnings = 300m },
+                new PlayerEarnings { PlayerId = c, TotalEarnings = 200m }
+            });
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var client = factory.CreateClient();
-        var res = await client.GetAsync("/api/v1/recycling-plant/reports/top-earners?Count=2", TestContext.Current.CancellationToken);
+        var res = await client.GetAsync($"/api/v1/recycling-plant/reports/top-earners?Count=2", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var list = await res.Content.ReadFromJsonAsync<List<PlayerEarnings>>(TestContext.Current.CancellationToken);
