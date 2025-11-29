@@ -21,12 +21,23 @@ public class CreditCreditsEndpoint : Endpoint<CreditCreditsRequest, bool>
 
     public override void Configure()
     {
-        Post("/player/{PlayerId}/deposit");
+        Post("/player/{PlayerId:guid}/deposit");
         AllowAnonymous();
     }
 
     public override async Task HandleAsync(CreditCreditsRequest req, CancellationToken ct)
     {
+        // If model binding produced validation failures (for example when the route contains a non-GUID value),
+        // return them as a structured 400 response early.
+        if (ValidationFailures?.Any() == true)
+        {
+            var err = ValidationFailures
+                .GroupBy(f => f.PropertyName)
+                .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
+            await Send.ResultAsync(TypedResults.BadRequest(new { message = "Validation failed", errors = err }));
+            return;
+        }
+
         if (req.Amount <= 0)
         {
             AddError("Amount must be positive");
