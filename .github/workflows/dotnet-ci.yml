@@ -76,9 +76,8 @@ jobs:
           fail_ci_if_error: false
 
       - name: Upload coverage report (HTML)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v2
         with:
-          name: coverage-report
           path: coverage-report
 
       - name: Upload coverage (Cobertura xml)
@@ -92,19 +91,6 @@ jobs:
     runs-on: ubuntu-latest
     # job-level permissions are optional since workflow-level permissions are set above
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download coverage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage-report
-
-      - name: Upload coverage to Pages artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: coverage-report
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
