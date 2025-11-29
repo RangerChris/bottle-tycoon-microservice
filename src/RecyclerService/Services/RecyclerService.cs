@@ -24,6 +24,11 @@ public class RecyclerService : IRecyclerService
         return await _db.Recyclers.Include(r => r.Visitors).FirstOrDefaultAsync(r => r.Id == id, ct);
     }
 
+    public async Task<List<Recycler>> GetAllAsync(CancellationToken ct = default)
+    {
+        return await _db.Recyclers.Include(r => r.Visitors).ToListAsync(ct);
+    }
+
     public async Task<Recycler> VisitorArrivedAsync(Guid recyclerId, Visitor visitor, CancellationToken ct = default)
     {
         var recycler = await _db.Recyclers.FirstOrDefaultAsync(r => r.Id == recyclerId, ct);

@@ -6,4 +6,5 @@ public interface IRecyclerService
 {
     Task<Recycler?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<Recycler> VisitorArrivedAsync(Guid recyclerId, Visitor visitor, CancellationToken ct = default);
+    Task<List<Recycler>> GetAllAsync(CancellationToken ct = default);
 }
