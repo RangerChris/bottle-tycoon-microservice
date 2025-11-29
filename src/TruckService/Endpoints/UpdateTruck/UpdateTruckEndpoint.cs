@@ -15,13 +15,13 @@ public class UpdateTruckEndpoint : Endpoint<UpdateTruckRequest>
 
     public override void Configure()
     {
-        Put("/truck/{id}");
+        Put("/truck");
         AllowAnonymous();
     }
 
     public override async Task HandleAsync(UpdateTruckRequest req, CancellationToken ct)
     {
-        var dto = new TruckDto { Id = req.Id, LicensePlate = req.LicensePlate, Model = req.Model, IsActive = req.IsActive };
+        var dto = new TruckDto { Id = req.TruckId, LicensePlate = req.LicensePlate, Model = req.Model, IsActive = req.IsActive };
         var ok = await _repo.UpdateAsync(dto, ct);
         if (!ok)
         {

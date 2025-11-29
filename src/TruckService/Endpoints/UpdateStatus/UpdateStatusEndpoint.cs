@@ -14,13 +14,13 @@ public class UpdateStatusEndpoint : Endpoint<UpdateStatusRequest>
 
     public override void Configure()
     {
-        Patch("/truck/{id}/status");
+        Patch("/truck/{TruckId}/status");
         AllowAnonymous();
     }
 
     public override async Task HandleAsync(UpdateStatusRequest req, CancellationToken ct)
     {
-        var idStr = Route<string>("id");
+        var idStr = Route<string>("TruckId");
         if (string.IsNullOrEmpty(idStr) || !Guid.TryParse(idStr, out var id))
         {
             await Send.ResultAsync(TypedResults.BadRequest());

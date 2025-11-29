@@ -15,7 +15,7 @@ public class GetTruckStatusEndpoint : Endpoint<GetTruckStatusRequest, TruckStatu
 
     public override void Configure()
     {
-        Get("/api/v1/trucks/{Id}/status");
+        Get("/api/v1/truck/{TruckId}/status");
         AllowAnonymous();
     }
 
@@ -23,7 +23,7 @@ public class GetTruckStatusEndpoint : Endpoint<GetTruckStatusRequest, TruckStatu
     {
         try
         {
-            var status = await _manager.GetStatusAsync(req.Id, ct);
+            var status = await _manager.GetStatusAsync(req.TruckId, ct);
             await Send.OkAsync(status, ct);
         }
         catch (KeyNotFoundException)

@@ -14,7 +14,7 @@ public class GetHistoryEndpoint : Endpoint<GetHistoryRequest, IEnumerable<object
 
     public override void Configure()
     {
-        Get("/api/v1/trucks/{TruckId}/history");
+        Get("/api/v1/truck/{TruckId}/history");
         AllowAnonymous();
     }
 

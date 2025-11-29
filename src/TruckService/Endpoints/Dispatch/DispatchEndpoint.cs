@@ -14,7 +14,7 @@ public class DispatchEndpoint : Endpoint<DispatchRequest, bool>
 
     public override void Configure()
     {
-        Post("/api/v1/trucks/{TruckId}/dispatch");
+        Post("/api/v1/truck/{TruckId}/dispatch");
         AllowAnonymous();
     }
 

@@ -15,7 +15,7 @@ public class GetFleetSummaryEndpoint : EndpointWithoutRequest<IEnumerable<TruckS
 
     public override void Configure()
     {
-        Get("/api/v1/trucks/fleet/summary");
+        Get("/api/v1/truck/fleet/summary");
         AllowAnonymous();
     }
 

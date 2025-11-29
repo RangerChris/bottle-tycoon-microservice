@@ -14,7 +14,7 @@ public class GetEarningsEndpoint : Endpoint<GetEarningsRequest, decimal>
 
     public override void Configure()
     {
-        Get("/api/v1/trucks/{TruckId}/earnings");
+        Get("/api/v1/truck/{TruckId}/earnings");
         AllowAnonymous();
     }
 

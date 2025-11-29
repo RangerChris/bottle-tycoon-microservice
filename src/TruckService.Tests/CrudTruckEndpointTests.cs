@@ -21,7 +21,7 @@ public class CrudTruckEndpointTests
 
         // Create
         var createReq = new CreateTruckRequest { LicensePlate = "NEW-123", Model = "Model-X", IsActive = true };
-        var createRes = await client.PostAsJsonAsync("/trucks", createReq, TestContext.Current.CancellationToken);
+        var createRes = await client.PostAsJsonAsync("/truck", createReq, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = JsonSerializer.Deserialize<TruckDto>(await createRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         created.ShouldNotBeNull();
@@ -33,12 +33,12 @@ public class CrudTruckEndpointTests
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         // List
-        var listRes = await client.GetAsync("/trucks", TestContext.Current.CancellationToken);
+        var listRes = await client.GetAsync("/truck", TestContext.Current.CancellationToken);
         listRes.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        // Update
-        var updateReq = new TruckDto { Id = id, LicensePlate = "NEW-321", Model = "Model-Y", IsActive = false };
-        var putRes = await client.PutAsJsonAsync($"/truck/{id}", updateReq, TestContext.Current.CancellationToken);
+        // Update (body-only)
+        var updateReq = new { truckId = id, licensePlate = "NEW-321", model = "Model-Y", isActive = false };
+        var putRes = await client.PutAsJsonAsync("/truck", updateReq, TestContext.Current.CancellationToken);
         putRes.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Patch status

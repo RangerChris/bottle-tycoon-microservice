@@ -14,13 +14,13 @@ public class DeleteTruckEndpoint : EndpointWithoutRequest
 
     public override void Configure()
     {
-        Delete("/truck/{id}");
+        Delete("/truck/{TruckId}");
         AllowAnonymous();
     }
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        var idStr = Route<string>("id");
+        var idStr = Route<string>("TruckId");
         if (string.IsNullOrEmpty(idStr) || !Guid.TryParse(idStr, out var id))
         {
             await Send.ResultAsync(TypedResults.BadRequest());

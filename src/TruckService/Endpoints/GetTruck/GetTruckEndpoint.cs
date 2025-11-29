@@ -15,13 +15,13 @@ public class GetTruckEndpoint : Endpoint<GetTruckRequest, TruckDto>
 
     public override void Configure()
     {
-        Get("/truck/{id}");
+        Get("/truck/{TruckId}");
         AllowAnonymous();
     }
 
     public override async Task HandleAsync(GetTruckRequest req, CancellationToken ct)
     {
-        var truck = await _repo.GetByIdAsync(req.Id, ct);
+        var truck = await _repo.GetByIdAsync(req.TruckId, ct);
         if (truck is null)
         {
             await Send.NotFoundAsync(ct);

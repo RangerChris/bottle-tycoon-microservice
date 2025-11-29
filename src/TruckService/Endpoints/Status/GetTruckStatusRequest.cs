@@ -2,5 +2,5 @@
 
 public class GetTruckStatusRequest
 {
-    public Guid Id { get; set; }
+    public Guid TruckId { get; set; }
 }

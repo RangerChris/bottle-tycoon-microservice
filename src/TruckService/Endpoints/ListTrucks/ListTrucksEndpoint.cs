@@ -15,8 +15,7 @@ public class ListTrucksEndpoint : EndpointWithoutRequest<IEnumerable<TruckDto>>
 
     public override void Configure()
     {
-        Verbs("GET");
-        Routes("/trucks");
+        Get("/truck");
         AllowAnonymous();
     }
 

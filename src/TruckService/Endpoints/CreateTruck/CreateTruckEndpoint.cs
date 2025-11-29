@@ -15,7 +15,7 @@ public class CreateTruckEndpoint : Endpoint<CreateTruckRequest, TruckDto>
 
     public override void Configure()
     {
-        Post("/trucks");
+        Post("/truck");
         AllowAnonymous();
     }
 
