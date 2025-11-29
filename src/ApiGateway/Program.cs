@@ -56,18 +56,24 @@ builder.Services.AddOpenTelemetry()
         .AddPrometheusExporter());
 
 // Health Checks
-builder.Services.AddHealthChecks()
-    .AddRedis(builder.Configuration.GetConnectionString("Redis")!)
-    .AddRabbitMQ(async sp =>
-    {
-        var factory = new ConnectionFactory
+var healthChecks = builder.Services.AddHealthChecks();
+
+var enableExternalHealthChecks = builder.Configuration.GetValue("HealthChecks:ExternalDependencies", true);
+if (enableExternalHealthChecks)
+{
+    healthChecks
+        .AddRedis(builder.Configuration.GetConnectionString("Redis")!)
+        .AddRabbitMQ(async _ =>
         {
-            HostName = builder.Configuration["RabbitMQ:Host"] ?? "localhost",
-            UserName = builder.Configuration["RabbitMQ:Username"] ?? "guest",
-            Password = builder.Configuration["RabbitMQ:Password"] ?? "guest"
-        };
-        return await factory.CreateConnectionAsync();
-    });
+            var factory = new ConnectionFactory
+            {
+                HostName = builder.Configuration["RabbitMQ:Host"] ?? "localhost",
+                UserName = builder.Configuration["RabbitMQ:Username"] ?? "guest",
+                Password = builder.Configuration["RabbitMQ:Password"] ?? "guest"
+            };
+            return await factory.CreateConnectionAsync();
+        });
+}
 
 try
 {

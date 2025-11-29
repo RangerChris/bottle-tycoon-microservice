@@ -77,6 +77,9 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
                     dict[clusterKey] = $"http://localhost:{kv.Value}";
                 }
 
+                // Disable external dependency health checks during tests so readiness doesn't fail due to Redis/RabbitMQ
+                dict["HealthChecks:ExternalDependencies"] = "false";
+
                 // Avoid setting external Redis/RabbitMQ connections here; health checks are replaced below
                 conf.AddInMemoryCollection(dict);
             });
