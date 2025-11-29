@@ -100,7 +100,7 @@ jobs:
         run: |
           set -e
           probes=(
-            "http://localhost:5000/"
+            "http://localhost:5000/health"
             "http://localhost:5000/api/gameservice/health/live"
             "http://localhost:5000/api/recyclerservice/health/live"
             "http://localhost:5000/api/truckservice/health/live"
