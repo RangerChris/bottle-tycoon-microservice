@@ -9,6 +9,13 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var environmentName = builder.Environment.EnvironmentName;
+builder.Configuration.SetBasePath(builder.Environment.ContentRootPath);
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+builder.Configuration.AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddCommandLine(args);
+
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -66,17 +73,11 @@ try
 {
     var app = builder.Build();
 
-    // Configure the HTTP request pipeline.
-    var swaggerEnabled = true;
-
     app.UseSwagger();
     app.UseSwaggerUI();
 
     app.UseHttpsRedirection();
-
-    // Rate Limiting
     app.UseIpRateLimiting();
-
 
     // OpenTelemetry Prometheus
     app.MapPrometheusScrapingEndpoint();
@@ -89,8 +90,6 @@ try
     app.MapReverseProxy();
 
     app.UseFastEndpoints();
-
-    app.MapGet("/", () => "ApiGateway OK");
 
     Log.Information("Starting ApiGateway host");
     app.Run();

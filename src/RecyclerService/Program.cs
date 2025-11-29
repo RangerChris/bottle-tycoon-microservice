@@ -13,6 +13,13 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var environmentName = builder.Environment.EnvironmentName;
+builder.Configuration.SetBasePath(builder.Environment.ContentRootPath);
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+builder.Configuration.AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddCommandLine(args);
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
@@ -96,83 +103,24 @@ try
 
     try
     {
-        using var scope = app.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
-
-        dbContext.Database.EnsureCreated();
-        Log.Information("Database.EnsureCreated() executed at startup");
-
-        var maxAttempts = builder.Configuration.GetValue<int?>("DB_MIGRATION_MAX_ATTEMPTS") ?? 6;
-        var retryDelaySeconds = builder.Configuration.GetValue<int?>("DB_MIGRATION_RETRY_DELAY_SECONDS") ?? 5;
-
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        // Apply migrations if using Postgres, otherwise EnsureCreated for in-memory
+        try
         {
-            try
+            using var scope = app.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
+            if (dbContext.Database.ProviderName?.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                // Try to open a connection to ensure database is reachable before migrating
-                try
-                {
-                    var connObj = dbContext.Database.GetDbConnection();
-                    connObj.Open();
-                    connObj.Close();
-                }
-                catch (Exception connEx)
-                {
-                    Log.Warning(connEx, "Database connection check failed on attempt {Attempt}/{Max}", attempt, maxAttempts);
-                }
-
-                List<string> pendingList;
-                try
-                {
-                    pendingList = dbContext.Database.GetPendingMigrations().ToList();
-                }
-                catch (Exception pendEx)
-                {
-                    Log.Warning(pendEx, "Failed to enumerate pending migrations on attempt {Attempt}/{Max}", attempt, maxAttempts);
-                    pendingList = new List<string>();
-                }
-
-                if (pendingList.Count > 0)
-                {
-                    Log.Information("Applying {Count} pending migrations: {Names}", pendingList.Count, string.Join(',', pendingList));
-                }
-
-                dbContext.Database.Migrate();
-
-                Log.Information("Database migrations applied successfully");
-                break;
+                dbContext.Database.EnsureCreated();
+                Log.Information("Database.EnsureCreated() executed at startup");
             }
-            catch (Exception migrateEx)
+            else
             {
-                Log.Warning(migrateEx, "Migration attempt {Attempt}/{Max} failed", attempt, maxAttempts);
-
-                if (attempt == maxAttempts)
-                {
-                    Log.Error(migrateEx, "All migration attempts failed");
-
-                    try
-                    {
-                        Log.Information("Attempting fallback Database.EnsureCreated() to create schema");
-                        dbContext.Database.EnsureCreated();
-                        Log.Information("Database.EnsureCreated() succeeded");
-                    }
-                    catch (Exception ensureEx)
-                    {
-                        Log.Error(ensureEx, "Database.EnsureCreated() fallback also failed");
-                    }
-
-                    break;
-                }
-
-                try
-                {
-                    Thread.Sleep(retryDelaySeconds * 1000);
-                }
-                catch (Exception sleepEx)
-                {
-                    Log.Warning(sleepEx, "Sleep interrupted during migration retry wait");
-                }
+                dbContext.Database.EnsureCreated();
             }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred while initializing the database");
         }
     }
     catch (Exception ex)

@@ -31,7 +31,7 @@ public class PlayerServiceTests
     }
 
     [Fact]
-    public async Task DebitCredits_Succeeds_AndRecordsPurchase()
+    public async Task DebitCredits_Succeeds()
     {
         await using var db = CreateInMemoryDb();
         var svc = new PlayerService(db);
@@ -44,7 +44,6 @@ public class PlayerServiceTests
         var fetched = await svc.GetPlayerAsync(p.Id);
         fetched.ShouldNotBeNull();
         fetched.Credits.ShouldBe(initial - 100m);
-        fetched.Purchases.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -73,17 +72,20 @@ public class PlayerServiceTests
         fetched?.Credits.ShouldBe(initial + 200m);
     }
 
+
     [Fact]
-    public async Task UpgradeItem_AddsUpgrade_WhenFunds()
+    public async Task GetAllPlayers_ReturnsAll()
     {
         await using var db = CreateInMemoryDb();
         var svc = new PlayerService(db);
-        var p = await svc.CreatePlayerAsync();
 
-        var ok = await svc.UpgradeItemAsync(p.Id, "truck", 1, 2, 100m);
-        ok.ShouldBeTrue();
+        var p1 = await svc.CreatePlayerAsync();
+        var p2 = await svc.CreatePlayerAsync();
 
-        var fetched = await svc.GetPlayerAsync(p.Id);
-        fetched?.Upgrades.ShouldNotBeEmpty();
+        var all = await svc.GetAllPlayersAsync();
+        all.ShouldNotBeNull();
+        all.Count.ShouldBe(2);
+        all.ShouldContain(p => p.Id == p1.Id);
+        all.ShouldContain(p => p.Id == p2.Id);
     }
 }

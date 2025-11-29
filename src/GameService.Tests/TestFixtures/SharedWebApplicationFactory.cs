@@ -60,7 +60,7 @@ public class SharedTestHostFixture : IDisposable
         {
             ["ENABLE_MESSAGING"] = "false",
             ["DatabaseProvider"] = _usePostgres ? "Npgsql" : "Sqlite",
-            ["ConnectionStrings:DefaultConnection"] = _usePostgres ? _pgContainer!.ConnectionString : "DataSource=:memory:"
+            ["ConnectionStrings:GameStateConnection"] = _usePostgres ? _pgContainer!.ConnectionString : "DataSource=:memory:"
         };
         builder.Configuration.AddInMemoryCollection(inMemory);
 

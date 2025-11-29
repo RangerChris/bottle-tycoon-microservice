@@ -15,18 +15,32 @@ public class PlayerService : IPlayerService
 
     public async Task<Player?> GetPlayerAsync(Guid playerId)
     {
-        return await _context.Players
-            .Include(p => p.Purchases)
-            .Include(p => p.Upgrades)
-            .FirstOrDefaultAsync(p => p.Id == playerId);
+        return await _context.Players.FirstOrDefaultAsync(p => p.Id == playerId);
     }
 
-    public async Task<Player> CreatePlayerAsync()
+    public async Task<List<Player>> GetAllPlayersAsync()
     {
-        var player = new Player();
-        _context.Players.Add(player);
+        return await _context.Players.ToListAsync();
+    }
+
+    public async Task<Player> CreatePlayerAsync(Player? player = null)
+    {
+        var p = player ?? new Player();
+        if (p.Id == Guid.Empty)
+        {
+            p.Id = Guid.NewGuid();
+        }
+
+        p.CreatedAt = DateTime.UtcNow;
+        p.UpdatedAt = DateTime.UtcNow;
+        if (p.Credits == 0)
+        {
+            p.Credits = 1000;
+        }
+
+        _context.Players.Add(p);
         await _context.SaveChangesAsync();
-        return player;
+        return p;
     }
 
     public async Task<bool> DebitCreditsAsync(Guid playerId, decimal amount, string reason)
@@ -39,15 +53,6 @@ public class PlayerService : IPlayerService
 
         player.Credits -= amount;
         player.UpdatedAt = DateTime.UtcNow;
-
-        // Log the transaction (could be an event or audit table)
-        var purchase = new Purchase
-        {
-            PlayerId = playerId,
-            ItemType = reason,
-            Amount = amount
-        };
-        _context.Purchases.Add(purchase);
 
         await _context.SaveChangesAsync();
         return true;
@@ -66,30 +71,5 @@ public class PlayerService : IPlayerService
 
         await _context.SaveChangesAsync();
         return true;
-    }
-
-    public async Task<bool> PurchaseItemAsync(Guid playerId, string itemType, decimal cost)
-    {
-        return await DebitCreditsAsync(playerId, cost, $"Purchase-{itemType}");
-    }
-
-    public async Task<bool> UpgradeItemAsync(Guid playerId, string itemType, int itemId, int newLevel, decimal cost)
-    {
-        var success = await DebitCreditsAsync(playerId, cost, $"Upgrade-{itemType}-{itemId}");
-        if (success)
-        {
-            var upgrade = new Upgrade
-            {
-                PlayerId = playerId,
-                ItemType = itemType,
-                ItemId = itemId,
-                NewLevel = newLevel,
-                Cost = cost
-            };
-            _context.Upgrades.Add(upgrade);
-            await _context.SaveChangesAsync();
-        }
-
-        return success;
     }
 }

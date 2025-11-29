@@ -30,7 +30,7 @@ public class HealthAndMigrationsTests
                     var cfg = new ConfigurationBuilder()
                         .AddInMemoryCollection(new[]
                         {
-                            new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", containers.Postgres.ConnectionString),
+                            new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", containers.Postgres.ConnectionString),
                             new KeyValuePair<string, string?>("ConnectionStrings:Redis", $"localhost:{containers.Redis.GetMappedPublicPort(6379)}"),
                             new KeyValuePair<string, string?>("APPLY_MIGRATIONS", "true"),
                             new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false")

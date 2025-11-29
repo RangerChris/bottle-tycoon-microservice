@@ -12,16 +12,16 @@ public class CreditCreditsRequest
 
 public class CreditCreditsEndpoint : Endpoint<CreditCreditsRequest, bool>
 {
-    private readonly IPlayerService _player_service;
+    private readonly IPlayerService _playerService;
 
     public CreditCreditsEndpoint(IPlayerService playerService)
     {
-        _player_service = playerService;
+        _playerService = playerService;
     }
 
     public override void Configure()
     {
-        Post("/players/{PlayerId}/credit");
+        Post("/player/{PlayerId}/deposit");
         AllowAnonymous();
     }
 
@@ -37,7 +37,7 @@ public class CreditCreditsEndpoint : Endpoint<CreditCreditsRequest, bool>
             return;
         }
 
-        var success = await _player_service.CreditCreditsAsync(req.PlayerId, req.Amount, req.Reason);
+        var success = await _playerService.CreditCreditsAsync(req.PlayerId, req.Amount, req.Reason);
         if (!success)
         {
             AddError("Player not found");

@@ -33,7 +33,7 @@ public class GameDbContext : DbContext
         {
             entity.ToTable("purchases");
             entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.Player).WithMany(p => p.Purchases).HasForeignKey(e => e.PlayerId);
+            entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId);
             entity.Property(e => e.Amount).HasPrecision(18, 2);
         });
 
@@ -41,7 +41,50 @@ public class GameDbContext : DbContext
         {
             entity.ToTable("upgrades");
             entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.Player).WithMany(p => p.Upgrades).HasForeignKey(e => e.PlayerId);
+            entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId);
         });
+
+        ApplyLowercaseNamingConvention(modelBuilder);
+    }
+
+    private static void ApplyLowercaseNamingConvention(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            var tableName = entityType.GetTableName();
+            if (!string.IsNullOrEmpty(tableName))
+            {
+                entityType.SetTableName(tableName.ToLowerInvariant());
+            }
+
+            foreach (var property in entityType.GetProperties())
+            {
+                property.SetColumnName(property.Name.ToLowerInvariant());
+            }
+
+            foreach (var key in entityType.GetKeys())
+            {
+                if (!string.IsNullOrEmpty(key.GetName()))
+                {
+                    key.SetName(key.GetName()!.ToLowerInvariant());
+                }
+            }
+
+            foreach (var index in entityType.GetIndexes())
+            {
+                if (!string.IsNullOrEmpty(index.GetDatabaseName()))
+                {
+                    index.SetDatabaseName(index.GetDatabaseName()!.ToLowerInvariant());
+                }
+            }
+
+            foreach (var foreignKey in entityType.GetForeignKeys())
+            {
+                if (!string.IsNullOrEmpty(foreignKey.GetConstraintName()))
+                {
+                    foreignKey.SetConstraintName(foreignKey.GetConstraintName()!.ToLowerInvariant());
+                }
+            }
+        }
     }
 }

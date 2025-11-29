@@ -11,6 +11,13 @@ using TruckService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var environmentName = builder.Environment.EnvironmentName;
+builder.Configuration.SetBasePath(builder.Environment.ContentRootPath);
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+builder.Configuration.AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddCommandLine(args);
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
@@ -93,21 +100,16 @@ else
 
 var app = builder.Build();
 
-// ensure DB created/migrations
-using (var scope = app.Services.CreateScope())
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
-
-    // If using the Npgsql provider (Postgres) apply migrations so schema is created/updated.
-    // Otherwise (sqlite) use EnsureCreated for quick local/test setup.
-    if (db.Database.ProviderName?.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
-    {
-        db.Database.Migrate();
-    }
-    else
-    {
-        db.Database.EnsureCreated();
-    }
+    db.Database.EnsureCreated();
+    Log.Information("TruckService: ensured database exists");
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "An error occurred while ensuring the TruckService database exists");
 }
 
 var swaggerEnabled = true; // same for all environments

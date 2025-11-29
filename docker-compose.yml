@@ -1,18 +1,36 @@
 ﻿services:
-  postgres:
+  gameservicepostgres:
     image: postgres:16-alpine
-    container_name: bottle-tycoon-postgres
+    container_name: bottle-tycoon-gameservice-postgres
     environment:
-      POSTGRES_DB: gamestate
+      POSTGRES_DB: GameServiceOwner
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker/init:/docker-entrypoint-initdb.d:ro
+      - gameservice_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d GameServiceOwner"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bottle-tycoon
+
+  truckpostgres:
+    image: postgres:16-alpine
+    container_name: bottle-tycoon-truck-postgres
+    environment:
+      POSTGRES_DB: TruckServiceOwner
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5435:5432"
+    volumes:
+      - truckpostgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d TruckServiceOwner"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,7 +41,7 @@
     image: postgres:16-alpine
     container_name: bottle-tycoon-recycler-postgres
     environment:
-      POSTGRES_DB: recyclerstate
+      POSTGRES_DB: RecyclerServiceOwner
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
@@ -31,7 +49,7 @@
     volumes:
       - recycler_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d RecyclerServiceOwner"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,7 +60,7 @@
     image: postgres:16-alpine
     container_name: bottle-tycoon-recyclingplant-postgres
     environment:
-      POSTGRES_DB: recyclingplantstate
+      POSTGRES_DB: RecyclingPlantServiceOwner
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
@@ -50,7 +68,7 @@
     volumes:
       - recyclingplant_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d RecyclingPlantServiceOwner"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -157,7 +175,7 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__DefaultConnection: Host=postgres;Database=gamestate;Username=postgres;Password=password
+      ConnectionStrings__GameStateConnection: Host=gameservicepostgres;Database=GameServiceOwner;Username=postgres;Password=password
       ConnectionStrings__Redis: redis:6379
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: guest
@@ -168,7 +186,7 @@
     ports:
       - "5001:80"
     depends_on:
-      postgres:
+      gameservicepostgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -186,11 +204,11 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__RecyclerConnection: Host=recyclerpostgres;Database=recyclerstate;Username=postgres;Password=password
-      RabbitMQ__Host: rabbitmq
+      ConnectionStrings__RecyclerConnection: Host=recyclerpostgres;Database=RecyclerServiceOwner;Username=postgres;Password=password
+      RabbitMQ__Host: bottle-tycoon-rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: RecyclerService
       ENABLE_MESSAGING: "true"
     ports:
@@ -212,17 +230,17 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__DefaultConnection: Host=postgres;Database=gamestate;Username=postgres;Password=password
-      ConnectionStrings__Redis: redis:6379
-      RabbitMQ__Host: rabbitmq
+      ConnectionStrings__DefaultConnection: Host=truckpostgres;Database=TruckServiceOwner;Username=postgres;Password=password
+      ConnectionStrings__Redis: bottle-tycoon-redis:6379
+      RabbitMQ__Host: bottle-tycoon-rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: TruckService
     ports:
       - "5003:80"
     depends_on:
-      postgres:
+      truckpostgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -240,17 +258,17 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__DefaultConnection: Host=postgres;Database=gamestate;Username=postgres;Password=password
-      ConnectionStrings__Redis: redis:6379
-      RabbitMQ__Host: rabbitmq
+      ConnectionStrings__DefaultConnection: Host=gameservicepostgres;Database=GameServiceOwner;Username=postgres;Password=password
+      ConnectionStrings__Redis: bottle-tycoon-redis:6379
+      RabbitMQ__Host: bottle-tycoon-rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: HeadquartersService
     ports:
       - "5004:80"
     depends_on:
-      postgres:
+      gameservicepostgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -268,7 +286,7 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__RecyclingPlantConnection: Host=recyclingplantpostgres;Database=recyclingplantstate;Username=postgres;Password=password
+      ConnectionStrings__RecyclingPlantConnection: Host=recyclingplantpostgres;Database=RecyclingPlantServiceOwner;Username=postgres;Password=password
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
@@ -294,11 +312,11 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__Redis: redis:6379
-      RabbitMQ__Host: rabbitmq
+      ConnectionStrings__Redis: bottle-tycoon-redis:6379
+      RabbitMQ__Host: bottle-tycoon-rabbitmq
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: ApiGateway
     ports:
       - "5000:80"
@@ -313,7 +331,8 @@
       - bottle-tycoon
 
 volumes:
-  postgres_data:
+  gameservice_postgres_data:
+  truckpostgres_data:
   recycler_postgres_data:
   recyclingplant_postgres_data:
   redis_data:

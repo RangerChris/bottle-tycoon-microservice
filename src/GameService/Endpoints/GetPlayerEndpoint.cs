@@ -15,7 +15,7 @@ public class GetPlayerEndpoint : EndpointWithoutRequest<Player>
 
     public override void Configure()
     {
-        Get("/players/{id}");
+        Get("/player/{id}");
         AllowAnonymous();
     }
 

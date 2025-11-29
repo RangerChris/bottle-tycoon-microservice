@@ -15,8 +15,8 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<GameDbCont
             .AddEnvironmentVariables()
             .Build();
 
-        var connectionString = config.GetConnectionString("DefaultConnection")
-                               ?? "Host=localhost;Database=GameServiceDb;Username=postgres;Password=password";
+        var connectionString = config.GetConnectionString("GameStateConnection")
+                               ?? "Host=localhost;Database=gamestate;Username=postgres;Password=password";
 
         var optionsBuilder = new DbContextOptionsBuilder<GameDbContext>();
         optionsBuilder.UseNpgsql(connectionString);
