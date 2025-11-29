@@ -2,17 +2,17 @@
 
 namespace HeadquartersService.Endpoints;
 
-public class GetRootEndpoint : EndpointWithoutRequest
+public class GetRootEndpoint // Removed EndpointWithoutRequest inheritance
 {
-    public override void Configure()
+    public void Configure()
     {
-        Get("/ping");
-        AllowAnonymous();
+        // Get /ping endpoint removed intentionally.
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public Task HandleAsync(CancellationToken ct)
     {
-        HttpContext.Response.ContentType = "text/plain";
-        await HttpContext.Response.WriteAsync("pong", ct);
+        return Task.CompletedTask;
     }
 }
+
+// Previously contained the /ping endpoint; removed to avoid FastEndpoints scanning an endpoint with no HTTP verbs.

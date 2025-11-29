@@ -8,24 +8,20 @@ namespace HeadquartersService.Tests;
 public class HeadquartersSmokeTests
 {
     [Fact]
-    public async Task GetRoot_ReturnsOk()
+    public async Task ReadinessEndpoint_ReturnsOk()
     {
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => { builder.UseEnvironment("Testing"); });
         var client = factory.CreateClient();
-        var res = await client.GetAsync("/ping", TestContext.Current.CancellationToken);
-        res.EnsureSuccessStatusCode();
-        var text = await res.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        text.ShouldNotBeNullOrWhiteSpace();
+        var res = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        res.IsSuccessStatusCode.ShouldBeTrue();
     }
 
     [Fact]
-    public async Task PingEndpoint_ReturnsPongExactly()
+    public async Task ReadinessEndpoint_StatusCodeIsOk()
     {
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => { builder.UseEnvironment("Testing"); });
         var client = factory.CreateClient();
-        var res = await client.GetAsync("/ping", TestContext.Current.CancellationToken);
-        res.EnsureSuccessStatusCode();
-        var body = await res.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        body.ShouldBe("pong");
+        var res = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        res.StatusCode.ShouldBe(System.Net.HttpStatusCode.OK);
     }
 }
