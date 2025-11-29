@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using Shouldly;
 using Xunit;
@@ -28,10 +27,7 @@ public class ProgramPathsTests
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment(env);
-            builder.ConfigureAppConfiguration((ctx, conf) =>
-            {
-                conf.Sources.Insert(0, new MemoryConfigurationSource { InitialData = inMem });
-            });
+            builder.ConfigureAppConfiguration((ctx, conf) => { conf.Sources.Insert(0, new MemoryConfigurationSource { InitialData = inMem }); });
         });
 
         var client = factory.CreateClient();

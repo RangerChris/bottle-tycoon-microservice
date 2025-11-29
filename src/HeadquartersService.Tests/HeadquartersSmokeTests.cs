@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using System.Net;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Shouldly;
 using Xunit;
@@ -22,6 +23,6 @@ public class HeadquartersSmokeTests
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => { builder.UseEnvironment("Testing"); });
         var client = factory.CreateClient();
         var res = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
-        res.StatusCode.ShouldBe(System.Net.HttpStatusCode.OK);
+        res.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 }

@@ -1,20 +1,20 @@
-﻿using FastEndpoints;
-using System.Text.Json;
+﻿using System.Text.Json;
+using FastEndpoints;
 
 namespace ApiGateway.Endpoints;
 
 public class HealthEndpoint : Endpoint<EmptyRequest>
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    private static readonly string[] ServiceNames = new[]
-    {
+    private static readonly string[] ServiceNames =
+    [
         "gameservice",
         "recyclerservice",
         "truckservice",
         "headquartersservice",
         "recyclingplantservice"
-    };
+    ];
+
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public HealthEndpoint(IHttpClientFactory httpClientFactory)
     {

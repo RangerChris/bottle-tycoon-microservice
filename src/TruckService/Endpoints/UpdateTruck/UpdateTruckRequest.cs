@@ -2,9 +2,14 @@
 
 public class UpdateTruckRequest
 {
-    private Guid _truckId;
-    public Guid TruckId { get => _truckId; set => _truckId = value; }
-    public Guid Id { get => _truckId; set => _truckId = value; }
+    public Guid TruckId { get; set; }
+
+    public Guid Id
+    {
+        get => TruckId;
+        set => TruckId = value;
+    }
+
     public string LicensePlate { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;
     public bool IsActive { get; set; }

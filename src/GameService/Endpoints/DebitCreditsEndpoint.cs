@@ -41,10 +41,14 @@ public class DebitCreditsEndpoint : Endpoint<DebitCreditsRequest, bool>
         if (req.Amount <= 0)
         {
             AddError("Amount must be positive");
-            var err = ValidationFailures
-                .GroupBy(f => f.PropertyName)
-                .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
-            await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
+            if (ValidationFailures != null)
+            {
+                var err = ValidationFailures
+                    .GroupBy(f => f.PropertyName)
+                    .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
+                await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
+            }
+
             return;
         }
 
@@ -52,10 +56,14 @@ public class DebitCreditsEndpoint : Endpoint<DebitCreditsRequest, bool>
         if (!success)
         {
             AddError("Insufficient credits or player not found");
-            var err = ValidationFailures
-                .GroupBy(f => f.PropertyName)
-                .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
-            await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
+            if (ValidationFailures != null)
+            {
+                var err = ValidationFailures
+                    .GroupBy(f => f.PropertyName)
+                    .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
+                await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
+            }
+
             return;
         }
 

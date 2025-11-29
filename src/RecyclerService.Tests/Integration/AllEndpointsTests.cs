@@ -119,7 +119,7 @@ public class AllEndpointsTests
         var client = factory.CreateClient();
 
         var res = await client.GetAsync("/health", TestContext.Current.CancellationToken);
-        res.StatusCode.ShouldBeOneOf([HttpStatusCode.OK, HttpStatusCode.ServiceUnavailable]);
+        res.StatusCode.ShouldBeOneOf(HttpStatusCode.OK, HttpStatusCode.ServiceUnavailable);
         var body = await res.Content.ReadFromJsonAsync<HealthResponse>(TestContext.Current.CancellationToken);
         body.ShouldNotBeNull();
         body.Status.ShouldNotBeNullOrWhiteSpace();
@@ -127,18 +127,23 @@ public class AllEndpointsTests
     }
 
     private sealed record CreateRequest(Guid Id, string Name, int Capacity, string? Location);
+
     private sealed record CreateResponse(Guid Id, string Name, int Capacity, int CurrentLoad, string? Location);
+
     private sealed record GetResponse(Guid Id, string Name, int CurrentLoad, int Capacity);
+
     private sealed record VisitorRequest
     {
         public int Bottles { get; set; }
         public string? VisitorType { get; set; }
     }
+
     private sealed record VisitorResponse
     {
         public Guid RecyclerId { get; set; }
         public int CurrentLoad { get; set; }
         public int Capacity { get; set; }
     }
+
     private sealed record HealthResponse(string Status, Dictionary<string, string> Checks);
 }

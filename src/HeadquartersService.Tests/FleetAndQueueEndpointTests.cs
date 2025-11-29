@@ -19,7 +19,10 @@ public class FleetAndQueueEndpointTests
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services => { /* no-op, we'll seed below via Build callback */ });
+            builder.ConfigureServices(services =>
+            {
+                /* no-op, we'll seed below via Build callback */
+            });
         });
 
         // Retrieve the IFleetService from the test server to seed it
@@ -45,7 +48,10 @@ public class FleetAndQueueEndpointTests
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services => { /* no-op */ });
+            builder.ConfigureServices(services =>
+            {
+                /* no-op */
+            });
         });
 
         var scopeFactory = factory.Services.GetRequiredService<IServiceScopeFactory>();

@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net.Sockets;
+using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
@@ -109,8 +110,8 @@ public class TestcontainersFixture : IAsyncLifetime
         // JSON options (same shape as app)
         builder.Services.Configure<JsonOptions>(options =>
         {
-            options.SerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
-            options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         });
 
         // Use TestServer
@@ -154,13 +155,17 @@ public class TestcontainersFixture : IAsyncLifetime
                 {
                     Client?.Dispose();
                 }
-                catch { }
+                catch
+                {
+                }
 
                 await _host.StopAsync();
                 _host.Dispose();
             }
         }
-        catch { }
+        catch
+        {
+        }
 
         if (IsAvailable)
         {
@@ -168,13 +173,17 @@ public class TestcontainersFixture : IAsyncLifetime
             {
                 await Redis.StopAsync();
             }
-            catch { }
+            catch
+            {
+            }
 
             try
             {
                 await Postgres.StopAsync();
             }
-            catch { }
+            catch
+            {
+            }
         }
         else
         {
@@ -183,7 +192,9 @@ public class TestcontainersFixture : IAsyncLifetime
                 _sqliteConnection?.Close();
                 _sqliteConnection?.Dispose();
             }
-            catch { }
+            catch
+            {
+            }
         }
     }
 }

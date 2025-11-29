@@ -13,8 +13,15 @@ public class RecyclerEndpointResponseTests : IAsyncLifetime
 {
     private readonly TestcontainersFixture _containers = new();
 
-    public ValueTask InitializeAsync() => _containers.InitializeAsync();
-    public ValueTask DisposeAsync() => _containers.DisposeAsync();
+    public ValueTask InitializeAsync()
+    {
+        return _containers.InitializeAsync();
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return _containers.DisposeAsync();
+    }
 
     [Fact]
     public async Task CreateRecycler_ResponseContainsLocationHeader()
@@ -101,7 +108,9 @@ public class RecyclerEndpointResponseTests : IAsyncLifetime
     }
 
     private sealed record CreateRequest(Guid Id, string Name, int Capacity, string? Location);
+
     private sealed record CreateResponse(Guid Id, string Name, int Capacity, int CurrentLoad, string? Location);
+
     private sealed record VisitorRequest
     {
         public int Bottles { get; set; }

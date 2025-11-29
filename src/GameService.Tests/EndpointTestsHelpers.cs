@@ -58,7 +58,9 @@ public static class EndpointTestsHelpers
                 return root[0].GetString() ?? content;
             }
         }
-        catch (JsonException) { }
+        catch (JsonException)
+        {
+        }
 
         return content;
     }

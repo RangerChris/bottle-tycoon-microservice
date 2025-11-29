@@ -62,33 +62,6 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
         _client = _factory?.CreateClient();
     }
 
-    private void CreateFactory()
-    {
-        // Create WebApplicationFactory for ApiGateway and override configuration
-        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureAppConfiguration((_, conf) =>
-            {
-                var dict = new Dictionary<string, string?>();
-                // Override reverse proxy cluster destinations to point to the stub hosts
-                foreach (var kv in _servicePorts)
-                {
-                    var clusterKey = $"ReverseProxy:Clusters:{kv.Key}:Destinations:destination1:Address";
-                    dict[clusterKey] = $"http://localhost:{kv.Value}";
-                }
-
-                // Disable external dependency health checks during tests so readiness doesn't fail due to Redis/RabbitMQ
-                dict["HealthChecks:ExternalDependencies"] = "false";
-
-                // Avoid setting external Redis/RabbitMQ connections here; health checks are replaced below
-                conf.AddInMemoryCollection(dict);
-            });
-
-            // Replace health checks for Redis and RabbitMQ to simple healthy checks to avoid dependency timing issues
-            builder.ConfigureServices(dummyServices => { dummyServices.AddHealthChecks().AddCheck("dummy", () => HealthCheckResult.Healthy()); });
-        });
-    }
-
     public async ValueTask DisposeAsync()
     {
         if (_client != null)
@@ -116,6 +89,33 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
         }
 
         _stubHosts.Clear();
+    }
+
+    private void CreateFactory()
+    {
+        // Create WebApplicationFactory for ApiGateway and override configuration
+        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, conf) =>
+            {
+                var dict = new Dictionary<string, string?>();
+                // Override reverse proxy cluster destinations to point to the stub hosts
+                foreach (var kv in _servicePorts)
+                {
+                    var clusterKey = $"ReverseProxy:Clusters:{kv.Key}:Destinations:destination1:Address";
+                    dict[clusterKey] = $"http://localhost:{kv.Value}";
+                }
+
+                // Disable external dependency health checks during tests so readiness doesn't fail due to Redis/RabbitMQ
+                dict["HealthChecks:ExternalDependencies"] = "false";
+
+                // Avoid setting external Redis/RabbitMQ connections here; health checks are replaced below
+                conf.AddInMemoryCollection(dict);
+            });
+
+            // Replace health checks for Redis and RabbitMQ to simple healthy checks to avoid dependency timing issues
+            builder.ConfigureServices(dummyServices => { dummyServices.AddHealthChecks().AddCheck("dummy", () => HealthCheckResult.Healthy()); });
+        });
     }
 
     [Fact]

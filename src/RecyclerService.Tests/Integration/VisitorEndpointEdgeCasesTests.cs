@@ -13,8 +13,15 @@ public class VisitorEndpointEdgeCasesTests : IAsyncLifetime
 {
     private readonly TestcontainersFixture _containers = new();
 
-    public ValueTask InitializeAsync() => _containers.InitializeAsync();
-    public ValueTask DisposeAsync() => _containers.DisposeAsync();
+    public ValueTask InitializeAsync()
+    {
+        return _containers.InitializeAsync();
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return _containers.DisposeAsync();
+    }
 
     [Fact]
     public async Task VisitorArrived_WhenRecyclerBecomesFull_ResponseReflectsCapacity()
@@ -97,6 +104,7 @@ public class VisitorEndpointEdgeCasesTests : IAsyncLifetime
     }
 
     private sealed record CreateRequest(Guid Id, string Name, int Capacity, string? Location);
+
     private sealed record VisitorRequest
     {
         public int Bottles { get; set; }
