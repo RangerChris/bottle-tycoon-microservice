@@ -122,8 +122,8 @@ try
             Log.Information("Applying DB initialization in {Env}", app.Environment.EnvironmentName);
         }
 
-        dbContext.Database.Migrate();
-        Log.Information("GameService: Database migrations applied successfully");
+        dbContext.Database.EnsureCreated();
+        Log.Information("GameService: Database ensured to exist");
     }
     catch (Exception ex)
     {
