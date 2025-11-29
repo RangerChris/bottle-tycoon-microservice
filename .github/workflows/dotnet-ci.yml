@@ -1,5 +1,10 @@
 ﻿name: .NET CI
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 on:
   push:
     branches: [ main, master ]
@@ -18,7 +23,7 @@ jobs:
         id: get-dotnet-version
         run: |
           if [ -f global.json ]; then
-            ver=$(grep -Po '(?<="version": ")[^\"]+' global.json || true)
+            ver=$(grep -Po '(?<="version": ")[^"]+' global.json || true)
             if [ -z "$ver" ]; then
               ver="10.0.x"
             fi
@@ -81,3 +86,25 @@ jobs:
         with:
           name: coverage-cobertura
           path: TestResults/**/coverage.cobertura.xml
+
+  publish-coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    # job-level permissions are optional since workflow-level permissions are set above
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage-report
+
+      - name: Upload coverage to Pages artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: coverage-report
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
