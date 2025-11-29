@@ -27,6 +27,7 @@
         <PackageReference Include="AspNetCoreRateLimit"/>
         <PackageReference Include="RabbitMQ.Client"/>
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore"/>
+        <PackageReference Include="AspNetCore.HealthChecks.UI.Client"/>
     </ItemGroup>
 
 </Project>

@@ -1,9 +1,10 @@
 ﻿using FastEndpoints;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using HealthChecks.UI.Client;
 
 namespace ApiGateway.Endpoints;
 
-public class HealthEndpoint : Endpoint<EmptyRequest, HealthResponse>
+public class HealthEndpoint : Endpoint<EmptyRequest>
 {
     private readonly HealthCheckService _healthService;
 
@@ -21,13 +22,10 @@ public class HealthEndpoint : Endpoint<EmptyRequest, HealthResponse>
     public override async Task HandleAsync(EmptyRequest req, CancellationToken ct)
     {
         var report = await _healthService.CheckHealthAsync(ct);
-        var response = new HealthResponse(report.Status.ToString(), new Dictionary<string, string>());
 
-        var statusCode = report.Status == HealthStatus.Healthy ? 200 : 503;
+        var statusCode = report.Status == HealthStatus.Unhealthy ? 503 : 200;
         HttpContext.Response.StatusCode = statusCode;
         HttpContext.Response.ContentType = "application/json";
-        await HttpContext.Response.WriteAsJsonAsync(response, ct);
+        await UIResponseWriter.WriteHealthCheckUIResponse(HttpContext, report);
     }
 }
-
-public sealed record HealthResponse(string Status, Dictionary<string, string> Checks);

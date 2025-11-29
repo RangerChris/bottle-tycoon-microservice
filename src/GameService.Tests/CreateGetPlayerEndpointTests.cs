@@ -8,11 +8,11 @@ using Xunit;
 
 namespace GameService.Tests;
 
-public class CreateGetPlayerEndpointTests : IClassFixture<SharedTestHostFixture>
+public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
 {
-    private readonly SharedTestHostFixture _fixture;
+    private readonly TestcontainersFixture _fixture;
 
-    public CreateGetPlayerEndpointTests(SharedTestHostFixture fixture)
+    public CreateGetPlayerEndpointTests(TestcontainersFixture fixture)
     {
         _fixture = fixture;
     }

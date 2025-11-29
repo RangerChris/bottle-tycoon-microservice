@@ -147,6 +147,15 @@ public class ApiGatewayIntegrationTests : IAsyncLifetime
         Assert.Equal("Healthy", body);
     }
 
+    [Fact]
+    public async Task Gateway_health_endpoint_available()
+    {
+        var resp = await _client!.GetAsync("/health", TestContext.Current.CancellationToken);
+        resp.EnsureSuccessStatusCode();
+        var body = await resp.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.False(string.IsNullOrWhiteSpace(body));
+    }
+
     private static int GetFreeTcpPort()
     {
         var listener = new TcpListener(IPAddress.Loopback, 0);

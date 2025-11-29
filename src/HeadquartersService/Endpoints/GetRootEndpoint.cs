@@ -10,9 +10,9 @@ public class GetRootEndpoint : EndpointWithoutRequest
         AllowAnonymous();
     }
 
-    public override Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(CancellationToken ct)
     {
-        Send.OkAsync("pong", ct);
-        return Task.CompletedTask;
+        HttpContext.Response.ContentType = "text/plain";
+        await HttpContext.Response.WriteAsync("pong", ct);
     }
 }
