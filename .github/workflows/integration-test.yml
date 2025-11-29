@@ -48,10 +48,10 @@ jobs:
       - name: Show containers
         run: docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-      - name: Wait for RabbitMQ (up to 3 minutes)
+      - name: Wait for RabbitMQ (up to 30 seconds)
         run: |
           set -e
-          timeout_seconds=180
+          timeout_seconds=30
           interval=5
           start_time=$(date +%s)
           echo "Waiting for RabbitMQ on localhost:5672..."
@@ -71,14 +71,14 @@ jobs:
             sleep $interval
           done
 
-      - name: Wait for Gateway to respond (up to 3 minutes)
+      - name: Wait for Gateway to respond (up to 30 seconds)
         run: |
           set -e
-          endpoints=("http://localhost:5000/")
+          endpoints=("http://localhost:5000/health")
           for ep in "${endpoints[@]}"; do
             echo "Waiting for $ep"
             start_time=$(date +%s)
-            timeout_seconds=180
+            timeout_seconds=30
             interval=3
             while : ; do
               if curl -fsS -o /dev/null "$ep"; then
