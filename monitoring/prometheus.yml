@@ -17,9 +17,33 @@ scrape_configs:
     metrics_path: '/metrics'
     scrape_interval: 15s
 
+  - job_name: 'recyclerservice'
+    static_configs:
+      - targets: ['recyclerservice:80']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'truckservice'
+    static_configs:
+      - targets: ['truckservice:80']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'headquartersservice'
+    static_configs:
+      - targets: ['headquartersservice:80']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
   - job_name: 'recyclingplantservice'
     static_configs:
       - targets: ['recyclingplantservice:80']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'apigateway'
+    static_configs:
+      - targets: ['apigateway:80']
     metrics_path: '/metrics'
     scrape_interval: 15s
 

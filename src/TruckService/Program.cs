@@ -5,6 +5,9 @@ using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 using TruckService.Data;
 using TruckService.Services;
@@ -98,6 +101,20 @@ else
     Log.Information("Messaging disabled via ENABLE_MESSAGING=false; MassTransit will not be started");
 }
 
+// OpenTelemetry
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService(builder.Configuration["OTEL_SERVICE_NAME"] ?? "TruckService")
+        .AddEnvironmentVariableDetector())
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddEntityFrameworkCoreInstrumentation()
+        .AddJaegerExporter())
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddPrometheusExporter());
+
 var app = builder.Build();
 
 try
@@ -121,6 +138,8 @@ if (swaggerEnabled)
 }
 
 app.UseHttpsRedirection();
+
+app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready");
