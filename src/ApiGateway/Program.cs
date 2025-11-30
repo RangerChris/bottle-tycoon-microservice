@@ -78,6 +78,24 @@ if (enableExternalHealthChecks)
         });
 }
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+        policy
+            .WithOrigins(
+                "http://localhost:3000",
+                "http://frontend:3000",
+                "http://apigateway:80",
+                "http://gameservice:80",
+                "http://recyclerservice:80",
+                "http://truckservice:80",
+                "http://headquartersservice:80",
+                "http://recyclingplantservice:80")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+});
+
 try
 {
     var app = builder.Build();
@@ -87,6 +105,7 @@ try
 
     app.UseHttpsRedirection();
     app.UseIpRateLimiting();
+    app.UseCors("Frontend");
 
     // OpenTelemetry Prometheus
     app.MapPrometheusScrapingEndpoint();
