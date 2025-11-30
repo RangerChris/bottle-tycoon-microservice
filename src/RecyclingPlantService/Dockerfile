@@ -10,7 +10,7 @@ COPY src/Shared/. ./Shared/
 COPY src/RecyclingPlantService/. ./RecyclingPlantService/
 RUN dotnet publish "RecyclingPlantService/RecyclingPlantService.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 EXPOSE 80
