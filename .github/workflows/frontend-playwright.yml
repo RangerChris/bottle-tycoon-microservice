@@ -1,0 +1,72 @@
+﻿name: Frontend Playwright Tests
+
+on:
+  push:
+    paths:
+      - 'src/Frontend/**'
+  pull_request:
+    paths:
+      - 'src/Frontend/**'
+
+jobs:
+  playwright:
+    name: Run Playwright tests (Frontend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: src/Frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: src/Frontend
+        run: npx playwright install --with-deps
+
+      - name: Build frontend
+        working-directory: src/Frontend
+        run: npm run build
+
+      - name: Serve built frontend on port 3000 (background)
+        working-directory: src/Frontend
+        run: |
+          nohup npm run preview -- --port 3000 > preview.log 2>&1 &
+          echo $! > preview.pid
+          # wait for server to be available
+          for i in {1..20}; do
+            if curl -sSf http://127.0.0.1:3000/ >/dev/null; then
+              echo "server up"; break
+            fi
+            sleep 1
+          done
+
+      - name: Run Playwright tests
+        working-directory: src/Frontend
+        continue-on-error: false
+        run: npx playwright test --reporter=list
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: src/Frontend/playwright-report
+
+      - name: Stop preview server
+        if: always()
+        working-directory: src/Frontend
+        run: |
+          if [ -f preview.pid ]; then
+            kill "$(cat preview.pid)" || true
+            rm preview.pid || true
+          else
+            pkill -f 'vite preview' || true
+          fi
