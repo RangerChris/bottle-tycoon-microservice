@@ -10,12 +10,21 @@ on:
 
 jobs:
   playwright:
-    name: Run Playwright tests (Frontend)
+    name: Run Playwright tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Ensure frontend lockfile is available at repo root
+        run: |
+          if [ -f src/Frontend/package-lock.json ]; then
+            cp src/Frontend/package-lock.json ./package-lock.json
+            echo "Copied src/Frontend/package-lock.json to repo root"
+          else
+            echo "No frontend package-lock.json found in src/Frontend"; exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
