@@ -110,7 +110,7 @@ try
     // OpenTelemetry Prometheus
     app.MapPrometheusScrapingEndpoint();
 
-    // Health Checks
+    // Health Checks (public endpoints)
     app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
     app.MapHealthChecks("/health/ready");
 
