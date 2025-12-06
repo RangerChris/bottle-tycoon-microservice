@@ -1,3 +1,108 @@
 ﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --primary-color: #10b981;
+  --secondary-color: #3b82f6;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --success-color: #22c55e;
+  --bg-primary: #1f2937;
+  --bg-secondary: #374151;
+  --bg-tertiary: #4b5563;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --border-color: #6b7280;
+}
+
+body {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: var(--text-primary);
+}
+
+/* Modal helper (keeps DaisyUI modal behavior but ensures overlay) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 50;
+}
+
+/* Capacity bar for recyclers/trucks */
+.capacity-bar {
+  position: relative;
+  height: 0.75rem; /* 12px */
+  background: var(--bg-primary);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.capacity-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+  transition: width 0.3s ease;
+}
+.capacity-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+
+/* Activity log styling */
+.log-container {
+  background: var(--bg-tertiary);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+.log-entry {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.375rem;
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+.log-time {
+  color: var(--text-secondary);
+  font-family: monospace;
+  white-space: nowrap;
+}
+.log-message { color: var(--text-primary); }
+.log-info { background: rgba(59,130,246,0.07); border-left: 3px solid var(--secondary-color); }
+.log-success { background: rgba(34,197,94,0.07); border-left: 3px solid var(--success-color); }
+.log-warning { background: rgba(245,158,11,0.07); border-left: 3px solid var(--warning-color); }
+.log-danger { background: rgba(239,68,68,0.07); border-left: 3px solid var(--danger-color); }
+
+/* Button secondary override to match mockup */
+.btn-secondary, .btn.btn-secondary {
+  background-color: var(--secondary-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Reusable class to remove border and focus ring for small control buttons (time controls, buy buttons) */
+.no-outline-btn {
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.no-outline-btn:hover,
+.no-outline-btn:active,
+.no-outline-btn:focus,
+.no-outline-btn:focus-visible {
+  box-shadow: none !important;
+  outline: none !important;
+  border: 0 !important;
+}
+
+/* subtle card styles used by components to approximate mockup */
+.card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.03);
+}
