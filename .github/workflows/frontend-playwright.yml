@@ -26,12 +26,21 @@ jobs:
             echo "No frontend package-lock.json found in src/Frontend"; exit 1
           fi
 
+      - name: "Debug: list repo root and check copied lockfile"
+        run: |
+          echo "Listing repo root files:"; ls -la . || true
+          if [ -f package-lock.json ]; then
+            echo "package-lock.json found at repo root; first 20 lines:"; head -n 20 package-lock.json
+          else
+            echo "package-lock.json NOT found at repo root"
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'src/Frontend/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
         working-directory: src/Frontend
