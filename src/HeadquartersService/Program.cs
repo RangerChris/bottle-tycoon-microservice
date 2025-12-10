@@ -18,7 +18,7 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
+    .WriteTo.Console()
     .CreateLogger();
 
 builder.Host.UseSerilog();

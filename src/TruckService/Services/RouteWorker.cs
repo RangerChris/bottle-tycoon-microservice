@@ -1,6 +1,4 @@
-﻿using MassTransit;
-using Microsoft.EntityFrameworkCore;
-using Shared.Events;
+﻿using Microsoft.EntityFrameworkCore;
 using TruckService.Data;
 
 namespace TruckService.Services;
@@ -9,13 +7,11 @@ public class RouteWorker : IRouteWorker
 {
     private readonly TruckDbContext _db;
     private readonly ILogger<RouteWorker> _logger;
-    private readonly IPublishEndpoint _publishEndpoint;
 
-    public RouteWorker(TruckDbContext db, ILogger<RouteWorker> logger, IPublishEndpoint publishEndpoint)
+    public RouteWorker(TruckDbContext db, ILogger<RouteWorker> logger)
     {
         _db = db;
         _logger = logger;
-        _publishEndpoint = publishEndpoint;
     }
 
     // Advances queued deliveries through the simple state machine synchronously for tests
@@ -38,15 +34,6 @@ public class RouteWorker : IRouteWorker
         // Publish TruckLoaded event
         var loadByType = delivery.GetLoadByType();
         var operatingCost = delivery.OperatingCost; // assuming cost is per delivery
-        var truckLoaded = new TruckLoaded(
-            delivery.TruckId,
-            delivery.RecyclerId,
-            Guid.Empty, // PlayerId not known here, perhaps need to add
-            loadByType,
-            operatingCost,
-            DateTimeOffset.UtcNow
-        );
-        await _publishEndpoint.Publish(truckLoaded);
 
         delivery.State = "AtPlant";
         await _db.SaveChangesAsync(ct);

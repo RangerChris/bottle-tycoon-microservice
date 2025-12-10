@@ -2,24 +2,22 @@
 
 using GameService.Events;
 using GameService.Services;
-using MassTransit;
 
 namespace GameService.Consumers;
 
-public class DeliveryCompletedConsumer : IConsumer<DeliveryCompleted>
-{
-    private readonly ILogger<DeliveryCompletedConsumer> _logger;
-    private readonly IPlayerService _playerService;
+public class DeliveryCompletedConsumer
+ {
+     private readonly ILogger<DeliveryCompletedConsumer> _logger;
+     private readonly IPlayerService _playerService;
 
-    public DeliveryCompletedConsumer(IPlayerService playerService, ILogger<DeliveryCompletedConsumer> logger)
-    {
-        _playerService = playerService;
-        _logger = logger;
-    }
+     public DeliveryCompletedConsumer(IPlayerService playerService, ILogger<DeliveryCompletedConsumer> logger)
+     {
+         _playerService = playerService;
+         _logger = logger;
+     }
 
-    public async Task Consume(ConsumeContext<DeliveryCompleted> context)
+    public async Task HandleAsync(DeliveryCompleted message)
     {
-        var message = context.Message;
         _logger.LogInformation("Processing DeliveryCompleted for Truck {TruckId} -> Plant {PlantId}, credits {Credits}", message.TruckId, message.PlantId, message.CreditsEarned);
 
         // If PlayerId is not provided (Guid.Empty), skip crediting
@@ -36,4 +34,4 @@ public class DeliveryCompletedConsumer : IConsumer<DeliveryCompleted>
             throw new Exception($"Failed to credit player {message.PlayerId}");
         }
     }
-}
+ }

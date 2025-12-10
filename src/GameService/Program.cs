@@ -1,10 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FastEndpoints;
-using GameService.Consumers;
 using GameService.Data;
 using GameService.Services;
-using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
@@ -23,9 +21,18 @@ builder.Configuration.AddJsonFile($"appsettings.{environmentName}.json", true, t
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .CreateLogger();
+try
+{
+    Log.Logger = new LoggerConfiguration()
+        .ReadFrom.Configuration(builder.Configuration)
+        .CreateLogger();
+}
+catch
+{
+    Log.Logger = new LoggerConfiguration()
+        .WriteTo.Console()
+        .CreateLogger();
+}
 
 builder.Host.UseSerilog();
 
@@ -37,35 +44,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddDbContext<GameDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("GameStateConnection")));
 
-builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = builder.Configuration.GetConnectionString("Redis"); });
-
-var enableMessaging = builder.Configuration.GetValue<bool?>("ENABLE_MESSAGING") ?? true;
-if (enableMessaging)
-{
-    builder.Services.AddMassTransit(x =>
-    {
-        x.AddConsumer<CreditsCreditedConsumer>();
-        x.AddConsumer<DeliveryCompletedConsumer>();
-
-        x.SetKebabCaseEndpointNameFormatter();
-
-        x.UsingRabbitMq((context, cfg) =>
-        {
-            Log.Information("Using RabbitMQHost {RabbitMQHost}", builder.Configuration["RabbitMQ:Host"]);
-            cfg.Host(builder.Configuration["RabbitMQ:Host"], h =>
-            {
-                h.Username(builder.Configuration["RabbitMQ:Username"] ?? throw new ConfigurationException("RabbitMQ:Username is not configured"));
-                h.Password(builder.Configuration["RabbitMQ:Password"] ?? throw new ConfigurationException("RabbitMQ:Password is not configured"));
-            });
-
-            cfg.ConfigureEndpoints(context);
-        });
-    });
-}
-else
-{
-    Log.Information("Messaging disabled via ENABLE_MESSAGING=false; MassTransit will not be started");
-}
+// Messaging and Redis removed: services should call each other directly via HTTP.
 
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
@@ -86,8 +65,6 @@ var healthChecks = builder.Services.AddHealthChecks();
 var dbCs = builder.Configuration.GetConnectionString("GameStateConnection");
 healthChecks.AddNpgSql(dbCs!);
 
-// Redis health check always added (if connection string missing it may throw during runtime)
-healthChecks.AddRedis(builder.Configuration.GetConnectionString("Redis")!);
 
 // Business Services
 builder.Services.AddScoped<IPlayerService, PlayerService>();

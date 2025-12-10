@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using FastEndpoints.Swagger;
-using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +10,7 @@ using OpenTelemetry.Trace;
 using Serilog;
 using TruckService.Data;
 using TruckService.Services;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,9 +21,27 @@ builder.Configuration.AddJsonFile($"appsettings.{environmentName}.json", true, t
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .CreateLogger();
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    Log.Logger = new LoggerConfiguration()
+        .WriteTo.Console()
+        .CreateLogger();
+}
+else
+{
+    try
+    {
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(builder.Configuration)
+            .CreateLogger();
+    }
+    catch
+    {
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .CreateLogger();
+    }
+}
 
 builder.Host.UseSerilog();
 
@@ -72,34 +90,10 @@ var hc = builder.Services.AddHealthChecks();
     if (!string.IsNullOrEmpty(connectionString))
     {
         hc.AddNpgSql(connectionString);
-        hc.AddRabbitMQ();
     }
 }
 
-// MassTransit
-var enableMessaging = builder.Configuration.GetValue<bool?>("ENABLE_MESSAGING") ?? true;
-if (enableMessaging)
-{
-    builder.Services.AddMassTransit(x =>
-    {
-        x.SetKebabCaseEndpointNameFormatter();
-
-        x.UsingRabbitMq((context, cfg) =>
-        {
-            cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq", h =>
-            {
-                h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
-                h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
-            });
-
-            cfg.ConfigureEndpoints(context);
-        });
-    });
-}
-else
-{
-    Log.Information("Messaging disabled via ENABLE_MESSAGING=false; MassTransit will not be started");
-}
+// Messaging removed: MassTransit and RabbitMQ are no longer used
 
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()

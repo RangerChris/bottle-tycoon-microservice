@@ -1,5 +1,4 @@
-﻿using MassTransit;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Events;
 using RecyclerService.Models;
@@ -10,12 +9,10 @@ public class RecyclerService : IRecyclerService
 {
     private readonly RecyclerDbContext _db;
     private readonly ILogger<RecyclerService> _logger;
-    private readonly IPublishEndpoint _publisher;
 
-    public RecyclerService(RecyclerDbContext db, IPublishEndpoint publisher, ILogger<RecyclerService> logger)
+    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger)
     {
         _db = db;
-        _publisher = publisher;
         _logger = logger;
     }
 
@@ -61,7 +58,6 @@ public class RecyclerService : IRecyclerService
         if (recycler.CurrentLoad >= recycler.Capacity)
         {
             _logger.LogInformation("Recycler {RecyclerId} reached capacity, publishing RecyclerFull event", recyclerId);
-            await _publisher.Publish(new RecyclerFull(recycler.Id, recycler.Capacity, recycler.CurrentLoad, DateTimeOffset.UtcNow), ct);
         }
 
         return recycler;

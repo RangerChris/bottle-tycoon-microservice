@@ -1,5 +1,4 @@
-﻿using MassTransit;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using RecyclerService.Data;
@@ -33,7 +32,7 @@ public class GetAllRecyclersEndpointTests
         db.Recyclers.Add(r2);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = new Services.RecyclerService(db, Mock.Of<IPublishEndpoint>(), Mock.Of<ILogger<Services.RecyclerService>>());
+        var service = new Services.RecyclerService(db, Mock.Of<ILogger<Services.RecyclerService>>());
 
         var result = await service.GetAllAsync(TestContext.Current.CancellationToken);
 

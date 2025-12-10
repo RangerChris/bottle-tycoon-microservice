@@ -87,3 +87,9 @@ The mockup frontend displays:
 - **Smart capacity management**: Trucks only dispatch when recyclers have enough bottles to fill them completely
 - **Real-time feedback**: Activity log shows all important events including waiting visitors and traffic delays
 - **Strategic depth**: Players must balance recycler capacity, truck count, and upgrade timing to maximize efficiency
+
+---
+
+This repository contains a simplified microservices demo for Bottle Tycoon. The architecture emphasizes direct HTTP APIs between services (no API Gateway), no message broker, and no Redis in the default development stack. Each service is an ASP.NET Core 9 app using Entity Framework Core and OpenAPI. Use `docker-compose.yml` for local orchestration; see `README.md` for run instructions.
+
+Game mechanics and UI documentation are stored in the `docs/` folder. Services live under `src/` and each service exposes OpenAPI/Swagger UI when running in development.

@@ -1,12 +1,10 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
-using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using RecyclerService.Consumers;
 using RecyclerService.Data;
 using RecyclerService.Services;
 using Serilog;
@@ -20,9 +18,27 @@ builder.Configuration.AddJsonFile($"appsettings.{environmentName}.json", true, t
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .CreateLogger();
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    Log.Logger = new LoggerConfiguration()
+        .WriteTo.Console()
+        .CreateLogger();
+}
+else
+{
+    try
+    {
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(builder.Configuration)
+            .CreateLogger();
+    }
+    catch
+    {
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .CreateLogger();
+    }
+}
 
 builder.Host.UseSerilog();
 
@@ -41,33 +57,7 @@ else
     builder.Services.AddDbContext<RecyclerDbContext>(options => options.UseInMemoryDatabase("RecyclerService_Db"));
 }
 
-// MassTransit
-var enableMessaging = builder.Configuration.GetValue<bool?>("ENABLE_MESSAGING") ?? true;
-if (enableMessaging)
-{
-    builder.Services.AddMassTransit(x =>
-    {
-        x.AddConsumer<TruckArrivedConsumer>();
-        x.AddConsumer<TruckLoadedConsumer>();
-
-        x.SetKebabCaseEndpointNameFormatter();
-
-        x.UsingRabbitMq((context, cfg) =>
-        {
-            cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq", h =>
-            {
-                h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
-                h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
-            });
-
-            cfg.ConfigureEndpoints(context);
-        });
-    });
-}
-else
-{
-    Log.Information("Messaging disabled via ENABLE_MESSAGING=false; MassTransit will not be started");
-}
+// Messaging removed: services call each other directly via HTTP
 
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()

@@ -1,10 +1,9 @@
 ﻿using GameService.Events;
 using GameService.Services;
-using MassTransit;
 
 namespace GameService.Consumers;
 
-public class CreditsCreditedConsumer : IConsumer<CreditsCredited>
+public class CreditsCreditedConsumer
 {
     private readonly ILogger<CreditsCreditedConsumer> _logger;
     private readonly IPlayerService _playerService;
@@ -15,9 +14,8 @@ public class CreditsCreditedConsumer : IConsumer<CreditsCredited>
         _logger = logger;
     }
 
-    public async Task Consume(ConsumeContext<CreditsCredited> context)
+    public async Task HandleAsync(CreditsCredited message)
     {
-        var message = context.Message;
         _logger.LogInformation("Crediting {Amount} credits to player {PlayerId} for {Reason}",
             message.Amount, message.PlayerId, message.Reason);
 

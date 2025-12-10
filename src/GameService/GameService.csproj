@@ -20,8 +20,6 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-        <PackageReference Include="MassTransit" />
-        <PackageReference Include="MassTransit.RabbitMQ" />
         <PackageReference Include="Serilog.AspNetCore" />
         <PackageReference Include="Serilog.Sinks.Console" />
         <PackageReference Include="Serilog.Sinks.Seq" />
@@ -32,13 +30,9 @@
         <PackageReference Include="prometheus-net.AspNetCore" />
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
         <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
-        <PackageReference Include="AspNetCore.HealthChecks.RabbitMQ" />
-        <PackageReference Include="AspNetCore.HealthChecks.Redis" />
-        <PackageReference Include="StackExchange.Redis" />
         <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" />
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" />
         <PackageReference Include="Swashbuckle.AspNetCore" />
-        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
     </ItemGroup>
 
 </Project>

@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Shared\Shared.csproj" />
         <PackageReference Include="FastEndpoints"/>
         <PackageReference Include="FastEndpoints.Swagger"/>
         <PackageReference Include="Serilog.AspNetCore"/>

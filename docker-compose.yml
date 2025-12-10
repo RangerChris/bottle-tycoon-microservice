@@ -75,40 +75,6 @@
     networks:
       - bottle-tycoon
 
-  redis:
-    image: redis:7-alpine
-    container_name: bottle-tycoon-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - bottle-tycoon
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: bottle-tycoon-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      - bottle-tycoon
-
   # Observability Services
   jaeger:
     image: jaegertracing/all-in-one:1.52
@@ -176,10 +142,6 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__GameStateConnection: Host=gameservicepostgres;Database=GameServiceOwner;Username=postgres;Password=password
-      ConnectionStrings__Redis: redis:6379
-      RabbitMQ__Host: rabbitmq
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
       OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
       OTEL_SERVICE_NAME: GameService
       OTEL_TRACES_EXPORTER: jaeger
@@ -187,10 +149,6 @@
       - "5001:80"
     depends_on:
       gameservicepostgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       jaeger:
         condition: service_started
@@ -205,9 +163,6 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__RecyclerConnection: Host=recyclerpostgres;Database=RecyclerServiceOwner;Username=postgres;Password=password
-      RabbitMQ__Host: bottle-tycoon-rabbitmq
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
       OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: RecyclerService
       ENABLE_MESSAGING: "true"
@@ -215,8 +170,6 @@
       - "5002:80"
     depends_on:
       recyclerpostgres:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       jaeger:
         condition: service_started
@@ -231,20 +184,12 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__DefaultConnection: Host=truckpostgres;Database=TruckServiceOwner;Username=postgres;Password=password
-      ConnectionStrings__Redis: bottle-tycoon-redis:6379
-      RabbitMQ__Host: bottle-tycoon-rabbitmq
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
       OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: TruckService
     ports:
       - "5003:80"
     depends_on:
       truckpostgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       jaeger:
         condition: service_started
@@ -259,20 +204,12 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__DefaultConnection: Host=gameservicepostgres;Database=GameServiceOwner;Username=postgres;Password=password
-      ConnectionStrings__Redis: bottle-tycoon-redis:6379
-      RabbitMQ__Host: bottle-tycoon-rabbitmq
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
       OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: HeadquartersService
     ports:
       - "5004:80"
     depends_on:
       gameservicepostgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       jaeger:
         condition: service_started
@@ -287,9 +224,6 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__RecyclingPlantConnection: Host=recyclingplantpostgres;Database=RecyclingPlantServiceOwner;Username=postgres;Password=password
-      RabbitMQ__Host: rabbitmq
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
       OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
       OTEL_SERVICE_NAME: RecyclingPlantService
       ENABLE_MESSAGING: "true"
@@ -297,33 +231,6 @@
       - "5005:80"
     depends_on:
       recyclingplantpostgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      jaeger:
-        condition: service_started
-    networks:
-      - bottle-tycoon
-
-  apigateway:
-    build:
-      context: .
-      dockerfile: src/ApiGateway/Dockerfile
-    environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__Redis: bottle-tycoon-redis:6379
-      RabbitMQ__Host: bottle-tycoon-rabbitmq
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
-      OTEL_SERVICE_NAME: ApiGateway
-    ports:
-      - "5000:80"
-    depends_on:
-      redis:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       jaeger:
         condition: service_started
@@ -335,15 +242,15 @@
       context: ./src/Frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: http://localhost:5000
+        VITE_API_BASE_URL: http://localhost:5001
     environment:
       NODE_ENV: production
-      VITE_API_BASE_URL: http://localhost:5000
-      API_BASE_URL: http://localhost:5000
+      VITE_API_BASE_URL: http://localhost:5001
+      API_BASE_URL: http://localhost:5001
     ports:
       - "3000:3000"
     depends_on:
-      - apigateway
+      - gameservice
     networks:
       - bottle-tycoon
 
@@ -352,8 +259,6 @@ volumes:
   truckpostgres_data:
   recycler_postgres_data:
   recyclingplant_postgres_data:
-  redis_data:
-  rabbitmq_data:
   loki_data:
   grafana_data:
 

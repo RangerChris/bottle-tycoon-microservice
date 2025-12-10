@@ -5,22 +5,17 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
-    <PackageVersion Include="AspNetCore.HealthChecks.RabbitMQ" Version="9.0.0" />
-    <PackageVersion Include="AspNetCore.HealthChecks.Redis" Version="9.0.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="DotNet.Testcontainers" Version="1.6.0" />
     <PackageVersion Include="FastEndpoints" Version="7.1.1" />
     <PackageVersion Include="FastEndpoints.Swagger" Version="7.1.1" />
-    <PackageVersion Include="MassTransit" Version="8.5.7" />
-    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.5.7" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.11" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.11" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.11" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
@@ -36,7 +31,6 @@
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.Seq" Version="9.0.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="StackExchange.Redis" Version="2.10.1" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.0.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="xunit.v3" Version="3.2.1" />
@@ -44,10 +38,6 @@
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="9.0.11" />
     <PackageVersion Include="Testcontainers" Version="4.9.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.9.0" />
-    <PackageVersion Include="Testcontainers.RabbitMq" Version="4.9.0" />
-    <PackageVersion Include="Testcontainers.Redis" Version="4.9.0" />
-    <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.14.0-beta.1" />
-    <PackageVersion Include="RabbitMQ.Client" Version="7.2.0" />
   </ItemGroup>
 </Project>
