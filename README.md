@@ -1,225 +1,89 @@
 # Bottle Tycoon Microservice: Learn Microservices, Observability, and .NET 9
 
-[![.NET CI](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml)  
+[![.NET CI](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml)
 [![coverage](https://img.shields.io/codecov/c/github/rangerchris/bottle-tycoon-microservice?logo=codecov&style=flat-square)](https://codecov.io/gh/rangerchris/bottle-tycoon-microservice)
 
-## 🎮 Project Overview
+Bottle Tycoon is an educational microservices project designed to teach modern architecture and observability practices through a simple, interactive game. The repository contains small, independently runnable ASP.NET Core services, a React frontend, and an observability stack (OpenTelemetry → Jaeger/Prometheus/Loki/Grafana).
 
-Bottle Tycoon is an **educational microservices project** designed to teach modern software architecture principles through a fun, interactive game. Manage a virtual bottle recycling network with multiple microservices, each handling different business domains, all monitored with OpenTelemetry for complete observability.
+Key differences from older versions
+- The default development stack has been simplified: the API Gateway, RabbitMQ (MassTransit), and Redis are *removed from the default Docker Compose* setup. Services now communicate directly via HTTP endpoints for common flows. See `docs/ARCHITECTURE.md` for migration notes and guidance on reintroducing messaging or caching if needed.
 
-### 🎯 Learning Objectives
-- Build scalable microservices using **ASP.NET Core 9**
-- Implement event-driven architecture with **RabbitMQ**/**MassTransit**
-- Complete observability with **OpenTelemetry, Jaeger, Prometheus, Loki, and Grafana**
-- Container orchestration with **Docker and Docker Compose**
-- Real-time frontend with **React and DaisyU[ARCHITECTURE.md](docs/ARCHITECTURE.md)
-[GAME_DESIGN.md](docs/GAME_DESIGN.md)I**
-- Distributed tracing and correlation IDs
-- Health checks and service communication patterns
-- Database per service pattern
+Quick facts
+- Runtime: .NET 9 (C# 13)
+- Frontend: React
+- Persistence: PostgreSQL (one container per service in compose)
+- Observability: OpenTelemetry + Jaeger + Prometheus + Loki + Grafana
 
----
+Services and local ports (compose, default)
+- Frontend — http://localhost:3000
+- Game Service — http://localhost:5001
+- Recycler Service — http://localhost:5002
+- Truck Service — http://localhost:5003
+- Headquarters Service — http://localhost:5004
+- Recycling Plant Service — http://localhost:5005
+- Jaeger UI — http://localhost:16686
+- Prometheus — http://localhost:9090
+- Grafana — http://localhost:3001 (admin/admin)
+- Loki — http://localhost:3100
 
-## 📊 Architecture Overview
+Prerequisites
+- Docker Desktop (with Docker Compose)
+- .NET 9 SDK (for local host development)
+- Node.js 18+ (for frontend dev)
 
-### Service Architecture
-```mermaid
-graph TD
-    subgraph Frontend
-        FE["React Frontend (3000)"]
-    end
-
-    subgraph Gateway
-        GW["API Gateway (Port 5000)"]
-    end
-
-    subgraph Microservices
-        GS["Game Service"]
-        RS["Recycler Service"]
-        TS["Truck Service"]
-        HS["Headquarters Service"]
-        PS["Recycling Plant Service"]
-    end
-
-    subgraph Infrastructure
-        PG["PostgreSQL"]
-        RD["Redis"]
-        RMQ["RabbitMQ"]
-        OBS["Observability"]
-    end
-
-    FE --> GW
-    GW --> GS
-    GW --> RS
-    GW --> TS
-    GW --> HS
-    GW --> PS
-    GS --> PG
-    RS --> PG
-    TS --> PG
-    HS --> PG
-    PS --> PG
-    GS --> RD
-    RS --> RD
-    TS --> RD
-    HS --> RD
-    PS --> RD
-    GS --> RMQ
-    RS --> RMQ
-    TS --> RMQ
-    HS --> RMQ
-    PS --> RMQ
-    GS --> OBS
-    RS --> OBS
-    TS --> OBS
-    HS --> OBS
-    PS --> OBS
-```
-
-### Services Breakdown
-
-| Service | Purpose | Port | Container Count |
-|---------|---------|------|-----------------|
-| **Game Service** | Player state, credits, upgrades | 5001 | 1 |
-| **Recycler Service** | Bottle collection, capacity tracking | 5002 | 3-5 (scalable) |
-| **Truck Service** | Fleet management, deliveries | 5003 | 3-5 (scalable) |
-| **Headquarters** | Dispatch coordination | 5004 | 1 |
-| **Recycling Plant** | Credit calculation | 5005 | 1 |
-| **API Gateway** | Request routing | 5000 | 1 |
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- **Docker Desktop** (includes Docker & Docker Compose)
-- **.NET 9 SDK** (for local development)
-- **Node.js 18+** (for React frontend)
-- **Git**
-
-### Installation & Running
-
-**Option 1: Docker Compose (Recommended - Everything in containers)**
+Option A — Recommended: Run the full stack with Docker Compose
 ```bash
-# Clone the repository
-git clone https://github.com/RangerChris/bottle-tycoon-microservice.git
-cd bottle-tycoon-microservice
-
-# Start all services
-docker-compose up -d
-
-# Wait 30 seconds for services to initialize
-sleep 30
-
-# Access the application
-Frontend:        http://localhost:3000
-API Gateway:     http://localhost:5000
-Jaeger UI:       http://localhost:16686
-Prometheus:      http://localhost:9090
-Grafana:         http://localhost:3001 (admin/admin)
+# from repository root
+docker-compose up -d --build
+# watch logs
+docker-compose logs -f
 ```
+Notes:
+- The default `docker-compose.yml` runs each service and a per-service Postgres instance used for development/integration testing.
+- The default compose file does NOT start RabbitMQ or Redis. If you need messaging/caching for a scenario, either update the compose file or run those services separately.
 
-**Option 2: Local Development (Services running on host)**
+Option B — Local development (services on host)
 ```bash
-# Terminal 1: PostgreSQL & Infrastructure
-docker-compose up postgres redis rabbitmq jaeger prometheus loki grafana -d
+# Start datastore & observability services
+docker-compose up -d gameservicepostgres recyclerpostgres truckpostgres recyclingplantpostgres jaeger prometheus loki grafana
 
-# Terminal 2-7: Run each service
+# Run services locally (in separate terminals)
 cd src/GameService && dotnet run
 cd src/RecyclerService && dotnet run
-# ... etc for other services
+cd src/TruckService && dotnet run
+cd src/HeadquartersService && dotnet run
+cd src/RecyclingPlantService && dotnet run
 
-# Terminal 8: Frontend
-cd src/Frontend && npm install && npm start
+# Frontend
+cd src/Frontend && npm ci && npm start
 ```
 
-### Verify Services Are Running
+Health checks & verification
 ```bash
-# Check all containers
+# List running containers
 docker-compose ps
 
-# Check API Gateway health
-curl http://localhost:5000/health
-
-# Check all services health
-curl http://localhost:5000/health/ready
+# Check a service health endpoint (example Game Service)
+curl http://localhost:5001/health
 ```
 
----
+Observability
+- Traces: Jaeger UI — http://localhost:16686
+- Metrics: Prometheus — http://localhost:9090; each service exposes `/metrics` when instrumented
+- Logs: Loki — http://localhost:3100; Grafana configured to visualize logs and metrics at http://localhost:3001
 
+Testing
+- Unit tests: `dotnet test` in each test project (xUnit v3)
+- Integration tests: use the `docker-compose` integration setup in `docker-compose.yml` (the project is structured to allow integration tests to run against real Postgres containers)
 
+Notes & next steps
+- If you intend to restore the old event-driven flows, reintroduce RabbitMQ and MassTransit in a separate compose file or a production compose, and re-add shared contracts (or publish shared DTOs as a NuGet package). See `docs/ARCHITECTURE.md` for migration guidance.
+- The repository previously referenced a `src/Shared` project for shared DTOs; that project is no longer present in the default layout. Use explicit HTTP contracts between services or publish shared contracts as a library if you need compile-time sharing.
 
-## 🧪 Testing
+Where to look next
+- `docs/ARCHITECTURE.md` — architecture, ports, migration notes
+- `docs/GAME_DESIGN.md` — game mechanics and UX design
+- `src/` — service projects
 
-### Test Coverage Target: >80%
-
-**Unit Tests**
-- Business logic: Capacity calculations, credit math, upgrades
-- Run: `dotnet test`
-
-**Integration Tests**
-- Database operations, event publishing
-- Service-to-service communication
-- Run: `dotnet test --filter Category=Integration`
-
-**End-to-End Tests**
-- Full game flows: Create player → deliver bottles → earn credits
-- Run: `npm test` (from Frontend directory)
-
-**Load Tests**
-- Multiple players simultaneously
-- Rapid delivery sequences
-- Tools: k6, Apache JMeter
-
----
-
-## 🐛 Troubleshooting
-
-### Services won't start
-```bash
-# Check Docker is running
-docker --version
-
-# Check ports aren't in use
-lsof -i :5000,5001,5002,5003,5004,5005
-
-# View logs
-docker-compose logs -f [service_name]
-```
-
-### Database connection errors
-```bash
-# Ensure PostgreSQL is running
-docker-compose ps postgres
-
-# Check connection string in appsettings.json
-# Reset database: docker-compose down -v && docker-compose up
-```
-
-### RabbitMQ not accepting connections
-```bash
-# Check RabbitMQ is healthy
-docker-compose logs rabbitmq
-
-# Access RabbitMQ management: http://localhost:15672 (guest/guest)
-```
-
-### Frontend not loading
-```bash
-# Check Node.js version
-node --version  # Should be 18+
-
-# Rebuild dependencies
-cd src/Frontend && npm ci
-
-# Clear cache and restart
-npm run build && npm start
-```
-
----
-
-## 📝 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
+License
+This project is licensed under the MIT License - see the `LICENSE` file for details.

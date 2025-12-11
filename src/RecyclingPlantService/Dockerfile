@@ -2,11 +2,9 @@
 WORKDIR /src
 
 COPY Directory.Packages.props ./
-COPY src/Shared/Shared.csproj ./Shared/
 COPY src/RecyclingPlantService/RecyclingPlantService.csproj ./RecyclingPlantService/
 RUN dotnet restore "RecyclingPlantService/RecyclingPlantService.csproj"
 
-COPY src/Shared/. ./Shared/
 COPY src/RecyclingPlantService/. ./RecyclingPlantService/
 RUN dotnet publish "RecyclingPlantService/RecyclingPlantService.csproj" -c Release -o /app/publish /p:UseAppHost=false
 

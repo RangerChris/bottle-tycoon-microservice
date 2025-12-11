@@ -18,13 +18,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure frontend lockfile is available at repo root
+      - name: Ensure frontend lockfile is available at repo root (optional)
         run: |
           if [ -f src/Frontend/package-lock.json ]; then
             cp src/Frontend/package-lock.json ./package-lock.json
             echo "Copied src/Frontend/package-lock.json to repo root"
           else
-            echo "No frontend package-lock.json found in src/Frontend"; exit 1
+            echo "No frontend package-lock.json found in src/Frontend; continuing without it"
           fi
 
       - name: "Debug: list repo root and check copied lockfile"
@@ -45,7 +45,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: src/Frontend
-        run: npm ci
+        run: npm install
 
       - name: Install Playwright browsers
         working-directory: src/Frontend

@@ -4,13 +4,9 @@ WORKDIR /src
 
 COPY Directory.Packages.props ./
 COPY src/TruckService/TruckService.csproj ./
-# Ensure the referenced Shared project is available at the path expected by the project reference
-COPY src/Shared/Shared.csproj ../Shared/Shared.csproj
 RUN dotnet restore "TruckService.csproj"
 
 COPY src/TruckService/. ./
-# Copy Shared sources into the container so the project reference can be resolved during build/publish
-COPY src/Shared/. ../Shared/
 RUN dotnet build "TruckService.csproj" -c Release -o /app/build
 
 # Publish the application
