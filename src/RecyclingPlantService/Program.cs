@@ -114,7 +114,11 @@ try
     var swaggerEnabled = true;
 
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+        c.RoutePrefix = string.Empty;
+    });
 
     app.UseHttpsRedirection();
 
@@ -125,7 +129,9 @@ try
 
     app.UseFastEndpoints();
 
-    app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Text("RecyclingPlantService OK"));
+    app.MapGet("/v1/swagger.json", () => Results.Redirect("/swagger/v1/swagger.json"));
+
+    app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/") : Results.Text("RecyclingPlantService OK"));
 
     Log.Information("Starting RecyclingPlantService host");
     app.Run();

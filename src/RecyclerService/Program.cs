@@ -133,7 +133,11 @@ try
     var swaggerEnabled = true;
 
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+        c.RoutePrefix = string.Empty;
+    });
 
     app.UseHttpsRedirection();
 
@@ -144,7 +148,12 @@ try
 
     app.UseFastEndpoints();
 
-    app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Text("RecyclerService OK"));
+    app.MapGet("/v1/swagger.json", () => Results.Redirect("/swagger/v1/swagger.json"));
+
+    if (!swaggerEnabled)
+    {
+        app.MapGet("/", () => Results.Text("RecyclerService OK"));
+    }
 
     Log.Information("Starting RecyclerService host");
     app.Run();

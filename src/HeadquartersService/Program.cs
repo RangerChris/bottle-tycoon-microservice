@@ -49,10 +49,17 @@ try
 {
     var app = builder.Build();
 
-    var swaggerEnabled = true;
 
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        // When serving the UI at the app root (RoutePrefix = empty), the UI's
+        // default relative doc path becomes /v1/swagger.json which doesn't
+        // match the generated endpoint (/swagger/v1/swagger.json). Explicitly
+        // set the Swagger endpoint to the generated JSON path.
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+        c.RoutePrefix = string.Empty;
+    });
 
     app.UseHttpsRedirection();
 
@@ -63,7 +70,9 @@ try
 
     app.UseFastEndpoints();
 
-    app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Text("HeadquartersService OK"));
+    // Some Swagger UI bundles request /v1/swagger.json when served at root.
+    // Provide a small redirect so both /v1/swagger.json and /swagger/v1/swagger.json work.
+    app.MapGet("/v1/swagger.json", () => Results.Redirect("/swagger/v1/swagger.json"));
 
     Log.Information("Starting HeadquartersService host");
     app.Run();

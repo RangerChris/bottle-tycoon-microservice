@@ -41,16 +41,6 @@ scrape_configs:
     metrics_path: '/metrics'
     scrape_interval: 15s
 
-  - job_name: 'apigateway'
-    static_configs:
-      - targets: ['apigateway:80']
-    metrics_path: '/metrics'
-    scrape_interval: 15s
-
-  - job_name: 'jaeger'
-    static_configs:
-      - targets: ['jaeger:14268']
-
   - job_name: 'grafana'
     static_configs:
       - targets: ['grafana:3000']

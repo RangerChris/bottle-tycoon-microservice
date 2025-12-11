@@ -10,7 +10,6 @@ using OpenTelemetry.Trace;
 using Serilog;
 using TruckService.Data;
 using TruckService.Services;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -128,7 +127,11 @@ var swaggerEnabled = true; // same for all environments
 if (swaggerEnabled)
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+        c.RoutePrefix = string.Empty;
+    });
 }
 
 app.UseHttpsRedirection();
@@ -141,7 +144,9 @@ app.MapHealthChecks("/health/ready");
 app.UseFastEndpoints()
     .UseSwaggerGen();
 
-app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/swagger") : Results.Text("TruckService OK"));
+app.MapGet("/v1/swagger.json", () => Results.Redirect("/swagger/v1/swagger.json"));
+
+app.MapGet("/", () => swaggerEnabled ? Results.Content("", "text/html") : Results.Text("TruckService OK"));
 
 Log.Information("Starting TruckService host");
 app.Run();

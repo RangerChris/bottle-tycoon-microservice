@@ -108,7 +108,11 @@ try
     }
 
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+        c.RoutePrefix = string.Empty;
+    });
 
     app.UseHttpsRedirection();
 
@@ -120,6 +124,9 @@ try
     app.MapHealthChecks("/health/ready");
 
     app.UseFastEndpoints();
+
+    // Provide compatibility for UI bundles that request /v1/swagger.json when UI is served at root
+    app.MapGet("/v1/swagger.json", () => Results.Redirect("/swagger/v1/swagger.json"));
 
     Log.Information("Starting GameService host");
     app.Run();
