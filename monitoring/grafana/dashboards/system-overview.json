@@ -186,42 +186,6 @@
     },
     {
       "id": 6,
-      "title": "API Gateway Health",
-      "type": "stat",
-      "targets": [
-        {
-          "expr": "up{job=\"apigateway\"}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "text": "DOWN",
-                  "color": "red"
-                },
-                "1": {
-                  "text": "UP",
-                  "color": "green"
-                }
-              },
-              "type": "value"
-            }
-          ]
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      }
-    },
-    {
-      "id": 7,
       "title": "Frontend Health",
       "type": "stat",
       "targets": [
