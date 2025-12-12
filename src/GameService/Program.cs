@@ -119,10 +119,6 @@ try
     // OpenTelemetry Prometheus
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
-    // Health Checks
-    app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
-    app.MapHealthChecks("/health/ready");
-
     app.UseFastEndpoints();
 
     // Provide compatibility for UI bundles that request /v1/swagger.json when UI is served at root

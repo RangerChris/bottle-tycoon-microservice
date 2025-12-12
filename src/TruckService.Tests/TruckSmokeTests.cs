@@ -25,16 +25,4 @@ public class TruckSmokeTests
         var res = await client.GetAsync("/", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBeOneOf(HttpStatusCode.OK, HttpStatusCode.Redirect);
     }
-
-    [Fact]
-    public async Task HealthEndpoints_AreAccessible()
-    {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.UseEnvironment("Testing"));
-        var client = factory.CreateClient();
-
-        var live = await client.GetAsync("/health/live", TestContext.Current.CancellationToken);
-        var ready = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
-
-        live.StatusCode.ShouldBeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
-    }
 }

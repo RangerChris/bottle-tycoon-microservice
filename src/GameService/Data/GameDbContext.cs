@@ -11,8 +11,6 @@ public class GameDbContext : DbContext
     }
 
     public DbSet<Player> Players { get; set; } = null!;
-    public DbSet<Purchase> Purchases { get; set; } = null!;
-    public DbSet<Upgrade> Upgrades { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -27,21 +25,6 @@ public class GameDbContext : DbContext
             entity.ToTable("players");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Credits).HasPrecision(18, 2);
-        });
-
-        modelBuilder.Entity<Purchase>(entity =>
-        {
-            entity.ToTable("purchases");
-            entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId);
-            entity.Property(e => e.Amount).HasPrecision(18, 2);
-        });
-
-        modelBuilder.Entity<Upgrade>(entity =>
-        {
-            entity.ToTable("upgrades");
-            entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId);
         });
 
         ApplyLowercaseNamingConvention(modelBuilder);

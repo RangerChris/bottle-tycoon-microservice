@@ -2,7 +2,6 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using HeadquartersService.Services;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -65,8 +64,6 @@ try
 
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
-    app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
-    app.MapHealthChecks("/health/ready");
 
     app.UseFastEndpoints();
 

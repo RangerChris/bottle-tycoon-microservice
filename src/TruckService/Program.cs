@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using FastEndpoints.Swagger;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
@@ -138,8 +137,6 @@ app.UseHttpsRedirection();
 
 app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
-app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
-app.MapHealthChecks("/health/ready");
 
 app.UseFastEndpoints()
     .UseSwaggerGen();
