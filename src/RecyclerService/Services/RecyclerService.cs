@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
-using RecyclerService.Events;
 using RecyclerService.Models;
 
 namespace RecyclerService.Services;

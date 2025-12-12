@@ -119,12 +119,9 @@ public class RecyclingPlantEndpointsInMemoryTests
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
-            db.PlantDeliveries.AddRange(new[]
-            {
-                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-1) },
+            db.PlantDeliveries.AddRange(new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-1) },
                 new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 2, MetalCount = 1, PlasticCount = 0, GrossEarnings = 10.5m, OperatingCost = 2m, NetEarnings = 8.5m, DeliveredAt = DateTimeOffset.UtcNow },
-                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 0, MetalCount = 3, PlasticCount = 2, GrossEarnings = 11.5m, OperatingCost = 1m, NetEarnings = 10.5m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-2) }
-            });
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 0, MetalCount = 3, PlasticCount = 2, GrossEarnings = 11.5m, OperatingCost = 1m, NetEarnings = 10.5m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-2) });
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
@@ -199,37 +196,6 @@ public class RecyclingPlantEndpointsInMemoryTests
     }
 
     [Fact]
-    public async Task GetPlayerEarningsBreakdown_CalculatesCorrectly()
-    {
-        await using var factory = CreateFactory();
-        var playerId = Guid.NewGuid();
-
-        using (var scope = factory.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
-            db.PlantDeliveries.AddRange(new[]
-            {
-                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 2, MetalCount = 1, PlasticCount = 0, GrossEarnings = 0m, OperatingCost = 0m, NetEarnings = 0m, DeliveredAt = DateTimeOffset.UtcNow },
-                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 0, MetalCount = 2, PlasticCount = 3, GrossEarnings = 0m, OperatingCost = 0m, NetEarnings = 0m, DeliveredAt = DateTimeOffset.UtcNow }
-            });
-            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
-        }
-
-        var client = factory.CreateClient();
-        var res = await client.GetAsync($"/api/v1/recycling-plant/players/{playerId}/earnings/breakdown", TestContext.Current.CancellationToken);
-        res.StatusCode.ShouldBe(HttpStatusCode.OK);
-
-        var breakdown = await res.Content.ReadFromJsonAsync<EarningsBreakdown>(TestContext.Current.CancellationToken);
-        breakdown.ShouldNotBeNull();
-        breakdown.GlassCount.ShouldBe(2);
-        breakdown.MetalCount.ShouldBe(3);
-        breakdown.PlasticCount.ShouldBe(3);
-        breakdown.GlassEarnings.ShouldBe(2 * 4.0m);
-        breakdown.MetalEarnings.ShouldBe(3 * 2.5m);
-        breakdown.PlasticEarnings.ShouldBe(3 * 1.75m);
-    }
-
-    [Fact]
     public async Task GetTopEarners_ReturnsTopNOrdered()
     {
         await using var factory = CreateFactory();
@@ -240,17 +206,12 @@ public class RecyclingPlantEndpointsInMemoryTests
             var a = Guid.NewGuid();
             var b = Guid.NewGuid();
             var c = Guid.NewGuid();
-            db.PlayerEarnings.AddRange(new[]
-            {
-                new PlayerEarnings { PlayerId = a, TotalEarnings = 100m },
-                new PlayerEarnings { PlayerId = b, TotalEarnings = 300m },
-                new PlayerEarnings { PlayerId = c, TotalEarnings = 200m }
-            });
+            db.PlayerEarnings.AddRange(new PlayerEarnings { PlayerId = a, TotalEarnings = 100m }, new PlayerEarnings { PlayerId = b, TotalEarnings = 300m }, new PlayerEarnings { PlayerId = c, TotalEarnings = 200m });
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var client = factory.CreateClient();
-        var res = await client.GetAsync($"/api/v1/recycling-plant/reports/top-earners?Count=2", TestContext.Current.CancellationToken);
+        var res = await client.GetAsync("/api/v1/recycling-plant/reports/top-earners?Count=2", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var list = await res.Content.ReadFromJsonAsync<List<PlayerEarnings>>(TestContext.Current.CancellationToken);

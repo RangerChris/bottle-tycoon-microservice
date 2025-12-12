@@ -9,23 +9,23 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" />
-        <PackageReference Include="xunit.v3" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="xunit.v3"/>
         <PackageReference Include="xunit.runner.visualstudio">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="coverlet.collector">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Moq" />
-        <PackageReference Include="Shouldly" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
-        <PackageReference Include="DotNet.Testcontainers" />
+        <PackageReference Include="Moq"/>
+        <PackageReference Include="Shouldly"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"/>
+        <PackageReference Include="DotNet.Testcontainers"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\TruckService\TruckService.csproj" />
+        <ProjectReference Include="..\TruckService\TruckService.csproj"/>
     </ItemGroup>
 
 </Project>
