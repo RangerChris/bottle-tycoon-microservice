@@ -147,6 +147,12 @@
       OTEL_TRACES_EXPORTER: jaeger
     ports:
       - "5001:80"
+    healthcheck:
+      test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     depends_on:
       gameservicepostgres:
         condition: service_healthy
@@ -168,6 +174,12 @@
       ENABLE_MESSAGING: "true"
     ports:
       - "5002:80"
+    healthcheck:
+      test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     depends_on:
       recyclerpostgres:
         condition: service_healthy
@@ -188,6 +200,12 @@
       OTEL_SERVICE_NAME: TruckService
     ports:
       - "5003:80"
+    healthcheck:
+      test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     depends_on:
       truckpostgres:
         condition: service_healthy
@@ -208,6 +226,12 @@
       OTEL_SERVICE_NAME: HeadquartersService
     ports:
       - "5004:80"
+    healthcheck:
+      test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     depends_on:
       gameservicepostgres:
         condition: service_healthy
@@ -229,6 +253,12 @@
       ENABLE_MESSAGING: "true"
     ports:
       - "5005:80"
+    healthcheck:
+      test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     depends_on:
       recyclingplantpostgres:
         condition: service_healthy
