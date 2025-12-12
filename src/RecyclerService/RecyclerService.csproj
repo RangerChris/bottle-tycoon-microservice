@@ -26,9 +26,4 @@
         <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
         <PackageReference Include="Swashbuckle.AspNetCore" />
     </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Shared\Shared.csproj" />
-    </ItemGroup>
-
 </Project>

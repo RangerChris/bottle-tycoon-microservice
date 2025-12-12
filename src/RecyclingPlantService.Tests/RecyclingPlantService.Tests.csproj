@@ -27,7 +27,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\RecyclingPlantService\RecyclingPlantService.csproj" />
-        <ProjectReference Include="..\Shared\Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>

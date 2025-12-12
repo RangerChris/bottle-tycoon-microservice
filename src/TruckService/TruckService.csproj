@@ -37,9 +37,4 @@
         <!-- Messaging removed: MassTransit and RabbitMQ omitted -->
         <!-- Redis and RabbitMQ healthchecks removed -->
     </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Shared\Shared.csproj" />
-    </ItemGroup>
-
 </Project>
