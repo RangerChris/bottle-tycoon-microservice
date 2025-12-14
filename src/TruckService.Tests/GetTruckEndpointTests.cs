@@ -13,7 +13,10 @@ public class GetTruckEndpointTests : IClassFixture<TestcontainersFixture>
 {
     private readonly TestcontainersFixture _fixture;
 
-    public GetTruckEndpointTests(TestcontainersFixture fixture) => _fixture = fixture;
+    public GetTruckEndpointTests(TestcontainersFixture fixture)
+    {
+        _fixture = fixture;
+    }
 
     [Fact]
     public async Task GetExistingTruck_ReturnsOk()

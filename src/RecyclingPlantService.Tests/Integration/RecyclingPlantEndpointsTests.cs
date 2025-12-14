@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using RecyclingPlantService.Data;
+using RecyclingPlantService.Services;
 using RecyclingPlantService.Tests.TestFixtures;
 using Shouldly;
 using Xunit;
@@ -181,5 +182,142 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         list.ShouldNotBeNull();
         list.Count.ShouldBe(2);
         list[0].TotalEarnings.ShouldBeGreaterThan(list[1].TotalEarnings);
+    }
+
+    [Fact]
+    public async Task InitializeEndpoint_ResetsData()
+    {
+        // Clear existing data
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
+            db.PlayerEarnings.RemoveRange(db.PlayerEarnings);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        // Seed some data
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.Add(new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow });
+            db.PlayerEarnings.Add(new PlayerEarnings { PlayerId = Guid.NewGuid(), TotalEarnings = 100m, DeliveryCount = 1, AverageEarnings = 100m });
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        // Verify data exists
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.Count().ShouldBe(1);
+            db.PlayerEarnings.Count().ShouldBe(1);
+        }
+
+        // Call initialize
+        var client = _fixture.Client;
+        var res = await client.PostAsync("/initialize", null, TestContext.Current.CancellationToken);
+        res.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        // Verify data is reset
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.Count().ShouldBe(0);
+            db.PlayerEarnings.Count().ShouldBe(0);
+        }
+    }
+
+    [Fact]
+    public async Task GetPlayerEarningsHistory_ReturnsPlayerDeliveries()
+    {
+        var playerId = Guid.NewGuid();
+
+        // Seed deliveries for the player
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.AddRange(
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-1) },
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 2, MetalCount = 1, PlasticCount = 0, GrossEarnings = 10.5m, OperatingCost = 2m, NetEarnings = 8.5m, DeliveredAt = DateTimeOffset.UtcNow },
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 0, MetalCount = 3, PlasticCount = 2, GrossEarnings = 11.5m, OperatingCost = 1m, NetEarnings = 10.5m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-2) } // different player
+            );
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var client = _fixture.Client;
+        var res = await client.GetAsync($"/api/v1/recycling-plant/players/{playerId}/earnings/history?page=1&pageSize=10", TestContext.Current.CancellationToken);
+        res.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var deliveries = await res.Content.ReadFromJsonAsync<List<PlantDelivery>>(TestContext.Current.CancellationToken);
+        deliveries.ShouldNotBeNull();
+        deliveries.Count.ShouldBe(2);
+
+        // Ensure ordered by DeliveredAt desc
+        deliveries[0].DeliveredAt.ShouldBeGreaterThan(deliveries[1].DeliveredAt);
+    }
+
+    [Fact]
+    public async Task ProcessDeliveryAsync_CreatesDeliveryAndUpdatesEarnings()
+    {
+        using var scope = _fixture.Host!.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IRecyclingPlantService>();
+        var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+
+        var truckId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
+        var loadByType = new Dictionary<string, int> { ["glass"] = 1, ["metal"] = 2 };
+        var operatingCost = 1.5m;
+        var deliveredAt = DateTimeOffset.UtcNow;
+
+        var deliveryId = await service.ProcessDeliveryAsync(truckId, playerId, loadByType, operatingCost, deliveredAt);
+
+        deliveryId.ShouldNotBe(Guid.Empty);
+
+        var delivery = await db.PlantDeliveries.FindAsync(deliveryId);
+        delivery.ShouldNotBeNull();
+        delivery.TruckId.ShouldBe(truckId);
+        delivery.PlayerId.ShouldBe(playerId);
+        delivery.GlassCount.ShouldBe(1);
+        delivery.MetalCount.ShouldBe(2);
+        delivery.PlasticCount.ShouldBe(0);
+        delivery.GrossEarnings.ShouldBe(4m + 2.5m * 2); // 4 + 5 = 9
+        delivery.OperatingCost.ShouldBe(operatingCost);
+        delivery.NetEarnings.ShouldBe(9m - operatingCost);
+
+        var earnings = await db.PlayerEarnings.FindAsync(playerId);
+        earnings.ShouldNotBeNull();
+        earnings.TotalEarnings.ShouldBe(9m - operatingCost);
+        earnings.DeliveryCount.ShouldBe(1);
+        earnings.AverageEarnings.ShouldBe(9m - operatingCost);
+    }
+
+    [Fact]
+    public async Task GetPlayerEarningsBreakdownAsync_ReturnsBreakdown()
+    {
+        var playerId = Guid.NewGuid();
+
+        // Seed deliveries
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.AddRange(
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow },
+                new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = playerId, GlassCount = 0, MetalCount = 2, PlasticCount = 1, GrossEarnings = 7.25m, OperatingCost = 1m, NetEarnings = 6.25m, DeliveredAt = DateTimeOffset.UtcNow }
+            );
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        using var serviceScope = _fixture.Host!.Services.CreateScope();
+        var service = serviceScope.ServiceProvider.GetRequiredService<IRecyclingPlantService>();
+
+        var breakdown = await service.GetPlayerEarningsBreakdownAsync(playerId);
+
+        breakdown.ShouldNotBeNull();
+        breakdown.GlassEarnings.ShouldBe(4m);
+        breakdown.MetalEarnings.ShouldBe(5m);
+        breakdown.PlasticEarnings.ShouldBe(1.75m);
+        breakdown.GlassCount.ShouldBe(1);
+        breakdown.MetalCount.ShouldBe(2);
+        breakdown.PlasticCount.ShouldBe(1);
     }
 }

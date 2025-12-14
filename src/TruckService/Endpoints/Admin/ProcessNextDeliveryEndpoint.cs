@@ -21,6 +21,6 @@ public class ProcessNextDeliveryEndpoint : EndpointWithoutRequest
     public override async Task HandleAsync(CancellationToken ct)
     {
         await _worker.RunOnceAsync(ct);
-        await Send.OkAsync(ct);
+        await Send.OkAsync();
     }
 }
