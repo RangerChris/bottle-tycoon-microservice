@@ -1,4 +1,4 @@
-﻿﻿using GameService.Data;
+﻿using GameService.Data;
 using GameService.Services;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;

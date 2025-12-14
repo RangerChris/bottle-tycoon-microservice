@@ -1,4 +1,4 @@
-﻿﻿using System.Net;
+﻿using System.Net;
 using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
 using FastEndpoints;
@@ -22,15 +22,14 @@ namespace GameService.Tests.TestFixtures;
 
 public class TestcontainersFixture : IAsyncLifetime
 {
-    private readonly string _databaseName;
     private IHost? _host;
 
     public TestcontainersFixture()
     {
-        _databaseName = $"gamestate_{Guid.NewGuid().ToString("N")}";
+        var databaseName = $"gamestate_{Guid.NewGuid().ToString("N")}";
         // Configure a wait strategy so StartAsync doesn't return until the container port is available
         Postgres = new PostgreSqlBuilder()
-            .WithDatabase(_databaseName)
+            .WithDatabase(databaseName)
             .WithUsername("postgres")
             .WithPassword("password")
             .WithImage("postgres:16-alpine")
@@ -49,24 +48,7 @@ public class TestcontainersFixture : IAsyncLifetime
 
     public string ConnectionString { get; private set; } = "";
 
-    public List<HttpRequestMessage> HttpRequests { get; } = new();
-
-    private class CapturingHandler : DelegatingHandler
-    {
-        private readonly List<HttpRequestMessage> _requests;
-
-        public CapturingHandler(List<HttpRequestMessage> requests)
-        {
-            _requests = requests;
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            _requests.Add(request);
-            // Return a successful response since the service isn't running
-            return new HttpResponseMessage(HttpStatusCode.NoContent);
-        }
-    }
+    public List<HttpRequestMessage> HttpRequests { get; } = [];
 
     public async ValueTask InitializeAsync()
     {
@@ -108,15 +90,30 @@ public class TestcontainersFixture : IAsyncLifetime
 
         // Add HttpClient for inter-service communication (mocked for tests)
         builder.Services.AddHttpClient("GameService", client =>
-        {
-            client.BaseAddress = new Uri("http://localhost:5001"); // Test port, but since it's the same host, it will work
-        })
-        .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
+            {
+                client.BaseAddress = new Uri("http://localhost:5001"); // Test port, but since it's the same host, it will work
+            })
+            .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
         builder.Services.AddHttpClient("RecyclerService", client =>
-        {
-            client.BaseAddress = new Uri("http://localhost:5002"); // Test port, but since no service, it will fail
-        })
-        .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
+            {
+                client.BaseAddress = new Uri("http://localhost:5002"); // Test port, but since no service, it will fail
+            })
+            .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
+        builder.Services.AddHttpClient("TruckService", client =>
+            {
+                client.BaseAddress = new Uri("http://localhost:5003"); // Test port, but since no service, it will fail
+            })
+            .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
+        builder.Services.AddHttpClient("HeadquartersService", client =>
+            {
+                client.BaseAddress = new Uri("http://localhost:5004"); // Test port, but since no service, it will fail
+            })
+            .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
+        builder.Services.AddHttpClient("RecyclingPlantService", client =>
+            {
+                client.BaseAddress = new Uri("http://localhost:5005"); // Test port, but since no service, it will fail
+            })
+            .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
 
         // JSON options (same shape as app)
         builder.Services.Configure<JsonOptions>(options =>
@@ -267,6 +264,23 @@ public class TestcontainersFixture : IAsyncLifetime
         catch (Exception e)
         {
             Log.Error(e, "An exception occurred while stopping the postgres container during retry");
+        }
+    }
+
+    private class CapturingHandler : DelegatingHandler
+    {
+        private readonly List<HttpRequestMessage> _requests;
+
+        public CapturingHandler(List<HttpRequestMessage> requests)
+        {
+            _requests = requests;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            _requests.Add(request);
+            // Return a successful response since the service isn't running
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));
         }
     }
 }

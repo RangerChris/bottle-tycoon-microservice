@@ -89,6 +89,7 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddScoped<ILoadProvider, RandomLoadProvider>();
         builder.Services.AddScoped<ITruckManager, TruckManager>();
         builder.Services.AddScoped<IRouteWorker, RouteWorker>();
+        builder.Services.AddScoped<ITruckService, Services.TruckService>();
 
         // JSON options (same shape as app)
         builder.Services.Configure<JsonOptions>(options =>

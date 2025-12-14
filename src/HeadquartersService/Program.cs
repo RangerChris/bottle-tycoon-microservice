@@ -42,6 +42,7 @@ builder.Services.AddOpenTelemetry()
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<IDispatchQueue, DispatchQueue>();
 builder.Services.AddSingleton<IFleetService, FleetService>();
+builder.Services.AddSingleton<IHeadquartersService, HeadquartersService.Services.HeadquartersService>();
 builder.Services.AddHostedService<DispatchProcessor>();
 
 try

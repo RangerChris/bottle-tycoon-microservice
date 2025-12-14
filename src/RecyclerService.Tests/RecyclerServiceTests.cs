@@ -31,7 +31,7 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var svc = new Services.RecyclerService(db, logger);
 
         // Clean up any existing data
-        await db.Recyclers.ExecuteDeleteAsync(cancellationToken: Xunit.TestContext.Current.CancellationToken);
+        await db.Recyclers.ExecuteDeleteAsync(Xunit.TestContext.Current.CancellationToken);
 
         var recycler = await svc.CreateRecyclerAsync();
         recycler.ShouldNotBeNull();
@@ -58,7 +58,7 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var svc = new Services.RecyclerService(db, logger);
 
         // Clean up any existing data
-        await db.Recyclers.ExecuteDeleteAsync(cancellationToken: Xunit.TestContext.Current.CancellationToken);
+        await db.Recyclers.ExecuteDeleteAsync(Xunit.TestContext.Current.CancellationToken);
 
         await svc.CreateRecyclerAsync();
         await svc.CreateRecyclerAsync();

@@ -45,8 +45,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+            .AllowAnyMethod()
+            .AllowAnyHeader();
     });
 });
 
@@ -83,10 +83,10 @@ builder.Services.AddHttpClient("GameService", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5001"); // Local GameService port
 });
-builder.Services.AddHttpClient("RecyclerService", client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["Services:RecyclerService"] ?? "http://recyclerservice:80");
-});
+builder.Services.AddHttpClient("RecyclerService", client => { client.BaseAddress = new Uri(builder.Configuration["Services:RecyclerService"] ?? "http://recyclerservice:80"); });
+builder.Services.AddHttpClient("TruckService", client => { client.BaseAddress = new Uri(builder.Configuration["Services:TruckService"] ?? "http://truckservice:80"); });
+builder.Services.AddHttpClient("HeadquartersService", client => { client.BaseAddress = new Uri(builder.Configuration["Services:HeadquartersService"] ?? "http://headquartersservice:80"); });
+builder.Services.AddHttpClient("RecyclingPlantService", client => { client.BaseAddress = new Uri(builder.Configuration["Services:RecyclingPlantService"] ?? "http://recyclingplantservice:80"); });
 
 // Add JSON options to avoid serialization cycles
 builder.Services.Configure<JsonOptions>(options =>

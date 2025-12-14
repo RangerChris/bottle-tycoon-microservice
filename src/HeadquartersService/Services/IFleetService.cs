@@ -9,4 +9,5 @@ public interface IFleetService
     IReadOnlyList<Truck> GetAvailableTrucks();
     bool TryAssignTruck(DispatchRequest req, out Truck? assigned);
     Truck? Get(Guid id);
+    void Reset();
 }

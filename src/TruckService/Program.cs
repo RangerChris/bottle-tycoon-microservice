@@ -77,6 +77,7 @@ builder.Services.AddScoped<ITruckManager, TruckManager>(sp =>
     return new TruckManager(repo, db, load, logger);
 });
 builder.Services.AddScoped<IRouteWorker, RouteWorker>();
+builder.Services.AddScoped<ITruckService, TruckService.Services.TruckService>();
 builder.Services.AddFastEndpoints()
     .SwaggerDocument();
 builder.Services.AddEndpointsApiExplorer();

@@ -1,12 +1,13 @@
 ﻿using FastEndpoints;
+using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
 public class InitializeEndpoint : EndpointWithoutRequest
 {
-    private readonly Services.IRecyclerService _recyclerService;
+    private readonly IRecyclerService _recyclerService;
 
-    public InitializeEndpoint(Services.IRecyclerService recyclerService)
+    public InitializeEndpoint(IRecyclerService recyclerService)
     {
         _recyclerService = recyclerService;
     }

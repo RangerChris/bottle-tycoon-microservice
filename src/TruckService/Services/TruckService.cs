@@ -1,0 +1,51 @@
+﻿using TruckService.Data;
+using TruckService.Models;
+
+namespace TruckService.Services;
+
+public class TruckService : ITruckService
+{
+    private readonly TruckDbContext _db;
+    private readonly ILogger<TruckService> _logger;
+
+    public TruckService(TruckDbContext db, ILogger<TruckService> logger)
+    {
+        _db = db;
+        _logger = logger;
+    }
+
+    public async Task ResetAsync()
+    {
+        _db.Trucks.RemoveRange(_db.Trucks);
+        _db.Deliveries.RemoveRange(_db.Deliveries);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task<TruckDto> CreateTruckAsync(TruckDto? truck = null)
+    {
+        var t = truck ?? new TruckDto();
+        if (t.Id == Guid.Empty)
+        {
+            t.Id = Guid.NewGuid();
+        }
+
+        t.LicensePlate = string.IsNullOrEmpty(t.LicensePlate) ? $"TRUCK-{t.Id.ToString().Substring(0, 8).ToUpper()}" : t.LicensePlate;
+        t.Model = string.IsNullOrEmpty(t.Model) ? "Standard Truck" : t.Model;
+        t.IsActive = true;
+
+        var ent = new TruckEntity
+        {
+            Id = t.Id,
+            LicensePlate = t.LicensePlate,
+            Model = t.Model,
+            IsActive = t.IsActive,
+            CapacityLevel = 0,
+            CurrentLoadByTypeJson = "{}",
+            TotalEarnings = 0
+        };
+
+        _db.Trucks.Add(ent);
+        await _db.SaveChangesAsync();
+        return t;
+    }
+}

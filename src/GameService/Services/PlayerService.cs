@@ -1,4 +1,4 @@
-﻿﻿using GameService.Data;
+﻿using GameService.Data;
 using GameService.Models;
 using Microsoft.EntityFrameworkCore;
 
