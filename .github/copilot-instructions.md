@@ -18,6 +18,8 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Simplicity:** Favor clear and straightforward code over complex or clever solutions. Prioritize maintainability and small methods and classes.
 - **Comments:** When creating code, do not add any comments unless absolutely necessary.
 - **Terminal:** When using Copilot in the terminal, assume that it is running in a PowerShell environment on a Windows 11 PC. You can not use && to chain commands. Multiline commands should be separated by semicolons (;).
+- **Error Handling:** Implement robust error handling and logging mechanisms to ensure that issues can be diagnosed and resolved efficiently.
+- **Performance:** Write efficient code that optimizes resource usage and minimizes latency.
 
 ## Architecture Patterns
 - **Microservices:** Follow microservices architecture where services are independently deployable and scalable, promoting loose coupling.

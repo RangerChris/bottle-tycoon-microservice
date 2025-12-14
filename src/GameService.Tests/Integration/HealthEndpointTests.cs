@@ -1,47 +1,25 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using GameService.Tests.TestFixtures;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Shouldly;
 using Xunit;
 
 namespace GameService.Tests.Integration;
 
-public class HealthEndpointTests : IAsyncLifetime
+public class HealthEndpointTests : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _containers = new();
+    private readonly TestcontainersFixture _fixture;
 
-    public ValueTask InitializeAsync()
+    public HealthEndpointTests(TestcontainersFixture fixture)
     {
-        return _containers.InitializeAsync();
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        return _containers.DisposeAsync();
+        _fixture = fixture;
     }
 
     [Fact]
     public async Task HealthEndpoint_ShouldReturnHealthyJson()
     {
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Development");
-            builder.ConfigureAppConfiguration((_, conf) =>
-            {
-                var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", _containers.Postgres.ConnectionString)
-                    ])
-                    .Build();
-                conf.AddConfiguration(cfg);
-            });
-        });
-
-        var client = factory.CreateClient();
-        var res = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        var client = _fixture.Client;
+        var res = await client.GetAsync("/health", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var content = await res.Content.ReadFromJsonAsync<dynamic>(TestContext.Current.CancellationToken);

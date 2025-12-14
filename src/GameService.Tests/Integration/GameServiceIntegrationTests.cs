@@ -5,46 +5,18 @@ using GameService.Tests.TestFixtures;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
-using Npgsql;
 using Shouldly;
 using Xunit;
 
 namespace GameService.Tests.Integration;
 
-public class GameServiceIntegrationTests : IAsyncLifetime
+public class GameServiceIntegrationTests : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _containers = new();
+    private readonly TestcontainersFixture _fixture;
 
-    public ValueTask InitializeAsync()
+    public GameServiceIntegrationTests(TestcontainersFixture fixture)
     {
-        return _containers.InitializeAsync();
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        return _containers.DisposeAsync();
-    }
-
-    private async Task SeedPlayersAsync(string connectionString, Guid aliceId, Guid bobId)
-    {
-        await using var conn = new NpgsqlConnection(connectionString);
-        await conn.OpenAsync();
-
-        var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            CREATE TABLE IF NOT EXISTS ""players"" (
-                ""Id"" uuid PRIMARY KEY,
-                ""Credits"" numeric(18,2) NOT NULL,
-                ""CreatedAt"" timestamptz NOT NULL,
-                ""UpdatedAt"" timestamptz NOT NULL
-            );
-
-            INSERT INTO ""players"" (""Id"", ""Credits"", ""CreatedAt"", ""UpdatedAt"") VALUES (@aId, 1000, now(), now()) ON CONFLICT (""Id"") DO NOTHING;
-            INSERT INTO ""players"" (""Id"", ""Credits"", ""CreatedAt"", ""UpdatedAt"") VALUES (@bId, 1200, now(), now()) ON CONFLICT (""Id"") DO NOTHING;
-        ";
-        cmd.Parameters.AddWithValue("aId", aliceId);
-        cmd.Parameters.AddWithValue("bId", bobId);
-        await cmd.ExecuteNonQueryAsync();
+        _fixture = fixture;
     }
 
     [Fact]
@@ -54,12 +26,10 @@ public class GameServiceIntegrationTests : IAsyncLifetime
         var bobId = Guid.NewGuid();
 
         // If the container didn't start, prefer to fail fast since this test seeds Postgres directly
-        if (!_containers.Started)
+        if (!_fixture.Started)
         {
             throw new InvalidOperationException("Postgres testcontainer did not start; cannot run Postgres-seeding integration test.");
         }
-
-        await SeedPlayersAsync(_containers.Postgres.ConnectionString, aliceId, bobId);
 
         var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -67,12 +37,12 @@ public class GameServiceIntegrationTests : IAsyncLifetime
             builder.ConfigureAppConfiguration((_, conf) =>
             {
                 var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection(new[]
-                    {
-                        new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", _containers.Postgres.ConnectionString),
+                    .AddInMemoryCollection([
+                        new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", _fixture.ConnectionString),
                         new KeyValuePair<string, string?>("APPLY_MIGRATIONS", "true"),
-                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false")
-                    })
+                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false"),
+                        new KeyValuePair<string, string?>("DatabaseProvider", _fixture.Started ? "Npgsql" : "Sqlite")
+                    ])
                     .Build();
 
                 conf.AddConfiguration(cfg);

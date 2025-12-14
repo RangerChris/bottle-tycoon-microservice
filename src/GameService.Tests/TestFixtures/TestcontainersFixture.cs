@@ -35,7 +35,7 @@ public class TestcontainersFixture : IAsyncLifetime
                 Password = "password"
             })
             .WithImage("postgres:16-alpine")
-            .WithPortBinding(5433, 5432)
+            .WithPortBinding(5432, 5432)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(5432))
             .WithAutoRemove(true)
             .WithCleanUp(true)
@@ -48,7 +48,7 @@ public class TestcontainersFixture : IAsyncLifetime
 
     public bool Started { get; private set; }
 
-    private string ConnectionString { get; set; } = "";
+    public string ConnectionString { get; private set; } = "";
 
     private async Task<bool> TryStartPostgresAsync(int maxAttempts = 3)
     {
@@ -73,7 +73,7 @@ public class TestcontainersFixture : IAsyncLifetime
 
             await StartContainerInternalAsync(cts.Token);
 
-            var cs = GetConnectionStringSafe();
+            var cs = Postgres.ConnectionString;
 
             if (await ProbeDatabaseAsync(cs, cts.Token))
             {
@@ -103,22 +103,9 @@ public class TestcontainersFixture : IAsyncLifetime
         }
     }
 
-    private string GetConnectionStringSafe()
-    {
-        try
-        {
-            return Postgres.ConnectionString;
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "Failed to retrieve connection string from container. Using fallback");
-            return "Host=localhost;Port=5433;Database=gamestate;Username=postgres;Password=password";
-        }
-    }
-
     private async Task<bool> ProbeDatabaseAsync(string connectionString, CancellationToken ct)
     {
-        for (var i = 0; i < 10; i++)
+        for (var i = 0; i < 3; i++)
         {
             try
             {
@@ -129,7 +116,7 @@ public class TestcontainersFixture : IAsyncLifetime
             }
             catch (Exception ex)
             {
-                Log.Debug(ex, "Probe attempt {Attempt} failed", i + 1);
+                Log.Debug(ex, "Probe attempt {Attempt} failed for {ConnectionString}", i + 1, connectionString);
                 await Task.Delay(1000, ct);
             }
         }
@@ -153,21 +140,24 @@ public class TestcontainersFixture : IAsyncLifetime
     {
         var started = await TryStartPostgresAsync();
 
+        if (!started)
+        {
+            throw new InvalidOperationException("Testcontainer failed to start. Ensure Docker is running and testcontainers can create PostgreSQL containers.");
+        }
+
+        ConnectionString = Postgres.ConnectionString;
+
         // set public flag so callers/tests can safely decide whether the container is available
         Started = started;
 
-        if (!started)
-        {
-            Log.Error("Testcontainer failed to start");
-        }
         // Build minimal WebApplication for tests (fallback to in-memory sqlite when containers not available)
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Testing" });
 
         var inMemory = new Dictionary<string, string?>
         {
             ["ENABLE_MESSAGING"] = "false",
-            ["DatabaseProvider"] = started ? "Npgsql" : "Sqlite",
-            ["ConnectionStrings:GameStateConnection"] = started ? ConnectionString : "Data Source=game_state_tests.db"
+            ["DatabaseProvider"] = "Npgsql",
+            ["ConnectionStrings:GameStateConnection"] = ConnectionString
         };
 
         builder.Configuration.AddInMemoryCollection(inMemory);
@@ -179,14 +169,7 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddAuthorization();
         builder.Services.AddHealthChecks();
 
-        if (started)
-        {
-            builder.Services.AddDbContext<GameDbContext>(options => options.UseNpgsql(ConnectionString));
-        }
-        else
-        {
-            builder.Services.AddDbContext<GameDbContext>(options => options.UseSqlite("Data Source=game_state_tests.db"));
-        }
+        builder.Services.AddDbContext<GameDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("GameStateConnection")));
 
         // Business services
         builder.Services.AddScoped<IPlayerService, PlayerService>();
