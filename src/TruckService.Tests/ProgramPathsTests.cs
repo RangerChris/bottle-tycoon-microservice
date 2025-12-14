@@ -16,8 +16,7 @@ public class ProgramPathsTests
     {
         var inMem = new Dictionary<string, string?>
         {
-            ["ENABLE_MESSAGING"] = "false",
-            ["ConnectionStrings:Redis"] = "localhost:6379"
+            ["ENABLE_MESSAGING"] = "false"
         };
         if (env != "Testing")
         {

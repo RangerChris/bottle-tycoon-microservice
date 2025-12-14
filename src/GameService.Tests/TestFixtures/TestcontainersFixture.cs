@@ -38,16 +38,9 @@ public class TestcontainersFixture : IAsyncLifetime
             })
             .WithImage("postgres:16-alpine")
             .Build();
-
-        Redis = new TestcontainersBuilder<TestcontainersContainer>()
-            .WithImage("redis:7-alpine")
-            .WithName("test-redis")
-            .WithPortBinding(6379, true)
-            .Build();
     }
 
     public PostgreSqlTestcontainer Postgres { get; }
-    public TestcontainersContainer Redis { get; }
     public bool IsAvailable { get; private set; }
 
     public HttpClient Client { get; private set; } = null!;
@@ -57,7 +50,6 @@ public class TestcontainersFixture : IAsyncLifetime
         try
         {
             await Postgres.StartAsync();
-            await Redis.StartAsync();
             IsAvailable = true;
         }
         catch (SocketException)
@@ -169,13 +161,6 @@ public class TestcontainersFixture : IAsyncLifetime
 
         if (IsAvailable)
         {
-            try
-            {
-                await Redis.StopAsync();
-            }
-            catch
-            {
-            }
 
             try
             {

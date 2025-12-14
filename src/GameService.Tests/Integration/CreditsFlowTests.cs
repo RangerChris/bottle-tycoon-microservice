@@ -28,10 +28,10 @@ public class CreditsFlowTests
                 builder.ConfigureAppConfiguration((context, conf) =>
                 {
                     var cfg = new ConfigurationBuilder()
-                        .AddInMemoryCollection([
-                            new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", containers.Postgres.ConnectionString),
-                            new KeyValuePair<string, string?>("ConnectionStrings:Redis", $"localhost:{containers.Redis.GetMappedPublicPort(6379)}")
-                        ])
+                        .AddInMemoryCollection(new[]
+                        {
+                            new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", containers.Postgres.ConnectionString)
+                        })
                         .Build();
                     conf.AddConfiguration(cfg);
                 });
