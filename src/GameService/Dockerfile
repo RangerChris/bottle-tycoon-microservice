@@ -1,4 +1,4 @@
-﻿﻿# Use the official .NET 10 SDK image to build the application
+﻿# Use the official .NET 10 SDK image to build the application
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
