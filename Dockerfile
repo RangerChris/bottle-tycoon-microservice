@@ -1,5 +1,5 @@
-﻿# Use the official .NET 9 SDK image to build the application
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+﻿﻿# Use the official .NET 10 SDK image to build the application
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy the solution file and restore dependencies
@@ -19,12 +19,11 @@ FROM build AS publish
 RUN dotnet publish "GameService.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Use the official ASP.NET Core runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Set environment variables for standalone container startup
-ENV ENABLE_MESSAGING=false
 ENV ASPNETCORE_ENVIRONMENT=Testing
 
 # Expose the port the app runs on

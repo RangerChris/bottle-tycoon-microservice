@@ -1,7 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
+using Testcontainers.PostgreSql;
 using FastEndpoints;
 using GameService.Data;
 using GameService.Services;
@@ -16,33 +15,32 @@ using Xunit;
 using Npgsql;
 using Serilog;
 
+[assembly: Xunit.CollectionBehavior(MaxParallelThreads = 0)]
+
 namespace GameService.Tests.TestFixtures;
 
 public class TestcontainersFixture : IAsyncLifetime
 {
     private IHost? _host;
+    private readonly string _databaseName;
 
     public TestcontainersFixture()
     {
-        TestcontainersSettings.ResourceReaperEnabled = false;
-
+        _databaseName = $"gamestate_{Guid.NewGuid().ToString("N")}";
         // Configure a wait strategy so StartAsync doesn't return until the container port is available
-        Postgres = new TestcontainersBuilder<PostgreSqlTestcontainer>()
-            .WithDatabase(new PostgreSqlTestcontainerConfiguration
-            {
-                Database = "gamestate",
-                Username = "postgres",
-                Password = "password"
-            })
+        Postgres = new PostgreSqlBuilder()
+            .WithDatabase(_databaseName)
+            .WithUsername("postgres")
+            .WithPassword("password")
             .WithImage("postgres:16-alpine")
-            .WithPortBinding(5432, 5432)
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(5432))
+            .WithPortBinding(5432, true)
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(5432))
             .WithAutoRemove(true)
             .WithCleanUp(true)
             .Build();
     }
 
-    public PostgreSqlTestcontainer Postgres { get; }
+    public PostgreSqlContainer Postgres { get; }
 
     public HttpClient Client { get; private set; } = null!;
 
@@ -73,7 +71,7 @@ public class TestcontainersFixture : IAsyncLifetime
 
             await StartContainerInternalAsync(cts.Token);
 
-            var cs = Postgres.ConnectionString;
+            var cs = Postgres.GetConnectionString();
 
             if (await ProbeDatabaseAsync(cs, cts.Token))
             {
@@ -145,7 +143,7 @@ public class TestcontainersFixture : IAsyncLifetime
             throw new InvalidOperationException("Testcontainer failed to start. Ensure Docker is running and testcontainers can create PostgreSQL containers.");
         }
 
-        ConnectionString = Postgres.ConnectionString;
+        ConnectionString = Postgres.GetConnectionString();
 
         // set public flag so callers/tests can safely decide whether the container is available
         Started = started;

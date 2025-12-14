@@ -1,7 +1,7 @@
 ﻿<Project>
     <PropertyGroup>
         <!-- Repository-wide required TargetFramework -->
-        <EnforceTargetFramework>net9.0</EnforceTargetFramework>
+        <EnforceTargetFramework>net10.0</EnforceTargetFramework>
     </PropertyGroup>
 
     <!--

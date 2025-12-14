@@ -54,16 +54,14 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 ## Technology Stack
 
 ### Backend Services
-- **Runtime**: ASP.NET Core 9, C# 13
+- **Runtime**: ASP.NET Core 10, C# 14
 - **ORM**: Entity Framework Core
 - **APIs**: FastEndpoints, OpenAPI/Swagger, Serilog
-- **Message Bus**: MassTransit (RabbitMQ)
+- **Message Bus**: MassTransit
 - **Testing**: xUnit (xunit.v3), Moq, Shouldly (v4.3.0)
 
 ### Data & Caching
 - **Primary DB**: PostgreSQL
-- **Cache**: Redis
-- **Message Broker**: RabbitMQ
 
 ### Frontend
 - **Framework**: React 19
@@ -119,7 +117,7 @@ Pre-configured dashboards for:
 - Overall system health
 - Per-service performance
 - Business metrics (credits, deliveries, earnings)
-- Infrastructure health (database, message broker)
+- Infrastructure health (database)
 
 Access Grafana: http://localhost:3001 (admin/admin)
 

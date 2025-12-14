@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Json;
 using GameService.Tests.TestFixtures;
 using Shouldly;
 using Xunit;
@@ -22,7 +21,7 @@ public class HealthEndpointTests : IClassFixture<TestcontainersFixture>
         var res = await client.GetAsync("/health", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        var content = await res.Content.ReadFromJsonAsync<dynamic>(TestContext.Current.CancellationToken);
-        ((string)content!.status).ShouldBe("Healthy");
+        var content = await res.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        content.ShouldContain("\"status\":\"Healthy\"");
     }
 }

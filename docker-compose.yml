@@ -171,7 +171,6 @@
       ConnectionStrings__RecyclerConnection: Host=recyclerpostgres;Database=RecyclerServiceOwner;Username=postgres;Password=password
       OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: RecyclerService
-      ENABLE_MESSAGING: "true"
     ports:
       - "5002:80"
     healthcheck:
@@ -250,7 +249,6 @@
       ConnectionStrings__RecyclingPlantConnection: Host=recyclingplantpostgres;Database=RecyclingPlantServiceOwner;Username=postgres;Password=password
       OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
       OTEL_SERVICE_NAME: RecyclingPlantService
-      ENABLE_MESSAGING: "true"
     ports:
       - "5005:80"
     healthcheck:

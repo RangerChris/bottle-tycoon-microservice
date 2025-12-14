@@ -39,8 +39,7 @@ public class HealthEndpointTests : IAsyncLifetime
             {
                 var cfg = new ConfigurationBuilder()
                     .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclerConnection", _containers.Postgres.ConnectionString),
-                        new KeyValuePair<string, string?>("RabbitMQ:Host", $"localhost:{_containers.RabbitMq.GetMappedPublicPort(5672)}"),
+                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclerConnection", _containers.Postgres.GetConnectionString()),
                         new KeyValuePair<string, string?>("RabbitMQ:Username", "guest"),
                         new KeyValuePair<string, string?>("RabbitMQ:Password", "guest"),
                         new KeyValuePair<string, string?>("ENABLE_MESSAGING", "true")
@@ -76,8 +75,7 @@ public class HealthEndpointTests : IAsyncLifetime
             {
                 var cfg = new ConfigurationBuilder()
                     .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclerConnection", _containers.Postgres.ConnectionString),
-                        new KeyValuePair<string, string?>("RabbitMQ:Host", $"localhost:{_containers.RabbitMq.GetMappedPublicPort(5672)}"),
+                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclerConnection", _containers.Postgres.GetConnectionString()),
                         new KeyValuePair<string, string?>("RabbitMQ:Username", "guest"),
                         new KeyValuePair<string, string?>("RabbitMQ:Password", "guest"),
                         new KeyValuePair<string, string?>("ENABLE_MESSAGING", "true")
