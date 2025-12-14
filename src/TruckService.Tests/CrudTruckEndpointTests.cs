@@ -110,12 +110,12 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         using (var scope = _fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
-            var delivery = await db.Deliveries.FindAsync(deliveryId);
+            var delivery = await db.Deliveries.FindAsync([deliveryId], Xunit.TestContext.Current.CancellationToken);
             delivery.ShouldNotBeNull();
             delivery.State.ShouldBe("Completed");
             delivery.CompletedAt.ShouldNotBeNull();
 
-            var truck = await db.Trucks.FindAsync(truckId);
+            var truck = await db.Trucks.FindAsync([truckId], Xunit.TestContext.Current.CancellationToken);
             truck.ShouldNotBeNull();
             truck.TotalEarnings.ShouldBe(5m);
         }

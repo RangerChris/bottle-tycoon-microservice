@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,7 +72,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
             var ts = tsEl.ValueKind == JsonValueKind.String ? tsEl.GetString() : tsEl.ToString();
             ts.ShouldNotBeNull();
             // ensure it's a valid DateTimeOffset
-            DateTimeOffset.Parse(ts!);
+            DateTimeOffset.Parse(ts);
         }
         else
         {
@@ -83,6 +83,14 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetDeliveries_ReturnsSeededDeliveries_OrderedDescending()
     {
+        // Clear existing data to ensure isolation
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
         // Seed data into isolated DB
         using (var scope = _fixture.Host!.Services.CreateScope())
         {
@@ -135,6 +143,14 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     {
         var playerId = Guid.NewGuid();
 
+        // Clear existing data to ensure isolation
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlayerEarnings.RemoveRange(db.PlayerEarnings);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
         using (var scope = _fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
@@ -164,6 +180,14 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetTopEarners_ReturnsTopNOrdered()
     {
+        // Clear existing data to ensure isolation
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlayerEarnings.RemoveRange(db.PlayerEarnings);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
         using (var scope = _fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
@@ -232,6 +256,14 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     {
         var playerId = Guid.NewGuid();
 
+        // Clear existing data to ensure isolation
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
         // Seed deliveries for the player
         using (var scope = _fixture.Host!.Services.CreateScope())
         {
@@ -259,9 +291,18 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ProcessDeliveryAsync_CreatesDeliveryAndUpdatesEarnings()
     {
-        using var scope = _fixture.Host!.Services.CreateScope();
-        var service = scope.ServiceProvider.GetRequiredService<IRecyclingPlantService>();
-        var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+        // Clear existing data to ensure isolation
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
+            db.PlayerEarnings.RemoveRange(db.PlayerEarnings);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        using var serviceScope = _fixture.Host!.Services.CreateScope();
+        var service = serviceScope.ServiceProvider.GetRequiredService<IRecyclingPlantService>();
+        var recyclingPlantDbContext = serviceScope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
 
         var truckId = Guid.NewGuid();
         var playerId = Guid.NewGuid();
@@ -273,7 +314,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
 
         deliveryId.ShouldNotBe(Guid.Empty);
 
-        var delivery = await db.PlantDeliveries.FindAsync(deliveryId);
+        var delivery = await recyclingPlantDbContext.PlantDeliveries.FindAsync([deliveryId], TestContext.Current.CancellationToken);
         delivery.ShouldNotBeNull();
         delivery.TruckId.ShouldBe(truckId);
         delivery.PlayerId.ShouldBe(playerId);
@@ -284,7 +325,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         delivery.OperatingCost.ShouldBe(operatingCost);
         delivery.NetEarnings.ShouldBe(9m - operatingCost);
 
-        var earnings = await db.PlayerEarnings.FindAsync(playerId);
+        var earnings = await recyclingPlantDbContext.PlayerEarnings.FindAsync([playerId], TestContext.Current.CancellationToken);
         earnings.ShouldNotBeNull();
         earnings.TotalEarnings.ShouldBe(9m - operatingCost);
         earnings.DeliveryCount.ShouldBe(1);
@@ -295,6 +336,14 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     public async Task GetPlayerEarningsBreakdownAsync_ReturnsBreakdown()
     {
         var playerId = Guid.NewGuid();
+
+        // Clear existing data to ensure isolation
+        using (var scope = _fixture.Host!.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
+            db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
 
         // Seed deliveries
         using (var scope = _fixture.Host!.Services.CreateScope())
