@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using FastEndpoints.Swagger;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -19,51 +18,30 @@ builder.Configuration.AddJsonFile($"appsettings.{environmentName}.json", true, t
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
-if (builder.Environment.IsEnvironment("Testing"))
+try
+{
+    Log.Logger = new LoggerConfiguration()
+        .ReadFrom.Configuration(builder.Configuration)
+        .CreateLogger();
+}
+catch
 {
     Log.Logger = new LoggerConfiguration()
         .WriteTo.Console()
         .CreateLogger();
 }
-else
-{
-    try
-    {
-        Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(builder.Configuration)
-            .CreateLogger();
-    }
-    catch
-    {
-        Log.Logger = new LoggerConfiguration()
-            .WriteTo.Console()
-            .CreateLogger();
-    }
-}
 
 builder.Host.UseSerilog();
 
-var isTesting = builder.Environment.IsEnvironment("Testing");
-
-if (isTesting)
+// Choose DB provider by configuration: prefer Postgres when DefaultConnection present, otherwise fall back to SQLite file.
+var pgConn = builder.Configuration.GetConnectionString("DefaultConnection");
+if (!string.IsNullOrEmpty(pgConn))
 {
-    // in-memory sqlite for tests
-    var conn = new SqliteConnection("DataSource=:memory:");
-    conn.Open();
-    builder.Services.AddDbContext<TruckDbContext>(o => o.UseSqlite(conn));
+    builder.Services.AddDbContext<TruckDbContext>(o => o.UseNpgsql(pgConn));
 }
 else
 {
-    // Choose DB provider by configuration: prefer Postgres when DefaultConnection present, otherwise fall back to SQLite file.
-    var pgConn = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (!string.IsNullOrEmpty(pgConn))
-    {
-        builder.Services.AddDbContext<TruckDbContext>(o => o.UseNpgsql(pgConn));
-    }
-    else
-    {
-        builder.Services.AddDbContext<TruckDbContext>(o => o.UseSqlite("Data Source=truckservice.db"));
-    }
+    builder.Services.AddDbContext<TruckDbContext>(o => o.UseSqlite("Data Source=truckservice.db"));
 }
 
 builder.Services.AddScoped<ITruckRepository, EfTruckRepository>();

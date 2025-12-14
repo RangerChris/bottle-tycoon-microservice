@@ -52,17 +52,14 @@ public class TestcontainersFixture : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        var started = await TryStartPostgresAsync();
-
-        if (!started)
-        {
-            throw new InvalidOperationException("Testcontainer failed to start. Ensure Docker is running and testcontainers can create PostgreSQL containers.");
-        }
+        await Postgres.StartAsync();
 
         ConnectionString = Postgres.GetConnectionString();
+        // Ensure the host is resolvable
+        ConnectionString = ConnectionString.Replace("Host=localhost", "Host=127.0.0.1");
 
         // set public flag so callers/tests can safely decide whether the container is available
-        Started = started;
+        Started = true;
 
         // Build minimal WebApplication for tests (fallback to in-memory sqlite when containers not available)
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Testing" });
@@ -156,92 +153,6 @@ public class TestcontainersFixture : IAsyncLifetime
         catch (Exception ex)
         {
             Log.Error(ex, "Error disposing Postgres container");
-        }
-    }
-
-    private async Task<bool> TryStartPostgresAsync(int maxAttempts = 3)
-    {
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
-        {
-            if (await AttemptStartAsync(attempt))
-            {
-                return true;
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(2 * attempt));
-        }
-
-        return false;
-    }
-
-    private async Task<bool> AttemptStartAsync(int attempt)
-    {
-        try
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
-
-            await StartContainerInternalAsync(cts.Token);
-
-            var cs = Postgres.GetConnectionString();
-
-            if (await ProbeDatabaseAsync(cs, cts.Token))
-            {
-                ConnectionString = cs;
-                return true;
-            }
-
-            await StopContainerSafeAsync(cts.Token);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Attempt {Attempt} to start Postgres container failed", attempt);
-        }
-
-        return false;
-    }
-
-    private async Task StartContainerInternalAsync(CancellationToken ct)
-    {
-        try
-        {
-            await Postgres.StartAsync(ct);
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("cannot hijack chunked or content length stream"))
-        {
-            Log.Warning("Ignored hijacking error: {Message}", ex.Message);
-        }
-    }
-
-    private async Task<bool> ProbeDatabaseAsync(string connectionString, CancellationToken ct)
-    {
-        for (var i = 0; i < 3; i++)
-        {
-            try
-            {
-                await using var conn = new NpgsqlConnection(connectionString);
-                await conn.OpenAsync(ct);
-                await conn.CloseAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Debug(ex, "Probe attempt {Attempt} failed for {ConnectionString}", i + 1, connectionString);
-                await Task.Delay(1000, ct);
-            }
-        }
-
-        return false;
-    }
-
-    private async Task StopContainerSafeAsync(CancellationToken ct)
-    {
-        try
-        {
-            await Postgres.StopAsync(ct);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "An exception occurred while stopping the postgres container during retry");
         }
     }
 }
