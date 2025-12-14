@@ -48,6 +48,8 @@ public class TestcontainersFixture : IAsyncLifetime
 
     public string ConnectionString { get; private set; } = "";
 
+    public IHost Host => _host!;
+
     public async ValueTask InitializeAsync()
     {
         var started = await TryStartPostgresAsync();

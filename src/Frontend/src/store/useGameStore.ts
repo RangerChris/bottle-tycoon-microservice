@@ -384,6 +384,24 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   },
 
   init: () => {
+    // Call initialize endpoint to reset game state
+    const controller = new AbortController()
+    const initializeGame = async () => {
+      try {
+        const env = (import.meta as any).env || {}
+        const envBase = env?.VITE_API_BASE_URL
+        const defaultBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+          ? 'http://localhost:5001'
+          : 'http://apigateway:5000'
+        const base = envBase || defaultBase
+        const url = `${base.replace(/\/$/, '')}/initialize`
+        await fetch(url, { method: 'POST', signal: controller.signal })
+      } catch (e) {
+        // Ignore errors, perhaps log later
+      }
+    }
+    initializeGame()
+
     // schedule initial visitor arrivals for all existing recyclers
     setTimeout(() => {
       const s = get()

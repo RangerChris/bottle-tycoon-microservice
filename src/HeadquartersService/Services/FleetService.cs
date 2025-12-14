@@ -50,4 +50,9 @@ public class FleetService : IFleetService
     {
         return _trucks.FirstOrDefault(t => t.Id == id);
     }
+
+    public void Reset()
+    {
+        _trucks.Clear();
+    }
 }

@@ -61,4 +61,27 @@ public class RecyclerService : IRecyclerService
 
         return recycler;
     }
+
+    public async Task ResetAsync()
+    {
+        _db.Recyclers.RemoveRange(_db.Recyclers);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task<Recycler> CreateRecyclerAsync(Recycler? recycler = null)
+    {
+        var r = recycler ?? new Recycler();
+        if (r.Id == Guid.Empty)
+        {
+            r.Id = Guid.NewGuid();
+        }
+
+        r.CreatedAt = DateTimeOffset.UtcNow;
+        r.Capacity = r.Capacity == 0 ? 100 : r.Capacity;
+        r.Name = string.IsNullOrEmpty(r.Name) ? $"Recycler-{r.Id}" : r.Name;
+
+        _db.Recyclers.Add(r);
+        await _db.SaveChangesAsync();
+        return r;
+    }
 }

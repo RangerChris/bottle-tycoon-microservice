@@ -9,4 +9,5 @@ public interface IPlayerService
     Task<Player> CreatePlayerAsync(Player? player = null);
     Task<bool> DebitCreditsAsync(Guid playerId, decimal amount, string reason);
     Task<bool> CreditCreditsAsync(Guid playerId, decimal amount, string reason);
+    Task ResetAsync();
 }

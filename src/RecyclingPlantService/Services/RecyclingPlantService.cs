@@ -138,4 +138,17 @@ public class RecyclingPlantService : IRecyclingPlantService
 
         return breakdown;
     }
+
+    public async Task ResetAsync()
+    {
+        _dbContext.PlantDeliveries.RemoveRange(_dbContext.PlantDeliveries);
+        _dbContext.PlayerEarnings.RemoveRange(_dbContext.PlayerEarnings);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public Task CreateRecyclingPlantAsync()
+    {
+        // Recycling plant doesn't need specific initialization - it's ready to process deliveries
+        return Task.CompletedTask;
+    }
 }

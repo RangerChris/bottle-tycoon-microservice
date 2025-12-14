@@ -11,4 +11,6 @@ public interface IRecyclingPlantService
     Task<IEnumerable<PlantDelivery>> GetDeliveriesAsync(int page = 1, int pageSize = 50);
     Task<IEnumerable<PlayerEarnings>> GetTopEarnersAsync(int count = 10);
     Task<IEnumerable<PlantDelivery>> GetPlayerDeliveriesAsync(Guid playerId, int page = 1, int pageSize = 50);
+    Task ResetAsync();
+    Task CreateRecyclingPlantAsync();
 }

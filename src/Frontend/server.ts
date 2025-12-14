@@ -22,6 +22,7 @@ app.get('/metrics', async (_req, res) => {
 })
 
 app.use('/health', createProxyMiddleware({ target: apiBase, changeOrigin: true }))
+app.use('/api/traces', createProxyMiddleware({ target: 'http://localhost:14268', changeOrigin: true }))
 app.use(express.static(path.join(__dirname, 'dist')))
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))

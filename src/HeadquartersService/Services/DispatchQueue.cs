@@ -87,4 +87,17 @@ public class DispatchQueue : IDispatchQueue
             _lock.ExitReadLock();
         }
     }
+
+    public void Reset()
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            _inner.Clear();
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
 }

@@ -72,4 +72,10 @@ public class PlayerService : IPlayerService
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task ResetAsync()
+    {
+        _context.Players.RemoveRange(_context.Players);
+        await _context.SaveChangesAsync();
+    }
 }

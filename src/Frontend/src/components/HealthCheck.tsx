@@ -14,7 +14,7 @@ export default function HealthCheck() {
         const env = (import.meta as any).env || {}
         const envBase = env?.VITE_API_BASE_URL
         const defaultBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
-          ? 'http://localhost:5000'
+          ? 'http://localhost:5001'
           : 'http://apigateway:5000'
         const base = envBase || defaultBase
         const url = `${base.replace(/\/$/, '')}/health`
