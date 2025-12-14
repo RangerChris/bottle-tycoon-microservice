@@ -2,6 +2,7 @@
 using DotNet.Testcontainers.Builders;
 using FastEndpoints;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -9,24 +10,23 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
-using RecyclerService.Data;
-using RecyclerService.Services;
 using Serilog;
 using Testcontainers.PostgreSql;
+using TruckService.Data;
+using TruckService.Services;
 using Xunit;
 
 [assembly: CollectionBehavior(MaxParallelThreads = 0)]
 
-namespace RecyclerService.Tests.TestFixtures;
+namespace TruckService.Tests.TestFixtures;
 
 public class TestcontainersFixture : IAsyncLifetime
 {
     private readonly string _databaseName;
-    private IHost? _host;
 
     public TestcontainersFixture()
     {
-        _databaseName = $"recyclerstate_{Guid.NewGuid().ToString("N")}";
+        _databaseName = $"truckstate_{Guid.NewGuid().ToString("N")}";
         // Configure a wait strategy so StartAsync doesn't return until the container port is available
         Postgres = new PostgreSqlBuilder()
             .WithDatabase(_databaseName)
@@ -47,6 +47,8 @@ public class TestcontainersFixture : IAsyncLifetime
     public bool Started { get; private set; }
 
     public string ConnectionString { get; private set; } = "";
+
+    public IHost? Host { get; private set; }
 
     public async ValueTask InitializeAsync()
     {
@@ -69,7 +71,7 @@ public class TestcontainersFixture : IAsyncLifetime
         {
             ["ENABLE_MESSAGING"] = "false",
             ["DatabaseProvider"] = "Npgsql",
-            ["ConnectionStrings:RecyclerConnection"] = ConnectionString
+            ["ConnectionStrings:DefaultConnection"] = ConnectionString
         };
 
         builder.Configuration.AddInMemoryCollection(inMemory);
@@ -81,10 +83,12 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddAuthorization();
         builder.Services.AddHealthChecks();
 
-        builder.Services.AddDbContext<RecyclerDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("RecyclerConnection")));
+        builder.Services.AddDbContext<TruckDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-        // Business services
-        builder.Services.AddScoped<IRecyclerService, Services.RecyclerService>();
+        builder.Services.AddScoped<ITruckRepository, EfTruckRepository>();
+        builder.Services.AddScoped<ILoadProvider, RandomLoadProvider>();
+        builder.Services.AddScoped<ITruckManager, TruckManager>();
+        builder.Services.AddScoped<IRouteWorker, RouteWorker>();
 
         // JSON options (same shape as app)
         builder.Services.Configure<JsonOptions>(options =>
@@ -101,35 +105,30 @@ public class TestcontainersFixture : IAsyncLifetime
         // Configure minimal request pipeline so FastEndpoints routes are registered
         app.UseFastEndpoints();
 
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
-            c.RoutePrefix = string.Empty;
-        });
+        app.MapGet("/", () => Results.Text("TruckService OK"));
 
-        _host = app;
+        Host = app;
 
         // Apply migrations / ensure created
-        using (var scope = _host.Services.CreateScope())
+        using (var scope = Host.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
             // await db.Database.MigrateAsync();
             await db.Database.EnsureCreatedAsync();
         }
 
         // Start the host
-        await _host.StartAsync();
+        await Host.StartAsync();
 
         // Create HttpClient from TestServer
-        Client = _host.GetTestClient();
+        Client = Host.GetTestClient();
     }
 
     public async ValueTask DisposeAsync()
     {
         try
         {
-            if (_host != null)
+            if (Host != null)
             {
                 try
                 {
@@ -140,8 +139,8 @@ public class TestcontainersFixture : IAsyncLifetime
                     Log.Error(ex, "Error disposing HttpClient");
                 }
 
-                await _host.StopAsync();
-                _host.Dispose();
+                await Host.StopAsync();
+                Host.Dispose();
             }
         }
         catch (Exception ex)

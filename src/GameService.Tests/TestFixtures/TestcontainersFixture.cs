@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
-using Testcontainers.PostgreSql;
 using FastEndpoints;
 using GameService.Data;
 using GameService.Services;
@@ -11,18 +10,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Xunit;
 using Npgsql;
 using Serilog;
+using Testcontainers.PostgreSql;
+using Xunit;
 
-[assembly: Xunit.CollectionBehavior(MaxParallelThreads = 0)]
+[assembly: CollectionBehavior(MaxParallelThreads = 0)]
 
 namespace GameService.Tests.TestFixtures;
 
 public class TestcontainersFixture : IAsyncLifetime
 {
-    private IHost? _host;
     private readonly string _databaseName;
+    private IHost? _host;
 
     public TestcontainersFixture()
     {
@@ -47,92 +47,6 @@ public class TestcontainersFixture : IAsyncLifetime
     public bool Started { get; private set; }
 
     public string ConnectionString { get; private set; } = "";
-
-    private async Task<bool> TryStartPostgresAsync(int maxAttempts = 3)
-    {
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
-        {
-            if (await AttemptStartAsync(attempt))
-            {
-                return true;
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(2 * attempt));
-        }
-
-        return false;
-    }
-
-    private async Task<bool> AttemptStartAsync(int attempt)
-    {
-        try
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
-
-            await StartContainerInternalAsync(cts.Token);
-
-            var cs = Postgres.GetConnectionString();
-
-            if (await ProbeDatabaseAsync(cs, cts.Token))
-            {
-                ConnectionString = cs;
-                return true;
-            }
-
-            await StopContainerSafeAsync(cts.Token);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Attempt {Attempt} to start Postgres container failed", attempt);
-        }
-
-        return false;
-    }
-
-    private async Task StartContainerInternalAsync(CancellationToken ct)
-    {
-        try
-        {
-            await Postgres.StartAsync(ct);
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("cannot hijack chunked or content length stream"))
-        {
-            Log.Warning("Ignored hijacking error: {Message}", ex.Message);
-        }
-    }
-
-    private async Task<bool> ProbeDatabaseAsync(string connectionString, CancellationToken ct)
-    {
-        for (var i = 0; i < 3; i++)
-        {
-            try
-            {
-                await using var conn = new NpgsqlConnection(connectionString);
-                await conn.OpenAsync(ct);
-                await conn.CloseAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Debug(ex, "Probe attempt {Attempt} failed for {ConnectionString}", i + 1, connectionString);
-                await Task.Delay(1000, ct);
-            }
-        }
-
-        return false;
-    }
-
-    private async Task StopContainerSafeAsync(CancellationToken ct)
-    {
-        try
-        {
-            await Postgres.StopAsync(ct);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "An exception occurred while stopping the postgres container during retry");
-        }
-    }
 
     public async ValueTask InitializeAsync()
     {
@@ -235,6 +149,92 @@ public class TestcontainersFixture : IAsyncLifetime
         catch (Exception ex)
         {
             Log.Error(ex, "Error disposing Postgres container");
+        }
+    }
+
+    private async Task<bool> TryStartPostgresAsync(int maxAttempts = 3)
+    {
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            if (await AttemptStartAsync(attempt))
+            {
+                return true;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(2 * attempt));
+        }
+
+        return false;
+    }
+
+    private async Task<bool> AttemptStartAsync(int attempt)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+
+            await StartContainerInternalAsync(cts.Token);
+
+            var cs = Postgres.GetConnectionString();
+
+            if (await ProbeDatabaseAsync(cs, cts.Token))
+            {
+                ConnectionString = cs;
+                return true;
+            }
+
+            await StopContainerSafeAsync(cts.Token);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Attempt {Attempt} to start Postgres container failed", attempt);
+        }
+
+        return false;
+    }
+
+    private async Task StartContainerInternalAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Postgres.StartAsync(ct);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("cannot hijack chunked or content length stream"))
+        {
+            Log.Warning("Ignored hijacking error: {Message}", ex.Message);
+        }
+    }
+
+    private async Task<bool> ProbeDatabaseAsync(string connectionString, CancellationToken ct)
+    {
+        for (var i = 0; i < 3; i++)
+        {
+            try
+            {
+                await using var conn = new NpgsqlConnection(connectionString);
+                await conn.OpenAsync(ct);
+                await conn.CloseAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Probe attempt {Attempt} failed for {ConnectionString}", i + 1, connectionString);
+                await Task.Delay(1000, ct);
+            }
+        }
+
+        return false;
+    }
+
+    private async Task StopContainerSafeAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Postgres.StopAsync(ct);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An exception occurred while stopping the postgres container during retry");
         }
     }
 }

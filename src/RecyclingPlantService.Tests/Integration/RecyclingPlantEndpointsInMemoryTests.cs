@@ -1,51 +1,21 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RecyclingPlantService.Data;
+using RecyclingPlantService.Tests.TestFixtures;
 using Shouldly;
 using Xunit;
 
 namespace RecyclingPlantService.Tests.Integration;
 
-public class RecyclingPlantEndpointsInMemoryTests
+public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
 {
-    private WebApplicationFactory<Program> CreateFactory(string? dbName = null)
+    private readonly TestcontainersFixture _fixture;
+
+    public RecyclingPlantEndpointsTests(TestcontainersFixture fixture)
     {
-        var uniqueDb = dbName ?? Guid.NewGuid().ToString();
-
-        return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureAppConfiguration((_, conf) =>
-            {
-                var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection(new[]
-                    {
-                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false")
-                    })
-                    .Build();
-
-                conf.AddConfiguration(cfg);
-            });
-
-            // Ensure each factory uses its own InMemory database instance to avoid cross-test pollution
-            builder.ConfigureServices(services =>
-            {
-                // remove existing DbContext registration if present
-                var existing = services.Where(d => d.ServiceType == typeof(DbContextOptions<RecyclingPlantDbContext>)).ToList();
-                foreach (var d in existing)
-                {
-                    services.Remove(d);
-                }
-
-                services.AddDbContext<RecyclingPlantDbContext>(options => options.UseInMemoryDatabase(uniqueDb));
-            });
-        });
+        _fixture = fixture;
     }
 
     private static bool TryGetPropertyCaseInsensitive(JsonElement el, string name, out JsonElement value)
@@ -78,8 +48,7 @@ public class RecyclingPlantEndpointsInMemoryTests
     [Fact]
     public async Task StatusEndpoint_ReturnsOperational()
     {
-        await using var factory = CreateFactory();
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var res = await client.GetAsync("/api/v1/recycling-plant/status", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -113,10 +82,8 @@ public class RecyclingPlantEndpointsInMemoryTests
     [Fact]
     public async Task GetDeliveries_ReturnsSeededDeliveries_OrderedDescending()
     {
-        await using var factory = CreateFactory();
-
-        // Seed data into isolated in-memory DB
-        using (var scope = factory.Services.CreateScope())
+        // Seed data into isolated DB
+        using (var scope = _fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.AddRange(new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-1) },
@@ -125,7 +92,7 @@ public class RecyclingPlantEndpointsInMemoryTests
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
         var res = await client.GetAsync("/api/v1/recycling-plant/deliveries?page=1&pageSize=10", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -165,18 +132,16 @@ public class RecyclingPlantEndpointsInMemoryTests
     [Fact]
     public async Task GetPlayerEarnings_ForExistingAndMissingPlayer_ReturnsExpected()
     {
-        await using var factory = CreateFactory();
-
         var playerId = Guid.NewGuid();
 
-        using (var scope = factory.Services.CreateScope())
+        using (var scope = _fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlayerEarnings.Add(new PlayerEarnings { PlayerId = playerId, TotalEarnings = 123.45m, DeliveryCount = 3, AverageEarnings = 41.15m });
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
         var res = await client.GetAsync($"/api/v1/recycling-plant/players/{playerId}/earnings", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await res.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
@@ -198,9 +163,7 @@ public class RecyclingPlantEndpointsInMemoryTests
     [Fact]
     public async Task GetTopEarners_ReturnsTopNOrdered()
     {
-        await using var factory = CreateFactory();
-
-        using (var scope = factory.Services.CreateScope())
+        using (var scope = _fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             var a = Guid.NewGuid();
@@ -210,7 +173,7 @@ public class RecyclingPlantEndpointsInMemoryTests
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
         var res = await client.GetAsync("/api/v1/recycling-plant/reports/top-earners?Count=2", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 

@@ -28,6 +28,7 @@ public class CreditsFlowTests : IClassFixture<TestcontainersFixture>
             var content = await createRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Log.Error("CreatePlayer failed: {CreateResStatusCode}, Content: {Content}", createRes.StatusCode, content);
         }
+
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = await createRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
         created.ShouldNotBeNull();

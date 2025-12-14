@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 using FastEndpoints;
 using GameService.Data;
 using GameService.Services;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;

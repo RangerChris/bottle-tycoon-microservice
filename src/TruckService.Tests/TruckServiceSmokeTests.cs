@@ -1,19 +1,23 @@
 ﻿using System.Net;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Shouldly;
+using TruckService.Tests.TestFixtures;
 using Xunit;
 
 namespace TruckService.Tests;
 
-public class TruckServiceSmokeTests
+public class TruckServiceSmokeTests : IClassFixture<TestcontainersFixture>
 {
+    private readonly TestcontainersFixture _fixture;
+
+    public TruckServiceSmokeTests(TestcontainersFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
     [Fact]
     public async Task GetRoot_ReturnsOk()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => { builder.UseEnvironment("Testing"); });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
         var res = await client.GetAsync("/", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
         var content = await res.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);

@@ -30,8 +30,4 @@
         <ProjectReference Include="..\RecyclingPlantService\RecyclingPlantService.csproj"/>
     </ItemGroup>
 
-    <ItemGroup>
-        <Folder Include="TestFixtures\"/>
-    </ItemGroup>
-
 </Project>

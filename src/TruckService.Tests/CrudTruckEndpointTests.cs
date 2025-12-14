@@ -1,23 +1,27 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Shouldly;
 using TruckService.Endpoints.CreateTruck;
 using TruckService.Models;
+using TruckService.Tests.TestFixtures;
 using Xunit;
 
 namespace TruckService.Tests;
 
-public class CrudTruckEndpointTests
+public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
 {
+    private readonly TestcontainersFixture _fixture;
+
+    public CrudTruckEndpointTests(TestcontainersFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
     [Fact]
     public async Task CreateListUpdateDeleteFlow_Works()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => { builder.UseEnvironment("Testing"); });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         // Create
         var createReq = new CreateTruckRequest { LicensePlate = "NEW-123", Model = "Model-X", IsActive = true };

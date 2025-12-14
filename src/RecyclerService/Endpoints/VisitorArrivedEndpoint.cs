@@ -1,4 +1,5 @@
-﻿using FastEndpoints;
+﻿using System.ComponentModel.DataAnnotations;
+using FastEndpoints;
 using FluentValidation;
 using RecyclerService.Models;
 using RecyclerService.Services;
@@ -41,8 +42,8 @@ public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, V
 
     public record Request
     {
-        [System.ComponentModel.DataAnnotations.Required]
-        public int Bottles { get; set; }
+        [Required] public int Bottles { get; set; }
+
         public string? VisitorType { get; set; }
     }
 
