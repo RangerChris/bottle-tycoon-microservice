@@ -1,4 +1,4 @@
-﻿using GameService.Data;
+﻿﻿using GameService.Data;
 using GameService.Services;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
@@ -87,5 +87,23 @@ public class PlayerServiceTests
         all.Count.ShouldBe(2);
         all.ShouldContain(p => p.Id == p1.Id);
         all.ShouldContain(p => p.Id == p2.Id);
+    }
+
+    [Fact]
+    public async Task ResetAsync_DeletesAllPlayers()
+    {
+        await using var db = CreateInMemoryDb();
+        var svc = new PlayerService(db);
+
+        await svc.CreatePlayerAsync();
+        await svc.CreatePlayerAsync();
+
+        var allBefore = await svc.GetAllPlayersAsync();
+        allBefore.Count.ShouldBe(2);
+
+        await svc.ResetAsync();
+
+        var allAfter = await svc.GetAllPlayersAsync();
+        allAfter.Count.ShouldBe(0);
     }
 }

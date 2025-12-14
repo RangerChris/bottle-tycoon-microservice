@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿﻿using System.Net;
+using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
 using FastEndpoints;
 using GameService.Data;
@@ -48,6 +49,25 @@ public class TestcontainersFixture : IAsyncLifetime
 
     public string ConnectionString { get; private set; } = "";
 
+    public List<HttpRequestMessage> HttpRequests { get; } = new();
+
+    private class CapturingHandler : DelegatingHandler
+    {
+        private readonly List<HttpRequestMessage> _requests;
+
+        public CapturingHandler(List<HttpRequestMessage> requests)
+        {
+            _requests = requests;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            _requests.Add(request);
+            // Return a successful response since the service isn't running
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
+        }
+    }
+
     public async ValueTask InitializeAsync()
     {
         var started = await TryStartPostgresAsync();
@@ -85,6 +105,18 @@ public class TestcontainersFixture : IAsyncLifetime
 
         // Business services
         builder.Services.AddScoped<IPlayerService, PlayerService>();
+
+        // Add HttpClient for inter-service communication (mocked for tests)
+        builder.Services.AddHttpClient("GameService", client =>
+        {
+            client.BaseAddress = new Uri("http://localhost:5001"); // Test port, but since it's the same host, it will work
+        })
+        .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
+        builder.Services.AddHttpClient("RecyclerService", client =>
+        {
+            client.BaseAddress = new Uri("http://localhost:5002"); // Test port, but since no service, it will fail
+        })
+        .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
 
         // JSON options (same shape as app)
         builder.Services.Configure<JsonOptions>(options =>

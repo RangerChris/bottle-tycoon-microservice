@@ -40,6 +40,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddDbContext<GameDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("GameStateConnection")));
 
@@ -67,6 +77,16 @@ healthChecks.AddNpgSql(dbCs!);
 
 // Business Services
 builder.Services.AddScoped<IPlayerService, PlayerService>();
+
+// Add HttpClient for inter-service communication
+builder.Services.AddHttpClient("GameService", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5001"); // Local GameService port
+});
+builder.Services.AddHttpClient("RecyclerService", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Services:RecyclerService"] ?? "http://recyclerservice:80");
+});
 
 // Add JSON options to avoid serialization cycles
 builder.Services.Configure<JsonOptions>(options =>
@@ -114,6 +134,8 @@ try
     });
 
     app.UseHttpsRedirection();
+
+    app.UseCors("AllowAll");
 
     // OpenTelemetry Prometheus
     app.UseOpenTelemetryPrometheusScrapingEndpoint();

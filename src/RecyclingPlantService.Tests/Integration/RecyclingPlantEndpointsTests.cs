@@ -63,7 +63,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         }
         else
         {
-            Assert.True(false, "Missing 'status' property in response (any casing)");
+            Assert.Fail("Missing 'status' property in response (any casing)");
         }
 
         if (TryGetPropertyCaseInsensitive(body, "timestamp", out var tsEl))
@@ -75,7 +75,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         }
         else
         {
-            Assert.True(false, "Missing 'timestamp' property in response (any casing)");
+            Assert.Fail("Missing 'timestamp' property in response (any casing)");
         }
     }
 

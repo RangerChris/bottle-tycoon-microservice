@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+﻿﻿using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
 using FastEndpoints;
 using Microsoft.AspNetCore.Builder;
@@ -47,6 +47,8 @@ public class TestcontainersFixture : IAsyncLifetime
     public bool Started { get; private set; }
 
     public string ConnectionString { get; private set; } = "";
+
+    public IHost Host => _host!;
 
     public async ValueTask InitializeAsync()
     {
