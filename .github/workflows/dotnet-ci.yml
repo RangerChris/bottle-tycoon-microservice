@@ -64,3 +64,13 @@ jobs:
       - name: Generate coverage reports
         run: |
           reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Html;Cobertura"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          file: ./coverage-report/Cobertura.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
