@@ -1,4 +1,5 @@
 ﻿using FastEndpoints;
+using FluentValidation;
 using RecyclerService.Models;
 using RecyclerService.Services;
 
@@ -40,6 +41,7 @@ public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, V
 
     public record Request
     {
+        [System.ComponentModel.DataAnnotations.Required]
         public int Bottles { get; set; }
         public string? VisitorType { get; set; }
     }
@@ -49,5 +51,13 @@ public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, V
         public Guid RecyclerId { get; set; }
         public int CurrentLoad { get; set; }
         public int Capacity { get; set; }
+    }
+
+    public class RequestValidator : Validator<Request>
+    {
+        public RequestValidator()
+        {
+            RuleFor(x => x.Bottles).GreaterThan(0);
+        }
     }
 }

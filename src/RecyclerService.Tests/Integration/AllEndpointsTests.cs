@@ -1,37 +1,24 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
+using RecyclerService.Tests.TestFixtures;
 using Shouldly;
 using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class AllEndpointsTests
+public class AllEndpointsTests : IClassFixture<TestcontainersFixture>
 {
-    private WebApplicationFactory<Program> CreateFactory()
+    private readonly TestcontainersFixture _fixture;
+
+    public AllEndpointsTests(TestcontainersFixture fixture)
     {
-        return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-            builder.ConfigureAppConfiguration((_, conf) =>
-            {
-                var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false")
-                    ])
-                    .Build();
-                conf.AddConfiguration(cfg);
-            });
-        });
+        _fixture = fixture;
     }
 
     [Fact]
     public async Task CreateRecycler_ShouldReturnCreatedWithBody()
     {
-        await using var factory = CreateFactory();
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var createRequest = new CreateRequest(Guid.NewGuid(), "Endpoint Test Recycler", 150, "Zone A");
         var response = await client.PostAsJsonAsync("/recyclers", createRequest, TestContext.Current.CancellationToken);
@@ -50,8 +37,7 @@ public class AllEndpointsTests
     [Fact]
     public async Task GetRecycler_ShouldReturnPersistedEntity()
     {
-        await using var factory = CreateFactory();
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var createRequest = new CreateRequest(Guid.NewGuid(), "Fetcher", 80, "Zone B");
         var createRes = await client.PostAsJsonAsync("/recyclers", createRequest, TestContext.Current.CancellationToken);
@@ -69,8 +55,7 @@ public class AllEndpointsTests
     [Fact]
     public async Task GetRecycler_NotFound_ShouldReturn404()
     {
-        await using var factory = CreateFactory();
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var res = await client.GetAsync($"/recyclers/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -81,8 +66,7 @@ public class AllEndpointsTests
     [Fact]
     public async Task VisitorArrived_ShouldIncreaseCurrentLoad()
     {
-        await using var factory = CreateFactory();
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var recyclerId = Guid.NewGuid();
         var createRequest = new CreateRequest(recyclerId, "Visitor Target", 60, "Zone C");
@@ -102,8 +86,7 @@ public class AllEndpointsTests
     [Fact]
     public async Task VisitorArrived_InvalidRecycler_ShouldReturn404()
     {
-        await using var factory = CreateFactory();
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var visitorReq = new VisitorRequest { Bottles = 10, VisitorType = "WalkIn" };
         var res = await client.PostAsJsonAsync($"/recyclers/{Guid.NewGuid()}/visitors", visitorReq, TestContext.Current.CancellationToken);
@@ -115,11 +98,10 @@ public class AllEndpointsTests
     [Fact]
     public async Task HealthEndpoint_ShouldReturnHealthy()
     {
-        await using var factory = CreateFactory();
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var res = await client.GetAsync("/health", TestContext.Current.CancellationToken);
-        res.StatusCode.ShouldBeOneOf(HttpStatusCode.OK, HttpStatusCode.ServiceUnavailable);
+        res.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await res.Content.ReadFromJsonAsync<HealthResponse>(TestContext.Current.CancellationToken);
         body.ShouldNotBeNull();
         body.Status.ShouldNotBeNullOrWhiteSpace();

@@ -1,54 +1,24 @@
-﻿﻿using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using RecyclerService.Tests.TestFixtures;
 using Shouldly;
 using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class CreateGetRecyclerEndpointTests : IAsyncLifetime
+public class CreateGetRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _containers = new();
+    private readonly TestcontainersFixture _fixture;
 
-    public ValueTask InitializeAsync()
+    public CreateGetRecyclerEndpointTests(TestcontainersFixture fixture)
     {
-        return _containers.InitializeAsync();
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        return _containers.DisposeAsync();
+        _fixture = fixture;
     }
 
     [Fact]
     public async Task CreateRecycler_ShouldCreateAndReturnRecycler()
     {
-        if (!_containers.IsAvailable)
-        {
-            return;
-        }
-
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Development");
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclerConnection", _containers.Postgres.GetConnectionString()),
-                        new KeyValuePair<string, string?>("RabbitMQ:Username", "guest"),
-                        new KeyValuePair<string, string?>("RabbitMQ:Password", "guest"),
-                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "true")
-                    ])
-                    .Build();
-                conf.AddConfiguration(cfg);
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var createRequest = new CreateRequest(Guid.NewGuid(), "Test Recycler", 100, "Test Location");
         var createRes = await client.PostAsJsonAsync("/recyclers", createRequest, TestContext.Current.CancellationToken);
@@ -76,29 +46,7 @@ public class CreateGetRecyclerEndpointTests : IAsyncLifetime
     [Fact]
     public async Task VisitorArrived_ShouldIncreaseLoadAndReturnUpdatedRecycler()
     {
-        if (!_containers.IsAvailable)
-        {
-            return;
-        }
-
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Development");
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclerConnection", _containers.Postgres.GetConnectionString()),
-                        new KeyValuePair<string, string?>("RabbitMQ:Username", "guest"),
-                        new KeyValuePair<string, string?>("RabbitMQ:Password", "guest"),
-                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "true")
-                    ])
-                    .Build();
-                conf.AddConfiguration(cfg);
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         // Create a recycler first
         var createRequest = new CreateRequest(Guid.NewGuid(), "Test Recycler", 100, "Test Location");
@@ -132,29 +80,7 @@ public class CreateGetRecyclerEndpointTests : IAsyncLifetime
     [Fact]
     public async Task VisitorArrived_WithNonExistentRecycler_ShouldReturn404()
     {
-        if (!_containers.IsAvailable)
-        {
-            return;
-        }
-
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Development");
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclerConnection", _containers.Postgres.GetConnectionString()),
-                        new KeyValuePair<string, string?>("RabbitMQ:Username", "guest"),
-                        new KeyValuePair<string, string?>("RabbitMQ:Password", "guest"),
-                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "true")
-                    ])
-                    .Build();
-                conf.AddConfiguration(cfg);
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         // Try to add visitor to non-existent recycler
         var visitorRequest = new VisitorRequest { Bottles = 10, VisitorType = "Regular" };
@@ -165,29 +91,7 @@ public class CreateGetRecyclerEndpointTests : IAsyncLifetime
     [Fact]
     public async Task MultipleVisitors_ShouldAccumulateLoadCorrectly()
     {
-        if (!_containers.IsAvailable)
-        {
-            return;
-        }
-
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Development");
-            builder.ConfigureAppConfiguration((context, conf) =>
-            {
-                var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclerConnection", _containers.Postgres.GetConnectionString()),
-                        new KeyValuePair<string, string?>("RabbitMQ:Username", "guest"),
-                        new KeyValuePair<string, string?>("RabbitMQ:Password", "guest"),
-                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "true")
-                    ])
-                    .Build();
-                conf.AddConfiguration(cfg);
-            });
-        });
-
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         // Create a recycler first
         var createRequest = new CreateRequest(Guid.NewGuid(), "Test Recycler", 100, "Test Location");

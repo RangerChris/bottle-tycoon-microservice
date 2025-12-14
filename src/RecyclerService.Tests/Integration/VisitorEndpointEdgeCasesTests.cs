@@ -1,38 +1,24 @@
-﻿﻿using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using RecyclerService.Tests.TestFixtures;
 using Shouldly;
 using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class VisitorEndpointEdgeCasesTests : IAsyncLifetime
+public class VisitorEndpointEdgeCasesTests : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _containers = new();
+    private readonly TestcontainersFixture _fixture;
 
-    public ValueTask InitializeAsync()
+    public VisitorEndpointEdgeCasesTests(TestcontainersFixture fixture)
     {
-        return _containers.InitializeAsync();
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        return _containers.DisposeAsync();
+        _fixture = fixture;
     }
 
     [Fact]
     public async Task VisitorArrived_WhenRecyclerBecomesFull_ResponseReflectsCapacity()
     {
-        if (!_containers.IsAvailable)
-        {
-            return;
-        }
-
-        using var factory = CreateFactory();
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var recyclerId = Guid.NewGuid();
         var createRequest = new CreateRequest(recyclerId, "High Capacity", 50, null);
@@ -60,13 +46,7 @@ public class VisitorEndpointEdgeCasesTests : IAsyncLifetime
     [Fact]
     public async Task VisitorArrived_InvalidPayload_ReturnsBadRequest()
     {
-        if (!_containers.IsAvailable)
-        {
-            return;
-        }
-
-        using var factory = CreateFactory();
-        var client = factory.CreateClient();
+        var client = _fixture.Client;
 
         var recyclerId = Guid.NewGuid();
         // Create recycler so endpoint exists
@@ -82,25 +62,6 @@ public class VisitorEndpointEdgeCasesTests : IAsyncLifetime
         text.ShouldContain("Bottles");
     }
 
-    private WebApplicationFactory<Program> CreateFactory()
-    {
-        return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Development");
-            builder.ConfigureAppConfiguration((_, conf) =>
-            {
-                var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:RecyclerConnection", _containers.Postgres.GetConnectionString()),
-                        new KeyValuePair<string, string?>("RabbitMQ:Username", "guest"),
-                        new KeyValuePair<string, string?>("RabbitMQ:Password", "guest"),
-                        new KeyValuePair<string, string?>("ENABLE_MESSAGING", "true")
-                    ])
-                    .Build();
-                conf.AddConfiguration(cfg);
-            });
-        });
-    }
 
     private sealed record CreateRequest(Guid Id, string Name, int Capacity, string? Location);
 
