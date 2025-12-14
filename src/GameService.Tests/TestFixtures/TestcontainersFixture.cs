@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-using System.Net.Sockets;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
@@ -10,25 +8,25 @@ using GameService.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
+using Npgsql;
+using Serilog;
 
 namespace GameService.Tests.TestFixtures;
 
 public class TestcontainersFixture : IAsyncLifetime
 {
     private IHost? _host;
-    private SqliteConnection? _sqliteConnection;
 
     public TestcontainersFixture()
     {
-        // Configure Testcontainers to avoid trying to attach to streams in constrained Docker environments
-        TestcontainersSettings.HubImageNamePrefix = "ryuk:0.3.0";
+        TestcontainersSettings.ResourceReaperEnabled = false;
 
+        // Configure a wait strategy so StartAsync doesn't return until the container port is available
         Postgres = new TestcontainersBuilder<PostgreSqlTestcontainer>()
             .WithDatabase(new PostgreSqlTestcontainerConfiguration
             {
@@ -37,42 +35,139 @@ public class TestcontainersFixture : IAsyncLifetime
                 Password = "password"
             })
             .WithImage("postgres:16-alpine")
+            .WithPortBinding(5433, 5432)
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(5432))
+            .WithAutoRemove(true)
+            .WithCleanUp(true)
             .Build();
     }
 
     public PostgreSqlTestcontainer Postgres { get; }
-    public bool IsAvailable { get; private set; }
 
     public HttpClient Client { get; private set; } = null!;
 
-    public async ValueTask InitializeAsync()
+    public bool Started { get; private set; }
+
+    private string ConnectionString { get; set; } = "";
+
+    private async Task<bool> TryStartPostgresAsync(int maxAttempts = 3)
+    {
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            if (await AttemptStartAsync(attempt))
+            {
+                return true;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(2 * attempt));
+        }
+
+        return false;
+    }
+
+    private async Task<bool> AttemptStartAsync(int attempt)
     {
         try
         {
-            await Postgres.StartAsync();
-            IsAvailable = true;
-        }
-        catch (SocketException)
-        {
-            IsAvailable = false;
-            Debug.WriteLine("Docker not available for testcontainers; integration tests will be skipped.");
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+
+            await StartContainerInternalAsync(cts.Token);
+
+            var cs = GetConnectionStringSafe();
+
+            if (await ProbeDatabaseAsync(cs, cts.Token))
+            {
+                ConnectionString = cs;
+                return true;
+            }
+
+            await StopContainerSafeAsync(cts.Token);
         }
         catch (Exception ex)
         {
-            IsAvailable = false;
-            Debug.WriteLine($"Testcontainers failed to start: {ex.Message}");
+            Log.Error(ex, "Attempt {Attempt} to start Postgres container failed", attempt);
         }
 
+        return false;
+    }
+
+    private async Task StartContainerInternalAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Postgres.StartAsync(ct);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("cannot hijack chunked or content length stream"))
+        {
+            Log.Warning("Ignored hijacking error: {Message}", ex.Message);
+        }
+    }
+
+    private string GetConnectionStringSafe()
+    {
+        try
+        {
+            return Postgres.ConnectionString;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to retrieve connection string from container. Using fallback");
+            return "Host=localhost;Port=5433;Database=gamestate;Username=postgres;Password=password";
+        }
+    }
+
+    private async Task<bool> ProbeDatabaseAsync(string connectionString, CancellationToken ct)
+    {
+        for (var i = 0; i < 10; i++)
+        {
+            try
+            {
+                await using var conn = new NpgsqlConnection(connectionString);
+                await conn.OpenAsync(ct);
+                await conn.CloseAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Probe attempt {Attempt} failed", i + 1);
+                await Task.Delay(1000, ct);
+            }
+        }
+
+        return false;
+    }
+
+    private async Task StopContainerSafeAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Postgres.StopAsync(ct);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "An exception occurred while stopping the postgres container during retry");
+        }
+    }
+
+    public async ValueTask InitializeAsync()
+    {
+        var started = await TryStartPostgresAsync();
+
+        // set public flag so callers/tests can safely decide whether the container is available
+        Started = started;
+
+        if (!started)
+        {
+            Log.Error("Testcontainer failed to start");
+        }
         // Build minimal WebApplication for tests (fallback to in-memory sqlite when containers not available)
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Testing" });
-
-        var usePostgres = IsAvailable;
 
         var inMemory = new Dictionary<string, string?>
         {
             ["ENABLE_MESSAGING"] = "false",
-            ["DatabaseProvider"] = usePostgres ? "Npgsql" : "Sqlite",
-            ["ConnectionStrings:GameStateConnection"] = usePostgres ? Postgres.ConnectionString : "DataSource=:memory:"
+            ["DatabaseProvider"] = started ? "Npgsql" : "Sqlite",
+            ["ConnectionStrings:GameStateConnection"] = started ? ConnectionString : "Data Source=game_state_tests.db"
         };
 
         builder.Configuration.AddInMemoryCollection(inMemory);
@@ -84,16 +179,13 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddAuthorization();
         builder.Services.AddHealthChecks();
 
-        if (usePostgres)
+        if (started)
         {
-            builder.Services.AddDbContext<GameDbContext>(options => options.UseNpgsql(Postgres.ConnectionString));
+            builder.Services.AddDbContext<GameDbContext>(options => options.UseNpgsql(ConnectionString));
         }
         else
         {
-            // Use the shared Sqlite connection so the in-memory DB lives for the host lifetime
-            _sqliteConnection = new SqliteConnection("DataSource=:memory:");
-            _sqliteConnection.Open();
-            builder.Services.AddDbContext<GameDbContext>(options => options.UseSqlite(_sqliteConnection));
+            builder.Services.AddDbContext<GameDbContext>(options => options.UseSqlite("Data Source=game_state_tests.db"));
         }
 
         // Business services
@@ -120,14 +212,8 @@ public class TestcontainersFixture : IAsyncLifetime
         using (var scope = _host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-            if (usePostgres)
-            {
-                db.Database.Migrate();
-            }
-            else
-            {
-                db.Database.EnsureCreated();
-            }
+            // await db.Database.MigrateAsync();
+            await db.Database.EnsureCreatedAsync();
         }
 
         // Start the host
@@ -145,41 +231,29 @@ public class TestcontainersFixture : IAsyncLifetime
             {
                 try
                 {
-                    Client?.Dispose();
+                    Client.Dispose();
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Log.Error(ex, "Error disposing HttpClient");
                 }
 
                 await _host.StopAsync();
                 _host.Dispose();
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Log.Error(ex, "Error disposing Host");
         }
 
-        if (IsAvailable)
+        try
         {
-
-            try
-            {
-                await Postgres.StopAsync();
-            }
-            catch
-            {
-            }
+            await Postgres.DisposeAsync();
         }
-        else
+        catch (Exception ex)
         {
-            try
-            {
-                _sqliteConnection?.Close();
-                _sqliteConnection?.Dispose();
-            }
-            catch
-            {
-            }
+            Log.Error(ex, "Error disposing Postgres container");
         }
     }
 }

@@ -3,11 +3,13 @@
 ## Purpose
 The purpose of these guidelines is to provide a comprehensive framework for using GitHub Copilot effectively within the bottle-tycoon-microservice repository. This document outlines best practices and strategies to integrate Copilot into our development workflow.
 
-## How Copilot Should Help
-- **Answers:** Do not explain anything unless the user asks for it.
+## Copilot behavior
+- **General behavior:** Do not explain anything unless the user asks for it. Always keep explanations concise and to the point. If you don't know, ask, do not come up with an answer where you guess.
 - **Code Suggestions:** Copilot assists by providing intelligent code completion and suggestions, allowing developers to focus on higher-level design rather than syntax.
 - **Faster Iteration:** By generating boilerplate code and repetitive patterns, Copilot speeds up the coding process and enhances productivity.
 - **Error Reduction:** With the AI's context awareness, Copilot helps decrease common coding errors, improving overall code quality.
+- **Unknown API or code:** Use context7 MCP server to enhance Copilot's understanding of the codebase or the specific nugetpackage/API.
+- **Logging:** Always write to log, never to console.
 
 ## Coding Conventions
 - **Consistency:** Adhere to established coding styles and conventions to maintain readability and uniformity across the codebase.
@@ -34,9 +36,6 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Code Review:** Implement thorough code reviews for all contributions influenced by Copilot to catch potential security vulnerabilities.
 - **Dependency Management:** Regularly update dependencies and utilize tools to monitor vulnerabilities in third-party libraries.
 - **Security Best Practices:** Follow security best practices, including input validation and proper authentication mechanisms.
-
-## MCP
-- **Context7:** Use context7 MCP server if possible to enhance Copilot's understanding of the codebase or the specific nugetpackage/API.
 
 ## Observability Requirements
 - **Logging:** Implement structured logging across services to facilitate performance tracking and issue diagnostics.

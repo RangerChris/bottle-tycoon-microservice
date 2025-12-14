@@ -26,21 +26,15 @@ public class HealthEndpointTests : IAsyncLifetime
     [Fact]
     public async Task HealthEndpoint_ShouldReturnHealthyJson()
     {
-        if (!_containers.IsAvailable)
-        {
-            return;
-        }
-
         var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
-            builder.ConfigureAppConfiguration((context, conf) =>
+            builder.ConfigureAppConfiguration((_, conf) =>
             {
                 var cfg = new ConfigurationBuilder()
-                    .AddInMemoryCollection(new[]
-                    {
+                    .AddInMemoryCollection([
                         new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", _containers.Postgres.ConnectionString)
-                    })
+                    ])
                     .Build();
                 conf.AddConfiguration(cfg);
             });

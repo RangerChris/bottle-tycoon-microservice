@@ -50,19 +50,21 @@ public class GameServiceIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task PostPlayer_CreatesPlayer_AndGetPlayer_ReturnsSeededAndCreated()
     {
-        if (!_containers.IsAvailable)
-        {
-            return;
-        }
-
         var aliceId = Guid.NewGuid();
         var bobId = Guid.NewGuid();
+
+        // If the container didn't start, prefer to fail fast since this test seeds Postgres directly
+        if (!_containers.Started)
+        {
+            throw new InvalidOperationException("Postgres testcontainer did not start; cannot run Postgres-seeding integration test.");
+        }
+
         await SeedPlayersAsync(_containers.Postgres.ConnectionString, aliceId, bobId);
 
         var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
-            builder.ConfigureAppConfiguration((context, conf) =>
+            builder.ConfigureAppConfiguration((_, conf) =>
             {
                 var cfg = new ConfigurationBuilder()
                     .AddInMemoryCollection(new[]
@@ -84,8 +86,7 @@ public class GameServiceIntegrationTests : IAsyncLifetime
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = await createRes.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         created.ValueKind.ShouldBe(JsonValueKind.Object);
-        created.TryGetProperty("Id", out var idProp).ShouldBeTrue();
-        var createdId = Guid.Parse(idProp.GetString()!);
+        created.TryGetProperty("Id", out _).ShouldBeTrue();
 
         // Get seeded player
         var getRes = await client.GetAsync($"/player/{aliceId}", TestContext.Current.CancellationToken);

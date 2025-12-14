@@ -17,20 +17,20 @@ public class HealthAndMigrationsTests
         try
         {
             await containers.InitializeAsync();
-            if (!containers.IsAvailable)
-            {
-                return;
-            }
 
             await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             {
                 builder.UseEnvironment("Development");
-                builder.ConfigureAppConfiguration((context, conf) =>
+                builder.ConfigureAppConfiguration((_, conf) =>
                 {
+                    var connectionString = containers.Started
+                        ? containers.Postgres.ConnectionString
+                        : "Data Source=game_state_tests.db";
+
                     var cfg = new ConfigurationBuilder()
                         .AddInMemoryCollection(new[]
                         {
-                            new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", containers.Postgres.ConnectionString),
+                            new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", connectionString),
                             new KeyValuePair<string, string?>("APPLY_MIGRATIONS", "true"),
                             new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false")
                         })
