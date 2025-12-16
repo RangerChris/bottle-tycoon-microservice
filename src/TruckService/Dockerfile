@@ -16,6 +16,7 @@ RUN dotnet publish "TruckService.csproj" -c Release -o /app/publish /p:UseAppHos
 # Use the official ASP.NET Core runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
+RUN apk add --no-cache icu-libs krb5-libs
 COPY --from=publish /app/publish .
 
 # Expose the port the app runs on

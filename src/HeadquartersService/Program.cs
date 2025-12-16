@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using HeadquartersService.Services;
@@ -71,6 +71,12 @@ try
     // Some Swagger UI bundles request /v1/swagger.json when served at root.
     // Provide a small redirect so both /v1/swagger.json and /swagger/v1/swagger.json work.
     app.MapGet("/v1/swagger.json", () => Results.Redirect("/swagger/v1/swagger.json"));
+
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        var announcedUrls = app.Urls.Count > 0 ? string.Join(", ", app.Urls) : builder.Configuration["ASPNETCORE_URLS"] ?? "http://+:80";
+        Log.Information("HeadquartersService ready at {Urls}", announcedUrls);
+    });
 
     Log.Information("Starting HeadquartersService host");
     app.Run();

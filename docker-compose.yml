@@ -111,6 +111,7 @@
       - "3100:3100"
     volumes:
       - loki_data:/loki
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml:ro
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - bottle-tycoon
@@ -145,6 +146,7 @@
       OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
       OTEL_SERVICE_NAME: GameService
       OTEL_TRACES_EXPORTER: jaeger
+      OTEL_TRACES_SAMPLER: always_on
     ports:
       - "5001:80"
     healthcheck:
@@ -221,7 +223,7 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__DefaultConnection: Host=gameservicepostgres;Database=GameServiceOwner;Username=postgres;Password=password
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
+      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
       OTEL_SERVICE_NAME: HeadquartersService
     ports:
       - "5004:80"

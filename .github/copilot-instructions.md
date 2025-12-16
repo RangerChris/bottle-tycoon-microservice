@@ -133,11 +133,6 @@ bottle-tycoon-microservice/
 │   ├── OBSERVABILITY.md          # Telemetry setup guide
 │   └── DEPLOYMENT.md             # Production deployment
 ├── src/
-│   ├── ApiGateway/
-│   │   ├── ApiGateway.csproj
-│   │   ├── Program.cs
-│   │   ├── Middleware/
-│   │   └── Routes/
 │   ├── GameService/
 │   │   ├── GameService.csproj
 │   │   ├── Models/

@@ -12,6 +12,7 @@
         <PackageReference Include="FastEndpoints"/>
         <PackageReference Include="FastEndpoints.Swagger"/>
         <PackageReference Include="Serilog.AspNetCore"/>
+        <PackageReference Include="Serilog.Sinks.Grafana.Loki"/>
         <PackageReference Include="Serilog.Sinks.Console"/>
         <PackageReference Include="Swashbuckle.AspNetCore"/>
         <PackageReference Include="prometheus-net.AspNetCore"/>

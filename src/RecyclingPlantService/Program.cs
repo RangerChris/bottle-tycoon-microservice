@@ -119,7 +119,19 @@ try
         c.RoutePrefix = string.Empty;
     });
 
-    app.UseHttpsRedirection();
+    var configuredUrls = builder.Configuration["ASPNETCORE_URLS"];
+    var enableHttpsRedirection = builder.Configuration.GetValue("EnableHttpsRedirection", true);
+    var httpsUrlConfigured = configuredUrls?.IndexOf("https", StringComparison.OrdinalIgnoreCase) >= 0;
+    var useHttpsRedirection = enableHttpsRedirection && httpsUrlConfigured;
+
+    if (useHttpsRedirection)
+    {
+        app.UseHttpsRedirection();
+    }
+    else
+    {
+        Log.Information("HTTPS redirection skipped because only HTTP endpoints are configured");
+    }
 
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
@@ -127,6 +139,12 @@ try
     app.UseFastEndpoints();
 
     app.MapGet("/v1/swagger.json", () => Results.Redirect("/swagger/v1/swagger.json"));
+
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        var announcedUrls = app.Urls.Count > 0 ? string.Join(", ", app.Urls) : configuredUrls ?? "http://+:80";
+        Log.Information("RecyclingPlantService ready at {Urls}", announcedUrls);
+    });
 
     app.MapGet("/", () => swaggerEnabled ? Results.Redirect("/") : Results.Text("RecyclingPlantService OK"));
 

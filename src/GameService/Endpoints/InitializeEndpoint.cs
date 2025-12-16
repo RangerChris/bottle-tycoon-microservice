@@ -1,4 +1,4 @@
-﻿using FastEndpoints;
+﻿﻿using FastEndpoints;
 using GameService.Services;
 
 namespace GameService.Endpoints;
@@ -24,60 +24,29 @@ public class InitializeEndpoint : EndpointWithoutRequest
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        // Initialize player service
+        _logger.LogInformation("Resetting and creating default player state");
         await _playerService.ResetAsync();
         await _playerService.CreatePlayerAsync();
 
-        // Initialize recycler service
-        try
-        {
-            var client = _httpClientFactory.CreateClient("RecyclerService");
-            var response = await client.PostAsync("/initialize", null, ct);
-            response.EnsureSuccessStatusCode();
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't fail the initialization
-            _logger.LogError(ex, "Failed to initialize RecyclerService");
-        }
+        await InitializeServiceAsync("RecyclerService", "/initialize", ct);
+        await InitializeServiceAsync("TruckService", "/initialize", ct);
+        await InitializeServiceAsync("HeadquartersService", "/initialize", ct);
+        await InitializeServiceAsync("RecyclingPlantService", "/initialize", ct);
+    }
 
-        // Initialize truck service
+    private async Task InitializeServiceAsync(string clientName, string path, CancellationToken ct)
+    {
         try
         {
-            var client = _httpClientFactory.CreateClient("TruckService");
-            var response = await client.PostAsync("/initialize", null, ct);
+            _logger.LogInformation("Initializing {Service}", clientName);
+            var client = _httpClientFactory.CreateClient(clientName);
+            var response = await client.PostAsync(path, null, ct);
             response.EnsureSuccessStatusCode();
+            _logger.LogInformation("{Service} initialization succeeded", clientName);
         }
         catch (Exception ex)
         {
-            // Log the error but don't fail the initialization
-            _logger.LogError(ex, "Failed to initialize TruckService");
-        }
-
-        // Initialize headquarters service
-        try
-        {
-            var client = _httpClientFactory.CreateClient("HeadquartersService");
-            var response = await client.PostAsync("/initialize", null, ct);
-            response.EnsureSuccessStatusCode();
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't fail the initialization
-            _logger.LogError(ex, "Failed to initialize HeadquartersService");
-        }
-
-        // Initialize recycling plant service
-        try
-        {
-            var client = _httpClientFactory.CreateClient("RecyclingPlantService");
-            var response = await client.PostAsync("/initialize", null, ct);
-            response.EnsureSuccessStatusCode();
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't fail the initialization
-            _logger.LogError(ex, "Failed to initialize RecyclingPlantService");
+            _logger.LogError(ex, "Failed to initialize {Service}", clientName);
         }
     }
 }
