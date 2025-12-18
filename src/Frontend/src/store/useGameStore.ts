@@ -23,13 +23,13 @@ export type GameState = {
   addLog: (message: string, type?: LogEntry['type']) => void
   buyRecycler: () => void
   buyTruck: () => void
-  deliverBottlesRandom: (recyclerId: number) => void
-  upgradeRecycler: (recyclerId: number) => void
-  upgradeTruck: (truckId: number) => void
+  deliverBottlesRandom: (recyclerId: number | string) => void
+  upgradeRecycler: (recyclerId: number | string) => void
+  upgradeTruck: (truckId: number | string) => void
   attemptSmartDispatch: () => void
   depositTick: (mult: number) => void
-  createVisitorForRecycler: (recyclerId: number) => void
-  scheduleNextArrival: (recyclerId: number, minSec?: number, maxSec?: number) => void
+  createVisitorForRecycler: (recyclerId: number | string) => void
+  scheduleNextArrival: (recyclerId: number | string, minSec?: number, maxSec?: number) => void
   // internal helpers for init
   init: () => void
 }
@@ -43,7 +43,7 @@ function calculateCapacity(base: number, level: number) {
 const timeMultipliers: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 4, 5: 5 }
 
 // Track scheduled arrival timers to avoid duplicates per recycler
-const scheduledArrivalTimers = new Map<number, number>()
+const scheduledArrivalTimers = new Map<number | string, number>()
 
 // Watchdog interval id to ensure scheduling is active
 let arrivalsWatchdog: number | null = null
@@ -71,47 +71,113 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (draft.logs.length > 50) draft.logs.pop()
   }),
 
-  buyRecycler: () => {
+  buyRecycler: async () => {
     const state = get()
     if (state.buyingRecycler) return
     set((draft: any) => { draft.buyingRecycler = true })
     const cost = 500
-    setTimeout(() => {
-      const s = get()
-      if (s.recyclers.length >= 10) { set((draft: any) => { draft.buyingRecycler = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Cannot purchase more recyclers.' }) }); return }
-      if (s.credits < cost) { set((draft: any) => { draft.buyingRecycler = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits to buy recycler!' }) }); return }
-      set((draft: any) => {
-        draft.credits -= cost
-        const newId = draft.recyclers.reduce((m: number, r: any) => Math.max(m, r.id), 0) + 1
-        draft.recyclers.push({ id: newId, level: 0, capacity: 100, currentBottles: { glass: 0, metal: 0, plastic: 0 }, visitor: null })
-        draft.buyingRecycler = false
-        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased Recycler #${newId}` })
-      })
-      // schedule initial visitor for new recycler
-      get().scheduleNextArrival(get().recyclers.slice(-1)[0].id, 1, 8)
-    }, 120)
+
+    if (state.recyclers.length >= 10) { set((draft: any) => { draft.buyingRecycler = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Cannot purchase more recyclers.' }) }); return }
+    if (state.credits < cost) { set((draft: any) => { draft.buyingRecycler = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits to buy recycler!' }) }); return }
+
+    try {
+        const env = (import.meta as any).env || {}
+        const envBase = env?.VITE_API_BASE_URL
+        const base = envBase || 'http://localhost:5001'
+        const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
+
+        const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: `Recycler ${state.recyclers.length + 1}`,
+                capacity: 100,
+                location: 'Default'
+            })
+        })
+
+        if (!response.ok) {
+            throw new Error('Failed to buy recycler')
+        }
+
+        const newRecycler = await response.json()
+
+        set((draft: any) => {
+            draft.credits -= cost
+            draft.recyclers.push({
+                id: newRecycler.id,
+                level: 0,
+                capacity: newRecycler.capacity,
+                currentBottles: { glass: 0, metal: 0, plastic: 0 },
+                visitor: null
+            })
+            draft.buyingRecycler = false
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased Recycler #${newRecycler.id.toString().substring(0, 8)}` })
+        })
+
+        get().scheduleNextArrival(newRecycler.id, 1, 8)
+
+    } catch (error) {
+        set((draft: any) => {
+            draft.buyingRecycler = false;
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to purchase recycler.' })
+        });
+    }
   },
 
-  buyTruck: () => {
+  buyTruck: async () => {
     const state = get()
     if (state.buyingTruck) return
     set((draft: any) => { draft.buyingTruck = true })
     const cost = 800
-    setTimeout(() => {
-      const s = get()
-      if (s.trucks.length >= 10) { set((draft: any) => { draft.buyingTruck = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Cannot purchase more trucks.' }) }); return }
-      if (s.credits < cost) { set((draft: any) => { draft.buyingTruck = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits to buy truck!' }) }); return }
-      set((draft: any) => {
-        draft.credits -= cost
-        const newId = draft.trucks.reduce((m: number, t: any) => Math.max(m, t.id), 0) + 1
-        draft.trucks.push({ id: newId, level: 0, capacity: 45, currentLoad: 0, status: 'idle', targetRecyclerId: null, cargo: null })
-        draft.buyingTruck = false
-        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased Truck #${newId}` })
-      })
-    }, 120)
+
+    if (state.trucks.length >= 10) { set((draft: any) => { draft.buyingTruck = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Cannot purchase more trucks.' }) }); return }
+    if (state.credits < cost) { set((draft: any) => { draft.buyingTruck = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits to buy truck!' }) }); return }
+
+    try {
+        const env = (import.meta as any).env || {}
+        const envBase = env?.VITE_API_BASE_URL
+        const base = envBase || 'http://localhost:5001'
+        const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
+
+        const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'Standard Truck',
+                isActive: true
+            })
+        })
+
+        if (!response.ok) {
+            throw new Error('Failed to buy truck')
+        }
+
+        const newTruck = await response.json()
+
+        set((draft: any) => {
+            draft.credits -= cost
+            draft.trucks.push({
+                id: newTruck.id,
+                level: 0,
+                capacity: 45,
+                currentLoad: 0,
+                status: 'idle',
+                targetRecyclerId: null,
+                cargo: null
+            })
+            draft.buyingTruck = false
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased Truck #${newTruck.id.toString().substring(0, 8)}` })
+        })
+    } catch (error) {
+        set((draft: any) => {
+            draft.buyingTruck = false;
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to purchase truck.' })
+        });
+    }
   },
 
-  deliverBottlesRandom: (recyclerId: number) => {
+  deliverBottlesRandom: (recyclerId: number | string) => {
     const picked = { glass: Math.floor(Math.random() * 20) + 5, metal: Math.floor(Math.random() * 15) + 5, plastic: Math.floor(Math.random() * 25) + 10 }
     const total = picked.glass + picked.metal + picked.plastic
     set((draft: any) => {
@@ -125,7 +191,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     setTimeout(() => get().attemptSmartDispatch(), 50)
   },
 
-  upgradeRecycler: (recyclerId: number) => set((draft: any) => {
+  upgradeRecycler: (recyclerId: number | string) => set((draft: any) => {
     const r = draft.recyclers.find((x: any) => x.id === recyclerId)
     if (!r) return
     if (r.level >= 3) { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Recycler already at max level!' }); return }
@@ -136,7 +202,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Recycler #${recyclerId} upgraded to Level ${r.level}` })
   }),
 
-  upgradeTruck: (truckId: number) => set((draft: any) => {
+  upgradeTruck: (truckId: number | string) => set((draft: any) => {
     const t = draft.trucks.find((x: any) => x.id === truckId)
     if (!t) return
     if (t.level >= 3) { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Truck already at max level!' }); return }
@@ -206,7 +272,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     get().attemptSmartDispatch()
   },
 
-  createVisitorForRecycler: (recyclerId: number) => {
+  createVisitorForRecycler: (recyclerId: number | string) => {
     // clear any scheduled arrival timer for this recycler
     const existing = scheduledArrivalTimers.get(recyclerId)
     if (existing) {
@@ -229,7 +295,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     })
   },
 
-  scheduleNextArrival: (recyclerId: number, minSec = 3, maxSec = 8) => {
+  scheduleNextArrival: (recyclerId: number | string, minSec = 3, maxSec = 8) => {
     // clear any existing scheduled timer so we always (re)schedule a fresh arrival
     const existing = scheduledArrivalTimers.get(recyclerId)
     if (existing) {
@@ -390,12 +456,43 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       try {
         const env = (import.meta as any).env || {}
         const envBase = env?.VITE_API_BASE_URL
-        const defaultBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
-          ? 'http://localhost:5001'
-          : 'http://apigateway:5000'
-        const base = envBase || defaultBase
+        const base = envBase || 'http://localhost:5001'
         const url = `${base.replace(/\/$/, '')}/initialize`
         await fetch(url, { method: 'POST', signal: controller.signal })
+
+        // Fetch trucks from service
+        const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
+        const trucksResp = await fetch(`${truckBase.replace(/\/$/, '')}/truck`, { signal: controller.signal })
+        if (trucksResp.ok) {
+            const truckDtos = await trucksResp.json()
+            set((draft: any) => {
+                draft.trucks = truckDtos.map((dto: any) => ({
+                    id: dto.id,
+                    level: 0,
+                    capacity: 45,
+                    currentLoad: 0,
+                    status: 'idle',
+                    targetRecyclerId: null,
+                    cargo: null
+                }))
+            })
+        }
+
+        // Fetch recyclers from service
+        const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
+        const recyclersResp = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers`, { signal: controller.signal })
+        if (recyclersResp.ok) {
+            const recyclerDtos = await recyclersResp.json()
+            set((draft: any) => {
+                draft.recyclers = recyclerDtos.map((dto: any) => ({
+                    id: dto.id,
+                    level: 0,
+                    capacity: dto.capacity,
+                    currentBottles: { glass: 0, metal: 0, plastic: 0 },
+                    visitor: null
+                }))
+            })
+        }
       } catch (e) {
         // Ignore errors, perhaps log later
       }

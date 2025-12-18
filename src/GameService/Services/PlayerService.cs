@@ -75,7 +75,6 @@ public class PlayerService : IPlayerService
 
     public async Task ResetAsync()
     {
-        _context.Players.RemoveRange(_context.Players);
-        await _context.SaveChangesAsync();
+        await _context.Players.ExecuteDeleteAsync();
     }
 }

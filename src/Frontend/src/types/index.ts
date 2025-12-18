@@ -9,7 +9,7 @@ export type Visitor = {
 };
 
 export type Recycler = {
-  id: number;
+  id: number | string;
   level: number;
   capacity: number;
   currentBottles: BottleCounts;
@@ -19,7 +19,7 @@ export type Recycler = {
 export type TruckStatus = 'idle' | 'to_recycler' | 'loading' | 'to_plant' | 'delivering' | 'picking';
 
 export type Truck = {
-  id: number;
+  id: number | string;
   level: number;
   capacity: number;
   currentLoad: number;

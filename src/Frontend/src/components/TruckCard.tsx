@@ -20,7 +20,7 @@ export default function TruckCard({ truck }: { truck: Truck }) {
     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Truck #{truck.id}</h3>
+          <h3 className="text-lg font-semibold">Truck #{typeof truck.id === 'string' ? truck.id.substring(0, 8) : truck.id}</h3>
           <div className="text-sm text-gray-400">Level {truck.level}</div>
         </div>
         <div className="text-right">

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FastEndpoints;
 using GameService.Data;
@@ -81,7 +81,7 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 // Add HttpClient for inter-service communication
 builder.Services.AddHttpClient("GameService", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5001"); // Local GameService port
+    client.BaseAddress = new Uri("http://localhost"); // Local GameService port
 });
 builder.Services.AddHttpClient("RecyclerService", client => { client.BaseAddress = new Uri(builder.Configuration["Services:RecyclerService"] ?? "http://recyclerservice:80"); });
 builder.Services.AddHttpClient("TruckService", client => { client.BaseAddress = new Uri(builder.Configuration["Services:TruckService"] ?? "http://truckservice:80"); });

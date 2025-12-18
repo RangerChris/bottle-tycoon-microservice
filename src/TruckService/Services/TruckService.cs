@@ -1,4 +1,5 @@
-﻿using TruckService.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using TruckService.Data;
 using TruckService.Models;
 
 namespace TruckService.Services;
@@ -16,9 +17,8 @@ public class TruckService : ITruckService
 
     public async Task ResetAsync()
     {
-        _db.Trucks.RemoveRange(_db.Trucks);
-        _db.Deliveries.RemoveRange(_db.Deliveries);
-        await _db.SaveChangesAsync();
+        await _db.Trucks.ExecuteDeleteAsync();
+        await _db.Deliveries.ExecuteDeleteAsync();
     }
 
     public async Task<TruckDto> CreateTruckAsync(TruckDto? truck = null)

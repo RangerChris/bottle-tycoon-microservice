@@ -14,7 +14,7 @@ export default function RecyclerCard({ recycler }: { recycler: Recycler }) {
     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Recycler #{recycler.id}</h3>
+          <h3 className="text-lg font-semibold">Recycler #{typeof recycler.id === 'string' ? recycler.id.substring(0, 8) : recycler.id}</h3>
           <div className="text-sm text-gray-400">Level {recycler.level}</div>
         </div>
         <div className="text-right">

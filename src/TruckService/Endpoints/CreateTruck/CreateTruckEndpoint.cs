@@ -1,4 +1,4 @@
-﻿using FastEndpoints;
+﻿﻿using FastEndpoints;
 using TruckService.Models;
 using TruckService.Services;
 
@@ -6,11 +6,11 @@ namespace TruckService.Endpoints.CreateTruck;
 
 public class CreateTruckEndpoint : Endpoint<CreateTruckRequest, TruckDto>
 {
-    private readonly ITruckRepository _repo;
+    private readonly ITruckService _service;
 
-    public CreateTruckEndpoint(ITruckRepository repo)
+    public CreateTruckEndpoint(ITruckService service)
     {
-        _repo = repo;
+        _service = service;
     }
 
     public override void Configure()
@@ -22,7 +22,7 @@ public class CreateTruckEndpoint : Endpoint<CreateTruckRequest, TruckDto>
     public override async Task HandleAsync(CreateTruckRequest req, CancellationToken ct)
     {
         var dto = new TruckDto { Id = req.Id, LicensePlate = req.LicensePlate, Model = req.Model, IsActive = req.IsActive };
-        var created = await _repo.CreateAsync(dto, ct);
+        var created = await _service.CreateTruckAsync(dto);
         await Send.ResultAsync(TypedResults.Created($"/truck/{created.Id}", created));
     }
 }

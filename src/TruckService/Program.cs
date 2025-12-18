@@ -56,6 +56,16 @@ builder.Services.AddScoped<ITruckManager, TruckManager>(sp =>
 });
 builder.Services.AddScoped<IRouteWorker, RouteWorker>();
 builder.Services.AddScoped<ITruckService, TruckService.Services.TruckService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
 builder.Services.AddFastEndpoints()
     .SwaggerDocument();
 builder.Services.AddEndpointsApiExplorer();
@@ -128,6 +138,7 @@ else
 
 app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
+app.UseCors("AllowAll");
 
 app.UseFastEndpoints()
     .UseSwaggerGen();

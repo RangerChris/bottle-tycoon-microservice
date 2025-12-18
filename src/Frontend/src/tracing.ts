@@ -6,7 +6,7 @@ import { registerInstrumentations } from '@opentelemetry/instrumentation';
 
 export function initTracing() {
   const exporter = new OTLPTraceExporter({
-    url: import.meta.env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT || '/api/traces',
+    url: import.meta.env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
   });
 
   const provider = new WebTracerProvider({

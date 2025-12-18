@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
@@ -86,6 +86,16 @@ if (!builder.Environment.IsEnvironment("Testing"))
 
 // Business Services
 builder.Services.AddScoped<IRecyclingPlantService, RecyclingPlantService.Services.RecyclingPlantService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
 
 try
 {
@@ -135,6 +145,8 @@ try
 
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
+
+    app.UseCors("AllowAll");
 
     app.UseFastEndpoints();
 

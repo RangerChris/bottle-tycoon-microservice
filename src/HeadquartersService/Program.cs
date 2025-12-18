@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using HeadquartersService.Services;
@@ -44,6 +44,16 @@ builder.Services.AddSingleton<IDispatchQueue, DispatchQueue>();
 builder.Services.AddSingleton<IFleetService, FleetService>();
 builder.Services.AddSingleton<IHeadquartersService, HeadquartersService.Services.HeadquartersService>();
 builder.Services.AddHostedService<DispatchProcessor>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
 
 try
 {
@@ -65,6 +75,8 @@ try
 
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
+
+    app.UseCors("AllowAll");
 
     app.UseFastEndpoints();
 
