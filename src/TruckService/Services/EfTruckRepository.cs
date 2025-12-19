@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿﻿using Microsoft.EntityFrameworkCore;
 using TruckService.Data;
 using TruckService.Models;
 
@@ -21,17 +21,17 @@ public class EfTruckRepository : ITruckRepository
             return null;
         }
 
-        return new TruckDto { Id = ent.Id, LicensePlate = ent.LicensePlate, Model = ent.Model, IsActive = ent.IsActive };
+        return new TruckDto { Id = ent.Id, Model = ent.Model, IsActive = ent.IsActive, Level = ent.CapacityLevel };
     }
 
     public async Task<IEnumerable<TruckDto>> GetAllAsync(CancellationToken ct = default)
     {
-        return await _db.Trucks.Select(ent => new TruckDto { Id = ent.Id, LicensePlate = ent.LicensePlate, Model = ent.Model, IsActive = ent.IsActive }).ToListAsync(ct);
+        return await _db.Trucks.Select(ent => new TruckDto { Id = ent.Id, Model = ent.Model, IsActive = ent.IsActive, Level = ent.CapacityLevel }).ToListAsync(ct);
     }
 
     public async Task<TruckDto> CreateAsync(TruckDto truck, CancellationToken ct = default)
     {
-        var ent = new TruckEntity { Id = truck.Id == Guid.Empty ? Guid.NewGuid() : truck.Id, LicensePlate = truck.LicensePlate, Model = truck.Model, IsActive = truck.IsActive };
+        var ent = new TruckEntity { Id = truck.Id == Guid.Empty ? Guid.NewGuid() : truck.Id, Model = truck.Model, IsActive = truck.IsActive };
         _db.Trucks.Add(ent);
         await _db.SaveChangesAsync(ct);
         truck.Id = ent.Id;
@@ -46,7 +46,6 @@ public class EfTruckRepository : ITruckRepository
             return false;
         }
 
-        ent.LicensePlate = truck.LicensePlate;
         ent.Model = truck.Model;
         ent.IsActive = truck.IsActive;
         await _db.SaveChangesAsync(ct);

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿using Microsoft.EntityFrameworkCore;
 using TruckService.Data;
 using TruckService.Models;
 
@@ -32,7 +32,6 @@ public class TruckManager : ITruckManager
         return new TruckStatusDto
         {
             Id = truck.Id,
-            LicensePlate = truck.LicensePlate,
             State = "Idle",
             Location = "Depot",
             CurrentLoadByType = truck.GetCurrentLoadByType(),
@@ -106,7 +105,6 @@ public class TruckManager : ITruckManager
         return trucks.Select(t => new TruckStatusDto
         {
             Id = t.Id,
-            LicensePlate = t.LicensePlate,
             State = t.IsActive ? "Idle" : "Inactive",
             Location = "Depot",
             CurrentLoadByType = t.GetCurrentLoadByType(),

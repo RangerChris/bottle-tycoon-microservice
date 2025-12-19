@@ -20,6 +20,7 @@ export type TruckStatus = 'idle' | 'to_recycler' | 'loading' | 'to_plant' | 'del
 
 export type Truck = {
   id: number | string;
+  model?: string;
   level: number;
   capacity: number;
   currentLoad: number;

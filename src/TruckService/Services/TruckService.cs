@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿using Microsoft.EntityFrameworkCore;
 using TruckService.Data;
 using TruckService.Models;
 
@@ -29,14 +29,12 @@ public class TruckService : ITruckService
             t.Id = Guid.NewGuid();
         }
 
-        t.LicensePlate = string.IsNullOrEmpty(t.LicensePlate) ? $"TRUCK-{t.Id.ToString().Substring(0, 8).ToUpper()}" : t.LicensePlate;
         t.Model = string.IsNullOrEmpty(t.Model) ? "Standard Truck" : t.Model;
         t.IsActive = true;
 
         var ent = new TruckEntity
         {
             Id = t.Id,
-            LicensePlate = t.LicensePlate,
             Model = t.Model,
             IsActive = t.IsActive,
             CapacityLevel = 0,

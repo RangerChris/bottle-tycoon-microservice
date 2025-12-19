@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿﻿using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -29,7 +29,7 @@ public class GetTruckEndpointTests : IClassFixture<TestcontainersFixture>
             var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
             if (await db.Trucks.FindAsync([id], TestContext.Current.CancellationToken) is null)
             {
-                db.Trucks.Add(new TruckEntity { Id = id, LicensePlate = "TRK-001", Model = "M", IsActive = true });
+                db.Trucks.Add(new TruckEntity { Id = id, Model = "M", IsActive = true });
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
         }
@@ -41,7 +41,6 @@ public class GetTruckEndpointTests : IClassFixture<TestcontainersFixture>
         var truck = JsonSerializer.Deserialize<TruckDto>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         truck.ShouldNotBeNull();
         truck.Id.ShouldBe(id);
-        truck.LicensePlate.ShouldBe("TRK-001");
     }
 
     [Fact]

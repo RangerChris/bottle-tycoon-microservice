@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,7 +27,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         var client = _fixture.Client;
 
         // Create
-        var createReq = new CreateTruckRequest { LicensePlate = "NEW-123", Model = "Model-X", IsActive = true };
+        var createReq = new CreateTruckRequest { Model = "Model-X", IsActive = true };
         var createRes = await client.PostAsJsonAsync("/truck", createReq, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = JsonSerializer.Deserialize<TruckDto>(await createRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -44,7 +44,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         listRes.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         // Update (body-only)
-        var updateReq = new { truckId = id, licensePlate = "NEW-321", model = "Model-Y", isActive = false };
+        var updateReq = new { truckId = id, model = "Model-Y", isActive = false };
         var putRes = await client.PutAsJsonAsync("/truck", updateReq, TestContext.Current.CancellationToken);
         putRes.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
@@ -79,7 +79,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         using (var scope = _fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
-            var truck = new TruckEntity { Id = Guid.NewGuid(), LicensePlate = "PROC-001", Model = "Test", IsActive = true };
+            var truck = new TruckEntity { Id = Guid.NewGuid(), Model = "Test", IsActive = true };
             db.Trucks.Add(truck);
             var delivery = new DeliveryEntity
             {
@@ -127,7 +127,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         var client = _fixture.Client;
 
         // Create a truck
-        var createReq = new CreateTruckRequest { LicensePlate = "DISP-123", Model = "Model-D", IsActive = true };
+        var createReq = new CreateTruckRequest { Model = "Model-D", IsActive = true };
         var createRes = await client.PostAsJsonAsync("/truck", createReq, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = JsonSerializer.Deserialize<TruckDto>(await createRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -149,7 +149,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         var client = _fixture.Client;
 
         // Create a truck
-        var createReq = new CreateTruckRequest { LicensePlate = "EARN-123", Model = "Model-E", IsActive = true };
+        var createReq = new CreateTruckRequest { Model = "Model-E", IsActive = true };
         var createRes = await client.PostAsJsonAsync("/truck", createReq, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = JsonSerializer.Deserialize<TruckDto>(await createRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -170,7 +170,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         var client = _fixture.Client;
 
         // Create a truck
-        var createReq = new CreateTruckRequest { LicensePlate = "FLEET-123", Model = "Model-F", IsActive = true };
+        var createReq = new CreateTruckRequest { Model = "Model-F", IsActive = true };
         var createRes = await client.PostAsJsonAsync("/truck", createReq, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
 
@@ -189,7 +189,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         var client = _fixture.Client;
 
         // Create a truck
-        var createReq = new CreateTruckRequest { LicensePlate = "STAT-123", Model = "Model-S", IsActive = true };
+        var createReq = new CreateTruckRequest { Model = "Model-S", IsActive = true };
         var createRes = await client.PostAsJsonAsync("/truck", createReq, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
         var created = JsonSerializer.Deserialize<TruckDto>(await createRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
