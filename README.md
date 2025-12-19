@@ -1,4 +1,4 @@
-# Bottle Tycoon Microservice: Learn Microservices, Observability, and .NET 9
+# Bottle Tycoon Microservice: Learn Microservices, Observability, and .NET 10
 
 [![.NET CI](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml/badge.svg)](https://github.com/rangerchris/bottle-tycoon-microservice/actions/workflows/dotnet-ci.yml)
 [![coverage](https://img.shields.io/codecov/c/github/rangerchris/bottle-tycoon-microservice?logo=codecov&style=flat-square)](https://codecov.io/gh/rangerchris/bottle-tycoon-microservice)
@@ -9,7 +9,7 @@ Key differences from older versions
 - The default development stack has been simplified: the API Gateway, RabbitMQ (MassTransit), and Redis are *removed from the default Docker Compose* setup. Services now communicate directly via HTTP endpoints for common flows. See `docs/ARCHITECTURE.md` for migration notes and guidance on reintroducing messaging or caching if needed.
 
 Quick facts
-- Runtime: .NET 9 (C# 13)
+- Runtime: .NET 10 (C# 14)
 - Frontend: React
 - Persistence: PostgreSQL (one container per service in compose)
 - Observability: OpenTelemetry + Jaeger + Prometheus + Loki + Grafana
@@ -28,7 +28,7 @@ Services and local ports (compose, default)
 
 Prerequisites
 - Docker Desktop (with Docker Compose)
-- .NET 9 SDK (for local host development)
+- .NET 10 SDK (for local host development)
 - Node.js 18+ (for frontend dev)
 
 Option A — Recommended: Run the full stack with Docker Compose
