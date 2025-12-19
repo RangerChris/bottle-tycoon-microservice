@@ -10,6 +10,8 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Error Reduction:** With the AI's context awareness, Copilot helps decrease common coding errors, improving overall code quality.
 - **Unknown API or code:** Use context7 MCP server to enhance Copilot's understanding of the codebase or the specific nugetpackage/API.
 - **Logging:** Always write to log, never to console.
+- **Testing:** Do not run tests more than once when working on new code. If in doubt, run all tests once.
+- **Compiling and building:** Only compile once when working on new code, fix any errors before proceeding. Always build the entire solution when done.
 
 ## Coding Conventions
 - **Consistency:** Adhere to established coding styles and conventions to maintain readability and uniformity across the codebase.

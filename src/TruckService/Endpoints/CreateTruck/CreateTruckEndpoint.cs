@@ -1,4 +1,4 @@
-﻿﻿using FastEndpoints;
+﻿﻿﻿using FastEndpoints;
 using TruckService.Models;
 using TruckService.Services;
 
@@ -21,7 +21,7 @@ public class CreateTruckEndpoint : Endpoint<CreateTruckRequest, TruckDto>
 
     public override async Task HandleAsync(CreateTruckRequest req, CancellationToken ct)
     {
-        var dto = new TruckDto { Id = req.Id, LicensePlate = req.LicensePlate, Model = req.Model, IsActive = req.IsActive };
+        var dto = new TruckDto { Id = req.Id, Model = req.Model, IsActive = req.IsActive };
         var created = await _service.CreateTruckAsync(dto);
         await Send.ResultAsync(TypedResults.Created($"/truck/{created.Id}", created));
     }

@@ -159,7 +159,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             draft.credits -= cost
             draft.trucks.push({
                 id: newTruck.id,
-                level: 0,
+                model: newTruck.model,
+                level: newTruck.level || 0,
                 capacity: 45,
                 currentLoad: 0,
                 status: 'idle',
@@ -202,16 +203,47 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Recycler #${recyclerId} upgraded to Level ${r.level}` })
   }),
 
-  upgradeTruck: (truckId: number | string) => set((draft: any) => {
-    const t = draft.trucks.find((x: any) => x.id === truckId)
+  upgradeTruck: async (truckId: number | string) => {
+    const state = get()
+    const t = state.trucks.find((x: any) => x.id === truckId)
     if (!t) return
-    if (t.level >= 3) { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Truck already at max level!' }); return }
+    if (t.level >= 3) { set((draft: any) => { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Truck already at max level!' }) }); return }
     const cost = 300 * (t.level + 1)
-    if (draft.credits < cost) { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits for upgrade!' }); return }
-    draft.credits -= cost
-    t.level++
-    draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${truckId} upgraded to Level ${t.level}` })
-  }),
+    if (state.credits < cost) { set((draft: any) => { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits for upgrade!' }) }); return }
+
+    try {
+        const env = (import.meta as any).env || {}
+        const envBase = env?.VITE_API_BASE_URL
+        const base = envBase || 'http://localhost:5001'
+        const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
+
+        const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck/${truckId}/upgrade`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        })
+
+        if (!response.ok) {
+            throw new Error('Failed to upgrade truck')
+        }
+
+        const updatedTruck = await response.json()
+
+        set((draft: any) => {
+            draft.credits -= cost
+            const truck = draft.trucks.find((x: any) => x.id === truckId)
+            if (truck) {
+                truck.level = updatedTruck.level
+                truck.model = updatedTruck.model
+            }
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${truckId} upgraded to Level ${updatedTruck.level}` })
+        })
+    } catch (error) {
+        set((draft: any) => {
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to upgrade truck.' })
+        })
+    }
+  },
 
   // depositTick: perform per-second deposit using multiplier from time control
   depositTick: (mult: number) => {
@@ -468,7 +500,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             set((draft: any) => {
                 draft.trucks = truckDtos.map((dto: any) => ({
                     id: dto.id,
-                    level: 0,
+                    model: dto.model,
+                    level: dto.level,
                     capacity: 45,
                     currentLoad: 0,
                     status: 'idle',
