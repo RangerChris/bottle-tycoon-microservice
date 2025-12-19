@@ -1,5 +1,5 @@
 ﻿# syntax=docker/dockerfile:1
-FROM node:20-alpine AS build
+FROM dhi.io/node:25-debian13-dev AS build
 WORKDIR /app
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
@@ -8,7 +8,7 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build; npm run build:server
 
-FROM node:20-alpine AS runner
+FROM dhi.io/node:25-debian13-dev AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json* ./
