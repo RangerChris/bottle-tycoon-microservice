@@ -51,55 +51,13 @@ jobs:
         working-directory: src/Frontend
         run: npx playwright install --with-deps
 
-      - name: Run component tests with dev server
-        working-directory: src/Frontend
-        run: |
-          # Start dev server in background
-          nohup npm run dev -- --port 5173 --host 127.0.0.1 > dev.log 2>&1 &
-          echo $! > dev.pid
-          # Wait for server to be available
-          for i in {1..20}; do
-            if curl -sSf http://127.0.0.1:5173/ >/dev/null; then
-              echo "dev server up"; break
-            fi
-            sleep 1
-          done
-          # Run component tests
-          npx playwright test tests/component --reporter=list
-          # Stop dev server
-          if [ -f dev.pid ]; then
-            kill "$(cat dev.pid)" || true
-            rm dev.pid || true
-          else
-            pkill -f 'vite' || true
-          fi
-
       - name: Build frontend
         working-directory: src/Frontend
         run: npm run build
 
-      - name: Run e2e tests with preview server
+      - name: Run e2e tests
         working-directory: src/Frontend
-        run: |
-          # Start preview server in background
-          nohup npm run preview -- --port 3000 > preview.log 2>&1 &
-          echo $! > preview.pid
-          # Wait for server to be available
-          for i in {1..20}; do
-            if curl -sSf http://127.0.0.1:3000/ >/dev/null; then
-              echo "preview server up"; break
-            fi
-            sleep 1
-          done
-          # Run e2e tests
-          npx playwright test tests/e2e --reporter=list
-          # Stop preview server
-          if [ -f preview.pid ]; then
-            kill "$(cat preview.pid)" || true
-            rm preview.pid || true
-          else
-            pkill -f 'vite preview' || true
-          fi
+        run: npx playwright test tests/e2e --reporter=list
 
       - name: Upload Playwright HTML report
         if: always()
@@ -107,10 +65,3 @@ jobs:
         with:
           name: playwright-report
           path: src/Frontend/playwright-report
-
-      - name: Stop any remaining servers
-        if: always()
-        working-directory: src/Frontend
-        run: |
-          pkill -f 'vite' || true
-          pkill -f 'vite preview' || true
