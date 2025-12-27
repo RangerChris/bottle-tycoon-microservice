@@ -1,4 +1,4 @@
-﻿using GameService.Data;
+﻿﻿using GameService.Data;
 using GameService.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,10 +33,8 @@ public class PlayerService : IPlayerService
 
         p.CreatedAt = DateTime.UtcNow;
         p.UpdatedAt = DateTime.UtcNow;
-        if (p.Credits == 0)
-        {
-            p.Credits = 1000;
-        }
+        // Always set starting credits for new players
+        p.Credits = 1300;
 
         _context.Players.Add(p);
         await _context.SaveChangesAsync();

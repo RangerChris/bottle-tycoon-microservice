@@ -56,7 +56,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
         var getRes = await client.GetAsync($"/player/{created.Id}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var player = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
-        player!.Credits.ShouldBe(1100m); // Starting 1000 + 100
+        player!.Credits.ShouldBe(1400m); // Starting 1300 + 100
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
         var getRes = await client.GetAsync($"/player/{created.Id}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var player = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
-        player!.Credits.ShouldBe(950m); // Starting 1000 - 50
+        player!.Credits.ShouldBe(1250m); // Starting 1300 - 50
     }
 
     [Fact]

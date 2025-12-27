@@ -31,7 +31,7 @@ export default function useGameLoop() {
     // run an immediate tick so time starts advancing without waiting for the first interval
     const store = (useGameStore as any).getState()
     if (mult > 0) {
-      store.depositTick(mult)
+      store.depositTick()
       store.attemptSmartDispatch()
     } else {
       // when paused, still run a quick dispatch check
@@ -43,7 +43,7 @@ export default function useGameLoop() {
       // Deposit loop runs every 1s real time; depositTick will handle multiplier (number of bottles per second)
       depositIntervalRef.current = window.setInterval(() => {
         const s = (useGameStore as any).getState()
-        s.depositTick(mult)
+        s.depositTick()
       }, 1000)
 
       // Smart dispatch loop: run every 2s divided by multiplier (faster speeds check more often)

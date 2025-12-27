@@ -47,6 +47,8 @@ public class TestcontainersFixture : IAsyncLifetime
 
     public string ConnectionString { get; private set; } = "";
 
+    public List<HttpRequestMessage> HttpRequests { get; } = [];
+
     public IHost? Host { get; private set; }
 
     public async ValueTask InitializeAsync()
@@ -78,6 +80,14 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddSwaggerGen();
         builder.Services.AddAuthorization();
         builder.Services.AddHealthChecks();
+        builder.Services.AddHttpClient();
+
+        // Add HttpClient for inter-service communication (mocked for tests)
+        builder.Services.AddHttpClient("GameService", client =>
+            {
+                client.BaseAddress = new Uri("http://localhost:5001"); // Test port, but since no service, it will be mocked
+            })
+            .AddHttpMessageHandler(() => new CapturingHandler(HttpRequests));
 
         builder.Services.AddDbContext<TruckDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -152,6 +162,23 @@ public class TestcontainersFixture : IAsyncLifetime
         catch (Exception ex)
         {
             Log.Error(ex, "Error disposing Postgres container");
+        }
+    }
+
+    private class CapturingHandler : DelegatingHandler
+    {
+        private readonly List<HttpRequestMessage> _requests;
+
+        public CapturingHandler(List<HttpRequestMessage> requests)
+        {
+            _requests = requests;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            _requests.Add(request);
+            // Return a successful response since the service isn't running
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
         }
     }
 }

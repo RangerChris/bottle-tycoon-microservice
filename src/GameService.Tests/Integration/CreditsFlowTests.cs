@@ -39,6 +39,6 @@ public class CreditsFlowTests : IClassFixture<TestcontainersFixture>
         var getRes = await client.GetAsync($"/player/{created.Id}", TestContext.Current.CancellationToken);
         getRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var player = await getRes.Content.ReadFromJsonAsync<Player>(TestContext.Current.CancellationToken);
-        player!.Credits.ShouldBe(1050m);
+        player!.Credits.ShouldBe(1350m);
     }
 }

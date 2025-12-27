@@ -22,7 +22,9 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    init()
+    (async () => {
+      await init()
+    })()
   }, [init])
 
   return (
