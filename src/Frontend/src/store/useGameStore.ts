@@ -55,7 +55,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   credits: 0,
   totalEarnings: 0,
   recyclers: [
-    { id: 1, level: 0, capacity: 100, currentBottles: { glass: 15, metal: 10, plastic: 20 }, visitor: null }
+    { id: 1, level: 0, capacity: 100, currentBottles: { glass: 0, metal: 0, plastic: 0 }, visitors: [] }
   ],
   trucks: [
     { id: 1, level: 0, capacity: 45, currentLoad: 0, status: 'idle', targetRecyclerId: null, cargo: null }
@@ -89,21 +89,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         const envBase = env?.VITE_API_BASE_URL
         const base = envBase || 'http://localhost:5001'
 
-        // Debit credits
-        const debitResponse = await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deduct`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                PlayerId: state.playerId,
-                Amount: cost,
-                Reason: 'Purchased recycler'
-            })
-        })
-
-        if (!debitResponse.ok) {
-            throw new Error('Failed to debit credits')
-        }
-
         const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
 
         const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers`, {
@@ -118,15 +103,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
 
         if (!response.ok) {
-            // If recycler creation fails, credit back
-            await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deposit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    Amount: cost,
-                    Reason: 'Refund recycler purchase'
-                })
-            })
             throw new Error('Failed to buy recycler')
         }
 
@@ -139,7 +115,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 level: 0,
                 capacity: newRecycler.capacity,
                 currentBottles: { glass: 0, metal: 0, plastic: 0 },
-                visitor: null
+                visitors: []
             })
             draft.buyingRecycler = false
             draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased Recycler #${newRecycler.id.toString().substring(0, 8)}` })
@@ -169,21 +145,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         const envBase = env?.VITE_API_BASE_URL
         const base = envBase || 'http://localhost:5001'
 
-        // Debit credits
-        const debitResponse = await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deduct`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                PlayerId: state.playerId,
-                Amount: cost,
-                Reason: 'Purchased truck'
-            })
-        })
-
-        if (!debitResponse.ok) {
-            throw new Error('Failed to debit credits')
-        }
-
         const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
 
         const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck`, {
@@ -198,16 +159,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
 
         if (!response.ok) {
-            // If truck creation fails, credit back
-            await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deposit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    PlayerId: state.playerId,
-                    Amount: cost,
-                    Reason: 'Refund truck purchase'
-                })
-            })
             throw new Error('Failed to buy truck')
         }
 
@@ -240,7 +191,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     const picked = { glass: Math.floor(Math.random() * 20) + 5, metal: Math.floor(Math.random() * 15) + 5, plastic: Math.floor(Math.random() * 25) + 10 }
     const total = picked.glass + picked.metal + picked.plastic
     set((draft: any) => {
-      const r = draft.recyclers.find((x: any) => x.id === recyclerId)
+      const r = draft.recyclers.find((x: any) => x.id == recyclerId)
       if (!r) return
       r.currentBottles.glass += picked.glass
       r.currentBottles.metal += picked.metal
@@ -252,7 +203,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
   upgradeRecycler: async (recyclerId: number | string) => {
     const state = get()
-    const r = state.recyclers.find((x: any) => x.id === recyclerId)
+    const r = state.recyclers.find((x: any) => x.id == recyclerId)
     if (!r) return
     if (r.level >= 3) { set((draft: any) => { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Recycler already at max level!' }) }); return }
     const cost = 200 * (r.level + 1)
@@ -262,21 +213,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         const env = (import.meta as any).env || {}
         const envBase = env?.VITE_API_BASE_URL
         const base = envBase || 'http://localhost:5001'
-
-        // Debit credits
-        const debitResponse = await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deduct`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                PlayerId: state.playerId,
-                Amount: cost,
-                Reason: 'Upgraded recycler'
-            })
-        })
-
-        if (!debitResponse.ok) {
-            throw new Error('Failed to debit credits')
-        }
 
         const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
 
@@ -289,16 +225,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
 
         if (!response.ok) {
-            // If upgrade fails, credit back
-            await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deposit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    PlayerId: state.playerId,
-                    Amount: cost,
-                    Reason: 'Refund recycler upgrade'
-                })
-            })
             throw new Error('Failed to upgrade recycler')
         }
 
@@ -306,7 +232,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
         set((draft: any) => {
             draft.credits -= cost
-            const recycler = draft.recyclers.find((x: any) => x.id === recyclerId)
+            const recycler = draft.recyclers.find((x: any) => x.id == recyclerId)
             if (recycler) {
                 recycler.level = updatedRecycler.capacityLevel
                 recycler.capacity = updatedRecycler.capacity
@@ -322,7 +248,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
   upgradeTruck: async (truckId: number | string) => {
     const state = get()
-    const t = state.trucks.find((x: any) => x.id === truckId)
+    const t = state.trucks.find((x: any) => x.id == truckId)
     if (!t) return
     if (t.level >= 3) { set((draft: any) => { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Truck already at max level!' }) }); return }
     const cost = 300 * (t.level + 1)
@@ -332,21 +258,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         const env = (import.meta as any).env || {}
         const envBase = env?.VITE_API_BASE_URL
         const base = envBase || 'http://localhost:5001'
-
-        // Debit credits
-        const debitResponse = await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deduct`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                PlayerId: state.playerId,
-                Amount: cost,
-                Reason: 'Upgraded truck'
-            })
-        })
-
-        if (!debitResponse.ok) {
-            throw new Error('Failed to debit credits')
-        }
 
         const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
 
@@ -359,16 +270,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
 
         if (!response.ok) {
-            // If upgrade fails, credit back
-            await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deposit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    PlayerId: state.playerId,
-                    Amount: cost,
-                    Reason: 'Refund truck upgrade'
-                })
-            })
             throw new Error('Failed to upgrade truck')
         }
 
@@ -376,7 +277,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
         set((draft: any) => {
             draft.credits -= cost
-            const truck = draft.trucks.find((x: any) => x.id === truckId)
+            const truck = draft.trucks.find((x: any) => x.id == truckId)
             if (truck) {
                 truck.level = updatedTruck.Level
                 truck.capacity = calculateCapacity(45, truck.level)
@@ -395,11 +296,14 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     const state = get()
     for (const truck of state.trucks) {
       if (truck.status === 'idle') {
-        const suitableRecycler = state.recyclers.find((recycler) => recycler.currentBottles.glass > 0 || recycler.currentBottles.metal > 0 || recycler.currentBottles.plastic > 0)
+        const suitableRecycler = state.recyclers.find((recycler) => {
+          const currentLoad = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
+          return currentLoad >= recycler.capacity * 0.8
+        })
         if (suitableRecycler) {
           set((draft: any) => {
-            const updatedTruck = draft.trucks.find((t: any) => t.id === truck.id)
-            const updatedRecycler = draft.recyclers.find((r: any) => r.id === suitableRecycler.id)
+            const updatedTruck = draft.trucks.find((t: any) => t.id == truck.id)
+            const updatedRecycler = draft.recyclers.find((r: any) => r.id == suitableRecycler.id)
             if (updatedTruck && updatedRecycler) {
               updatedTruck.status = 'en route'
               updatedTruck.targetRecyclerId = updatedRecycler.id
@@ -423,8 +327,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
               // Check if this recycler had a waiting visitor and space is now available
               const currentLoad = updatedRecycler.currentBottles.glass + updatedRecycler.currentBottles.metal + updatedRecycler.currentBottles.plastic
-              if (updatedRecycler.visitor && updatedRecycler.visitor.waiting && currentLoad < updatedRecycler.capacity) {
-                updatedRecycler.visitor.waiting = false
+              if (updatedRecycler.visitors.length > 0 && updatedRecycler.visitors[0].waiting && currentLoad < updatedRecycler.capacity) {
+                updatedRecycler.visitors[0].waiting = false
                 draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor resumed depositing at Recycler #${suitableRecycler.id}` })
               }
             }
@@ -439,7 +343,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
   deliverToPlant: async (truckId: number | string) => {
     const state = get()
-    const truck = state.trucks.find((t) => t.id === truckId)
+    const truck = state.trucks.find((t) => t.id == truckId)
     if (!truck || !truck.cargo) return
 
     const totalBottles = truck.cargo.glass + truck.cargo.metal + truck.cargo.plastic
@@ -461,11 +365,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             })
         })
     } catch (error) {
-        console.error('Failed to credit earnings:', error)
+        get().addLog('Failed to credit earnings.', 'error')
     }
 
     set((draft: any) => {
-      const updatedTruck = draft.trucks.find((t: any) => t.id === truckId)
+      const updatedTruck = draft.trucks.find((t: any) => t.id == truckId)
       if (updatedTruck) {
         updatedTruck.status = 'idle'
         updatedTruck.targetRecyclerId = null
@@ -487,13 +391,13 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
     set((draft: any) => {
       for (const recycler of draft.recyclers) {
-        if (recycler.visitor && recycler.visitor.remaining > 0) {
+        if (recycler.visitors.length > 0 && recycler.visitors[0].remaining > 0) {
           const currentLoad = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
           const hasSpace = currentLoad < recycler.capacity
 
           if (hasSpace) {
             // Deposit one bottle - randomly choose type from visitor's remaining bottles
-            const visitorBottles = recycler.visitor.bottles
+            const visitorBottles = recycler.visitors[0].bottles
             const availableTypes = []
             if (visitorBottles.glass > 0) availableTypes.push('glass')
             if (visitorBottles.metal > 0) availableTypes.push('metal')
@@ -502,34 +406,27 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             if (availableTypes.length > 0) {
               const randomType = availableTypes[Math.floor(Math.random() * availableTypes.length)]
               recycler.currentBottles[randomType] += 1
-              recycler.visitor.bottles[randomType] -= 1
-              recycler.visitor.remaining -= 1
+              recycler.visitors[0].bottles[randomType] -= 1
+              recycler.visitors[0].remaining -= 1
 
-              // Log the deposit
-              draft.logs.unshift({
-                id: uid(),
-                time: new Date().toLocaleTimeString(),
-                type: 'info',
-                message: `Visitor deposited 1 ${randomType} bottle at Recycler #${recycler.id}`
-              })
 
               // If visitor is done depositing, remove them and schedule next arrival
-              if (recycler.visitor.remaining === 0) {
+              if (recycler.visitors[0].remaining === 0) {
                 draft.logs.unshift({
                   id: uid(),
                   time: new Date().toLocaleTimeString(),
                   type: 'success',
                   message: `Visitor finished depositing bottles at Recycler #${recycler.id}`
                 })
-                recycler.visitor = null
+                recycler.visitors.shift()
                 // Schedule next visitor arrival
-                setTimeout(() => get().scheduleNextArrival(recycler.id), 100)
+                get().scheduleNextArrival(recycler.id)
               }
             }
           } else {
             // Recycler is full, mark visitor as waiting
-            if (!recycler.visitor.waiting) {
-              recycler.visitor.waiting = true
+            if (!recycler.visitors[0].waiting) {
+              recycler.visitors[0].waiting = true
               draft.logs.unshift({
                 id: uid(),
                 time: new Date().toLocaleTimeString(),
@@ -545,7 +442,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
   createVisitorForRecycler: (recyclerId: number | string) => {
     const state = get()
-    const recycler = state.recyclers.find((r) => r.id === recyclerId)
+    const recycler = state.recyclers.find((r) => r.id == recyclerId)
     if (!recycler) return
 
     // Generate random bottles for visitor (5-25 total bottles)
@@ -562,15 +459,17 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         bottles: { glass, metal, plastic },
         waiting: false
       }
-      draft.recyclers.find((r: any) => r.id === recyclerId)!.visitor = visitor
+      draft.recyclers.find((r: any) => r.id == recyclerId)!.visitors.push(visitor)
       draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor arrived at Recycler #${recyclerId} with ${totalBottles} bottles` })
     })
   },
 
   scheduleNextArrival: (recyclerId: number | string, minSec: number = 5, maxSec: number = 15) => {
     const state = get()
-    const recycler = state.recyclers.find((r) => r.id === recyclerId)
-    if (!recycler) return
+    const recycler = state.recyclers.find((r) => r.id == recyclerId)
+    if (!recycler) {
+      return
+    }
 
     const existingTimer = scheduledArrivalTimers.get(recyclerId)
     if (existingTimer) {
@@ -579,6 +478,10 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     }
 
     const randomDelay = Math.floor(Math.random() * (maxSec - minSec + 1) + minSec) * 1000
+    set((draft) => {
+      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor scheduled to arrive at Recycler #${recyclerId} in ${randomDelay / 1000} seconds` })
+      if (draft.logs.length > 50) draft.logs.pop()
+    })
     const timer = setTimeout(() => {
       get().createVisitorForRecycler(recyclerId)
       scheduledArrivalTimers.delete(recyclerId)
@@ -590,8 +493,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   init: async () => {
     set((draft: any) => {
       draft.totalEarnings = 0
-      draft.recyclers = []
-      draft.trucks = []
       draft.logs = []
       draft.chartPoints = []
       draft.lastTick = null
@@ -602,6 +503,12 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     })
 
     await get().fetchPlayer()
+
+    // Schedule initial visitor arrivals for all recyclers
+    const state = get()
+    for (const recycler of state.recyclers) {
+      get().scheduleNextArrival(recycler.id)
+    }
   },
 
   fetchPlayer: async () => {

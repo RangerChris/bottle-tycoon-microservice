@@ -1,4 +1,4 @@
-﻿﻿using GameService.Data;
+﻿using GameService.Data;
 using GameService.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -74,5 +74,11 @@ public class PlayerService : IPlayerService
     public async Task ResetAsync()
     {
         await _context.Players.ExecuteDeleteAsync();
+    }
+
+    public async Task UpdatePlayerAsync(Player player)
+    {
+        _context.Players.Update(player);
+        await _context.SaveChangesAsync();
     }
 }

@@ -13,7 +13,7 @@ export type Recycler = {
   level: number;
   capacity: number;
   currentBottles: BottleCounts;
-  visitor?: Visitor | null;
+  visitors: Visitor[];
 };
 
 export type TruckStatus = 'idle' | 'to_recycler' | 'loading' | 'to_plant' | 'delivering' | 'picking';
