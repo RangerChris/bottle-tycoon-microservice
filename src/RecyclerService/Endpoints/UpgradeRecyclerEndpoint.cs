@@ -1,8 +1,5 @@
 ﻿using FastEndpoints;
-using System;
-using System.Net.Http.Json;
 using RecyclerService.Data;
-using RecyclerService.Models;
 
 namespace RecyclerService.Endpoints;
 
@@ -60,6 +57,7 @@ public class UpgradeRecyclerEndpoint : Endpoint<UpgradeRecyclerEndpoint.Request,
             Id = recycler.Id,
             Name = recycler.Name,
             Capacity = recycler.Capacity,
+            CapacityLevel = recycler.CapacityLevel,
             CurrentLoad = recycler.CurrentLoad,
             Location = recycler.Location
         }, ct);
@@ -96,6 +94,7 @@ public class UpgradeRecyclerEndpoint : Endpoint<UpgradeRecyclerEndpoint.Request,
         public Guid Id { get; set; }
         public string Name { get; set; } = default!;
         public int Capacity { get; set; }
+        public int CapacityLevel { get; set; }
         public int CurrentLoad { get; set; }
         public string? Location { get; set; }
     }

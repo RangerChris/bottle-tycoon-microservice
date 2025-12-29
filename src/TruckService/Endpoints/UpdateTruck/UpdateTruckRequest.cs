@@ -1,4 +1,4 @@
-﻿﻿namespace TruckService.Endpoints.UpdateTruck;
+﻿namespace TruckService.Endpoints.UpdateTruck;
 
 public class UpdateTruckRequest
 {

@@ -35,6 +35,9 @@ export type GameState = {
   // internal helpers for init
   init: () => Promise<void>
   fetchPlayer: () => Promise<void>
+  initializeServices: () => Promise<void>
+  fetchRecyclers: () => Promise<void>
+  fetchTrucks: () => Promise<void>
 }
 
 // helper: calculate capacity based on level
@@ -279,11 +282,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             draft.credits -= cost
             const truck = draft.trucks.find((x: any) => x.id == truckId)
             if (truck) {
-                truck.level = updatedTruck.Level
+                truck.level = updatedTruck.level
                 truck.capacity = calculateCapacity(45, truck.level)
-                truck.model = updatedTruck.Model
+                truck.model = updatedTruck.model
             }
-            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${truckId} upgraded to Level ${updatedTruck.Level}` })
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${truckId} upgraded to Level ${updatedTruck.level}` })
         })
     } catch (error) {
         set((draft: any) => {
@@ -294,6 +297,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
   attemptSmartDispatch: () => {
     const state = get()
+    const mult = timeMultipliers[state.timeLevel] || 1
     for (const truck of state.trucks) {
       if (truck.status === 'idle') {
         const suitableRecycler = state.recyclers.find((recycler) => {
@@ -334,8 +338,9 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             }
           })
 
-          // Schedule arrival at plant after 10 seconds
-          setTimeout(() => get().deliverToPlant(truck.id), 10000)
+          // Schedule arrival at plant after 10 seconds, adjusted for time multiplier
+          const deliveryTime = Math.max(1000, 10000 / mult) // Minimum 1 second
+          setTimeout(() => get().deliverToPlant(truck.id), deliveryTime)
         }
       }
     }
@@ -389,6 +394,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     const state = get()
     if (!state.playerId) return // Wait for player to be initialized
 
+    const mult = timeMultipliers[state.timeLevel] || 1
+
     set((draft: any) => {
       for (const recycler of draft.recyclers) {
         if (recycler.visitors.length > 0 && recycler.visitors[0].remaining > 0) {
@@ -396,32 +403,36 @@ const useGameStore = create(immer<GameState>((set, get) => ({
           const hasSpace = currentLoad < recycler.capacity
 
           if (hasSpace) {
-            // Deposit one bottle - randomly choose type from visitor's remaining bottles
-            const visitorBottles = recycler.visitors[0].bottles
-            const availableTypes = []
-            if (visitorBottles.glass > 0) availableTypes.push('glass')
-            if (visitorBottles.metal > 0) availableTypes.push('metal')
-            if (visitorBottles.plastic > 0) availableTypes.push('plastic')
+            // Deposit bottles based on time multiplier
+            for (let i = 0; i < mult; i++) {
+              if (recycler.visitors[0].remaining <= 0) break
 
-            if (availableTypes.length > 0) {
-              const randomType = availableTypes[Math.floor(Math.random() * availableTypes.length)]
-              recycler.currentBottles[randomType] += 1
-              recycler.visitors[0].bottles[randomType] -= 1
-              recycler.visitors[0].remaining -= 1
+              // Deposit one bottle - randomly choose type from visitor's remaining bottles
+              const visitorBottles = recycler.visitors[0].bottles
+              const availableTypes = []
+              if (visitorBottles.glass > 0) availableTypes.push('glass')
+              if (visitorBottles.metal > 0) availableTypes.push('metal')
+              if (visitorBottles.plastic > 0) availableTypes.push('plastic')
 
-
-              // If visitor is done depositing, remove them and schedule next arrival
-              if (recycler.visitors[0].remaining === 0) {
-                draft.logs.unshift({
-                  id: uid(),
-                  time: new Date().toLocaleTimeString(),
-                  type: 'success',
-                  message: `Visitor finished depositing bottles at Recycler #${recycler.id}`
-                })
-                recycler.visitors.shift()
-                // Schedule next visitor arrival
-                get().scheduleNextArrival(recycler.id)
+              if (availableTypes.length > 0) {
+                const randomType = availableTypes[Math.floor(Math.random() * availableTypes.length)]
+                recycler.currentBottles[randomType] += 1
+                recycler.visitors[0].bottles[randomType] -= 1
+                recycler.visitors[0].remaining -= 1
               }
+            }
+
+            // If visitor is done depositing, remove them and schedule next arrival
+            if (recycler.visitors[0].remaining === 0) {
+              draft.logs.unshift({
+                id: uid(),
+                time: new Date().toLocaleTimeString(),
+                type: 'success',
+                message: `Visitor finished depositing bottles at Recycler #${recycler.id}`
+              })
+              recycler.visitors.shift()
+              // Schedule next visitor arrival
+              get().scheduleNextArrival(recycler.id)
             }
           } else {
             // Recycler is full, mark visitor as waiting
@@ -477,7 +488,9 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       scheduledArrivalTimers.delete(recyclerId)
     }
 
-    const randomDelay = Math.floor(Math.random() * (maxSec - minSec + 1) + minSec) * 1000
+    const mult = timeMultipliers[state.timeLevel] || 1
+    const randomDelay = Math.max(1000, Math.floor(Math.random() * (maxSec - minSec + 1) + minSec) * 1000 / mult) // Minimum 1 second
+
     set((draft) => {
       draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor scheduled to arrive at Recycler #${recyclerId} in ${randomDelay / 1000} seconds` })
       if (draft.logs.length > 50) draft.logs.pop()
@@ -503,6 +516,13 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     })
 
     await get().fetchPlayer()
+
+    // Initialize services
+    await get().initializeServices()
+
+    // Fetch recyclers and trucks
+    await get().fetchRecyclers()
+    await get().fetchTrucks()
 
     // Schedule initial visitor arrivals for all recyclers
     const state = get()
@@ -544,6 +564,88 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       set((draft: any) => {
         draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to initialize player data.' })
       })
+    }
+  },
+
+  initializeServices: async () => {
+    try {
+      const env = (import.meta as any).env || {}
+      const envBase = env?.VITE_API_BASE_URL
+      const base = envBase || 'http://localhost:5001'
+
+      const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
+      const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
+
+      // Initialize RecyclerService
+      await fetch(`${recyclerBase.replace(/\/$/, '')}/initialize`, {
+        method: 'POST'
+      })
+
+      // Initialize TruckService
+      await fetch(`${truckBase.replace(/\/$/, '')}/initialize`, {
+        method: 'POST'
+      })
+    } catch (error) {
+      get().addLog('Failed to initialize services.', 'error')
+    }
+  },
+
+  fetchRecyclers: async () => {
+    try {
+      const env = (import.meta as any).env || {}
+      const envBase = env?.VITE_API_BASE_URL
+      const base = envBase || 'http://localhost:5001'
+
+      const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
+
+      const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch recyclers')
+      }
+      const recyclers = await response.json()
+
+      set((draft: any) => {
+        draft.recyclers = recyclers.map((r: any) => ({
+          id: r.id,
+          level: r.capacityLevel,
+          capacity: r.capacity,
+          currentBottles: { glass: 0, metal: 0, plastic: 0 }, // Assuming CurrentLoad is total, but we need breakdown
+          visitors: []
+        }))
+      })
+    } catch (error) {
+      get().addLog('Failed to fetch recyclers.', 'error')
+    }
+  },
+
+  fetchTrucks: async () => {
+    try {
+      const env = (import.meta as any).env || {}
+      const envBase = env?.VITE_API_BASE_URL
+      const base = envBase || 'http://localhost:5001'
+
+      const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
+
+      const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch trucks')
+      }
+      const trucks = await response.json()
+
+      set((draft: any) => {
+        draft.trucks = trucks.map((t: any) => ({
+          id: t.id,
+          model: t.model,
+          level: t.level,
+          capacity: calculateCapacity(45, t.level),
+          currentLoad: 0,
+          status: 'idle',
+          targetRecyclerId: null,
+          cargo: null
+        }))
+      })
+    } catch (error) {
+      get().addLog('Failed to fetch trucks.', 'error')
     }
   }
 })))

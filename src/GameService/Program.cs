@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FastEndpoints;
 using GameService.Data;
@@ -72,8 +72,10 @@ builder.Services.AddOpenTelemetry()
 // Health Checks
 var healthChecks = builder.Services.AddHealthChecks();
 var dbCs = builder.Configuration.GetConnectionString("GameStateConnection");
-healthChecks.AddNpgSql(dbCs!);
-
+if (!string.IsNullOrEmpty(dbCs))
+{
+    healthChecks.AddNpgSql(dbCs);
+}
 
 // Business Services
 builder.Services.AddScoped<IPlayerService, PlayerService>();

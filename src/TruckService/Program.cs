@@ -62,16 +62,13 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.AllowAnyOrigin()
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+                .AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 builder.Services.AddHttpClient();
 // Add HttpClient for inter-service communication
-builder.Services.AddHttpClient("GameService", client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["Services:GameService"] ?? "http://gameservice:80");
-});
+builder.Services.AddHttpClient("GameService", client => { client.BaseAddress = new Uri(builder.Configuration["Services:GameService"] ?? "http://gameservice:80"); });
 builder.Services.AddFastEndpoints()
     .SwaggerDocument();
 builder.Services.AddEndpointsApiExplorer();

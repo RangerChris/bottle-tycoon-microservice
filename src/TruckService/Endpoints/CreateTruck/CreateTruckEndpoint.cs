@@ -1,5 +1,4 @@
 ﻿using FastEndpoints;
-using System.Net.Http.Json;
 using TruckService.Models;
 using TruckService.Services;
 
@@ -7,8 +6,8 @@ namespace TruckService.Endpoints.CreateTruck;
 
 public class CreateTruckEndpoint : Endpoint<CreateTruckRequest, TruckDto>
 {
-    private readonly ITruckService _service;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ITruckService _service;
 
     public CreateTruckEndpoint(ITruckService service, IHttpClientFactory httpClientFactory)
     {

@@ -1,5 +1,4 @@
 ﻿using FastEndpoints;
-using System.Net.Http.Json;
 using TruckService.Data;
 using TruckService.Models;
 
@@ -52,7 +51,7 @@ public class UpgradeTruckEndpoint : Endpoint<UpgradeTruckRequest, TruckDto>
         // Update model name to reflect upgrade if it's the standard name
         if (truck.Model == "Standard Truck" || truck.Model.StartsWith("Standard Truck Mk"))
         {
-             truck.Model = $"Standard Truck Mk {truck.CapacityLevel + 1}";
+            truck.Model = $"Standard Truck Mk {truck.CapacityLevel + 1}";
         }
 
         await _db.SaveChangesAsync(ct);

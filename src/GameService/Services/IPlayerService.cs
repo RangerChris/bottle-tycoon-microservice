@@ -1,4 +1,4 @@
-﻿﻿using GameService.Models;
+﻿using GameService.Models;
 
 namespace GameService.Services;
 

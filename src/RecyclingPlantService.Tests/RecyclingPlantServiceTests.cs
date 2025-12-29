@@ -10,16 +10,16 @@ namespace RecyclingPlantService.Tests;
 public class RecyclingPlantServiceTests : IDisposable
 {
     private readonly RecyclingPlantDbContext _dbContext;
-    private readonly RecyclingPlantService.Services.RecyclingPlantService _service;
+    private readonly Services.RecyclingPlantService _service;
 
     public RecyclingPlantServiceTests()
     {
         var options = new DbContextOptionsBuilder<RecyclingPlantDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _dbContext = new RecyclingPlantDbContext(options);
-        var loggerMock = new Mock<ILogger<RecyclingPlantService.Services.RecyclingPlantService>>();
-        _service = new RecyclingPlantService.Services.RecyclingPlantService(_dbContext, loggerMock.Object);
+        var loggerMock = new Mock<ILogger<Services.RecyclingPlantService>>();
+        _service = new Services.RecyclingPlantService(_dbContext, loggerMock.Object);
     }
 
     public void Dispose()

@@ -1,4 +1,4 @@
-﻿﻿namespace TruckService.Endpoints.UpgradeTruck;
+﻿namespace TruckService.Endpoints.UpgradeTruck;
 
 public class UpgradeTruckRequest
 {
