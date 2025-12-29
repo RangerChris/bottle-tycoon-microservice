@@ -1,4 +1,4 @@
-﻿﻿namespace GameService.Models;
+﻿namespace GameService.Models;
 
 public class Player
 {

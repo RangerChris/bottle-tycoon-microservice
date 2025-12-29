@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Net;
+using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
 using FastEndpoints;
 using Microsoft.AspNetCore.Builder;
@@ -270,7 +271,7 @@ public class TestcontainersFixture : IAsyncLifetime
         {
             _requests.Add(request);
             // Return a successful response since the service isn't running
-            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿﻿using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Shouldly;
@@ -37,7 +37,7 @@ public class UpgradeTruckEndpointTests : IClassFixture<TestcontainersFixture>
         var truckId = created.Id;
 
         // 2. Upgrade to Level 1
-        var upgRes1 = await client.PostAsJsonAsync($"/truck/{truckId}/upgrade", new {}, TestContext.Current.CancellationToken);
+        var upgRes1 = await client.PostAsJsonAsync($"/truck/{truckId}/upgrade", new { }, TestContext.Current.CancellationToken);
         upgRes1.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var upgDto1 = JsonSerializer.Deserialize<TruckDto>(
@@ -48,7 +48,7 @@ public class UpgradeTruckEndpointTests : IClassFixture<TestcontainersFixture>
         upgDto1.Model.ShouldBe("Standard Truck Mk 2");
 
         // 3. Upgrade to Level 2
-        var upgRes2 = await client.PostAsJsonAsync($"/truck/{truckId}/upgrade", new {}, TestContext.Current.CancellationToken);
+        var upgRes2 = await client.PostAsJsonAsync($"/truck/{truckId}/upgrade", new { }, TestContext.Current.CancellationToken);
         upgRes2.StatusCode.ShouldBe(HttpStatusCode.OK);
         var upgDto2 = JsonSerializer.Deserialize<TruckDto>(
             await upgRes2.Content.ReadAsStringAsync(TestContext.Current.CancellationToken),
@@ -57,7 +57,7 @@ public class UpgradeTruckEndpointTests : IClassFixture<TestcontainersFixture>
         upgDto2?.Model.ShouldBe("Standard Truck Mk 3");
 
         // 4. Upgrade to Level 3 (Max)
-        var upgRes3 = await client.PostAsJsonAsync($"/truck/{truckId}/upgrade", new {}, TestContext.Current.CancellationToken);
+        var upgRes3 = await client.PostAsJsonAsync($"/truck/{truckId}/upgrade", new { }, TestContext.Current.CancellationToken);
         upgRes3.StatusCode.ShouldBe(HttpStatusCode.OK);
         var upgDto3 = JsonSerializer.Deserialize<TruckDto>(
             await upgRes3.Content.ReadAsStringAsync(TestContext.Current.CancellationToken),
@@ -66,7 +66,7 @@ public class UpgradeTruckEndpointTests : IClassFixture<TestcontainersFixture>
         upgDto3?.Model.ShouldBe("Standard Truck Mk 4");
 
         // 5. Attempt Upgrade beyond Max
-        var upgRes4 = await client.PostAsJsonAsync($"/truck/{truckId}/upgrade", new {}, TestContext.Current.CancellationToken);
+        var upgRes4 = await client.PostAsJsonAsync($"/truck/{truckId}/upgrade", new { }, TestContext.Current.CancellationToken);
         upgRes4.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
@@ -76,7 +76,7 @@ public class UpgradeTruckEndpointTests : IClassFixture<TestcontainersFixture>
         var client = _fixture.Client;
         var invalidId = Guid.NewGuid();
 
-        var res = await client.PostAsJsonAsync($"/truck/{invalidId}/upgrade", new {}, TestContext.Current.CancellationToken);
+        var res = await client.PostAsJsonAsync($"/truck/{invalidId}/upgrade", new { }, TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 }

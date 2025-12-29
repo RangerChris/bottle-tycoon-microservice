@@ -13,10 +13,7 @@ public class HealthEndpointTests
     [Fact]
     public async Task HealthEndpoint_ShouldReturnHealthy()
     {
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Testing");
-        });
+        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => { builder.UseEnvironment("Testing"); });
 
         var client = factory.CreateClient();
         var response = await client.GetAsync("/health", TestContext.Current.CancellationToken);

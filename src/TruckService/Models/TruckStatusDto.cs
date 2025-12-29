@@ -1,4 +1,4 @@
-﻿﻿namespace TruckService.Models;
+﻿namespace TruckService.Models;
 
 public class TruckStatusDto
 {

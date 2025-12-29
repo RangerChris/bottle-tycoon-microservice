@@ -1,8 +1,5 @@
-﻿﻿using FastEndpoints;
-using System;
-using System.Net.Http.Json;
+﻿using FastEndpoints;
 using RecyclerService.Data;
-using RecyclerService.Models;
 
 namespace RecyclerService.Endpoints;
 

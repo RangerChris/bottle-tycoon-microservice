@@ -7,8 +7,8 @@ namespace HeadquartersService.Tests;
 
 public class HeadquartersServiceTests
 {
-    private readonly Mock<IFleetService> _fleetServiceMock;
     private readonly Mock<IDispatchQueue> _dispatchQueueMock;
+    private readonly Mock<IFleetService> _fleetServiceMock;
     private readonly Services.HeadquartersService _headquartersService;
 
     public HeadquartersServiceTests()

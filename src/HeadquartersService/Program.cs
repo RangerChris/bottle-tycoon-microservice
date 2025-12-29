@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using HeadquartersService.Services;
@@ -50,8 +50,8 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.AllowAnyOrigin()
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+                .AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 

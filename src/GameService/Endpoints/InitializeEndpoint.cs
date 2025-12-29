@@ -1,4 +1,4 @@
-﻿﻿using FastEndpoints;
+﻿using FastEndpoints;
 using GameService.Services;
 
 namespace GameService.Endpoints;
