@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TruckService.Data;
 using TruckService.Models;
 
@@ -31,6 +31,7 @@ public class TruckService : ITruckService
 
         t.Model = string.IsNullOrEmpty(t.Model) ? "Standard Truck" : t.Model;
         t.IsActive = true;
+        t.Level = 0;
 
         var ent = new TruckEntity
         {

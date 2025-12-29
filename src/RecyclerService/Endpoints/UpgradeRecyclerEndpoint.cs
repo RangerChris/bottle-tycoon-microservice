@@ -1,16 +1,17 @@
 ﻿using FastEndpoints;
+using System;
 using System.Net.Http.Json;
 using RecyclerService.Data;
 using RecyclerService.Models;
 
 namespace RecyclerService.Endpoints;
 
-public class CreateRecyclerEndpoint : Endpoint<CreateRecyclerEndpoint.Request, CreateRecyclerEndpoint.Response>
+public class UpgradeRecyclerEndpoint : Endpoint<UpgradeRecyclerEndpoint.Request, UpgradeRecyclerEndpoint.Response>
 {
     private readonly RecyclerDbContext _db;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public CreateRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory)
+    public UpgradeRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory)
     {
         _db = db;
         _httpClientFactory = httpClientFactory;
@@ -19,42 +20,49 @@ public class CreateRecyclerEndpoint : Endpoint<CreateRecyclerEndpoint.Request, C
     public override void Configure()
     {
         Verbs("POST");
-        Routes("/recyclers");
+        Routes("/recyclers/{RecyclerId}/upgrade");
         AllowAnonymous();
         Options(x => x.WithTags("Recycler"));
     }
 
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
-        // Deduct credits for new recycler: 500 credits
-        var debitSuccess = await DebitCreditsAsync(req.PlayerId, 500m, "Purchased new recycler", ct);
+        var recycler = await _db.Recyclers.FindAsync(new object[] { req.RecyclerId }, ct);
+        if (recycler == null)
+        {
+            await Send.NotFoundAsync(ct);
+            return;
+        }
+
+        if (recycler.CapacityLevel >= 3)
+        {
+            AddError("Recycler is already at max level");
+            await Send.ErrorsAsync(400, ct);
+            return;
+        }
+
+        // Calculate cost: 200 * (current level + 1)
+        var cost = 200m * (recycler.CapacityLevel + 1);
+        var debitSuccess = await DebitCreditsAsync(req.PlayerId, cost, $"Upgraded recycler to level {recycler.CapacityLevel + 1}", ct);
         if (!debitSuccess)
         {
             await Send.ErrorsAsync(400, ct);
             return;
         }
 
-        var entity = new Recycler
-        {
-            Id = req.Id == Guid.Empty ? Guid.NewGuid() : req.Id,
-            Name = req.Name,
-            Capacity = req.Capacity, // Use capacity from request
-            CapacityLevel = 0,
-            Location = req.Location,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
+        recycler.CapacityLevel++;
+        recycler.Capacity = (int)(100 * Math.Pow(1.25, recycler.CapacityLevel));
 
-        _db.Recyclers.Add(entity);
         await _db.SaveChangesAsync(ct);
 
-        await Send.ResultAsync(TypedResults.Created($"/recyclers/{entity.Id}", new Response
+        await Send.OkAsync(new Response
         {
-            Id = entity.Id,
-            Name = entity.Name,
-            Capacity = entity.Capacity,
-            CurrentLoad = entity.CurrentLoad,
-            Location = entity.Location
-        }));
+            Id = recycler.Id,
+            Name = recycler.Name,
+            Capacity = recycler.Capacity,
+            CurrentLoad = recycler.CurrentLoad,
+            Location = recycler.Location
+        }, ct);
     }
 
     private async Task<bool> DebitCreditsAsync(Guid playerId, decimal amount, string reason, CancellationToken ct)
@@ -80,10 +88,7 @@ public class CreateRecyclerEndpoint : Endpoint<CreateRecyclerEndpoint.Request, C
     public record Request
     {
         public Guid PlayerId { get; set; }
-        public Guid Id { get; set; }
-        public string Name { get; set; } = default!;
-        public int Capacity { get; set; }
-        public string? Location { get; set; }
+        public Guid RecyclerId { get; set; }
     }
 
     public new record Response

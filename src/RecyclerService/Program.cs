@@ -95,6 +95,13 @@ builder.Services.AddCors(options =>
                   .AllowAnyMethod();
         });
 });
+builder.Services.AddHttpClient();
+
+// Add HttpClient for inter-service communication
+builder.Services.AddHttpClient("GameService", client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["Services:GameService"] ?? "http://gameservice:80");
+    });
 
 try
 {

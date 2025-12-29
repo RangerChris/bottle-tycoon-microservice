@@ -1,7 +1,8 @@
-﻿﻿namespace TruckService.Endpoints.CreateTruck;
+﻿namespace TruckService.Endpoints.CreateTruck;
 
 public class CreateTruckRequest
 {
+    public Guid PlayerId { get; set; }
     public Guid Id { get; set; }
     public string Model { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;

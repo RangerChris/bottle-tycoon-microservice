@@ -32,7 +32,7 @@ Goals:
 
 - Truck Service (owner of truck fleet state)
   - Manages truck status, current load, level and capacities.
-
+  
 - Headquarters Service
   - Orchestrates dispatch decisions by querying service APIs and calling endpoints directly.
 
@@ -93,12 +93,7 @@ flowchart LR
 
 ## Key Flows (summary)
 
-- Visitor → Recycler → Truck → Plant (synchronous flow summary):
-  - Visitors deposit bottles at a Recycler endpoint.
-  - When a Recycler needs pickup, the Recycler calls Headquarters/Dispatch endpoints or Headquarters polls Recyclers to determine dispatch decisions.
-  - Trucks are instructed via direct HTTP calls to the Truck Service API to perform dispatch and loading lifecycles.
-  - When deliveries are completed, the Recycling Plant exposes an endpoint that the Truck Service calls to submit delivery details and receive credits.
-  - The Game Service exposes endpoints to credit player accounts directly; callers should call it synchronously where immediate balance updates are required.
+See project-description.md
 
 ## Deployment
 
@@ -119,7 +114,6 @@ Suggested service ports (local / compose):
 
 Docker Compose notes:
 - Use one Postgres instance per service or schema-per-service depending on desired isolation.
-- Remove rabbitmq and redis services from the compose file used for development and tests.
 - Keep named volumes to persist DB data in development when useful for debugging.
 
 ## Observability

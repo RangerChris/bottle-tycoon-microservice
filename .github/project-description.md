@@ -30,8 +30,8 @@ Manage a bottle recycling network. Start with 1 recycler and 1 truck, grow your 
    - Delivers and earns credits (1.5-2.5 seconds unloading)
    - Returns to idle state
    - **Each trip varies** due to simulated traffic conditions (±30% time variance)
-5. **Credits earned** are added to your account
-6. **Purchase upgrades** or buy additional equipment
+5. **Credits earned** are added to players account
+6. **Purchase upgrades** recyclers and trucks to increase capacity and efficiency add cost credits
 
 ### Time Controls
 - **Pause** - Stop all game activity

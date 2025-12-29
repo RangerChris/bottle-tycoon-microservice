@@ -18,6 +18,7 @@ export type GameState = {
   timeLevel: number
   buyingRecycler: boolean
   buyingTruck: boolean
+  playerId: string | null
   // actions
   setTimeLevel: (level: number) => void
   addLog: (message: string, type?: LogEntry['type']) => void
@@ -27,11 +28,13 @@ export type GameState = {
   upgradeRecycler: (recyclerId: number | string) => void
   upgradeTruck: (truckId: number | string) => void
   attemptSmartDispatch: () => void
-  depositTick: (mult: number) => void
+  deliverToPlant: (truckId: number | string) => void
+  depositTick: () => void
   createVisitorForRecycler: (recyclerId: number | string) => void
   scheduleNextArrival: (recyclerId: number | string, minSec?: number, maxSec?: number) => void
   // internal helpers for init
-  init: () => void
+  init: () => Promise<void>
+  fetchPlayer: () => Promise<void>
 }
 
 // helper: calculate capacity based on level
@@ -43,16 +46,16 @@ function calculateCapacity(base: number, level: number) {
 const timeMultipliers: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 4, 5: 5 }
 
 // Track scheduled arrival timers to avoid duplicates per recycler
-const scheduledArrivalTimers = new Map<number | string, number>()
+const scheduledArrivalTimers = new Map<number | string, any>()
 
 // Watchdog interval id to ensure scheduling is active
 let arrivalsWatchdog: number | null = null
 
 const useGameStore = create(immer<GameState>((set, get) => ({
-  credits: 1000,
+  credits: 0,
   totalEarnings: 0,
   recyclers: [
-    { id: 1, level: 0, capacity: 100, currentBottles: { glass: 15, metal: 10, plastic: 20 }, visitor: null }
+    { id: 1, level: 0, capacity: 100, currentBottles: { glass: 0, metal: 0, plastic: 0 }, visitors: [] }
   ],
   trucks: [
     { id: 1, level: 0, capacity: 45, currentLoad: 0, status: 'idle', targetRecyclerId: null, cargo: null }
@@ -63,6 +66,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   timeLevel: 2,
   buyingRecycler: false,
   buyingTruck: false,
+  playerId: null,
 
   setTimeLevel: (level: number) => set((draft: any) => { draft.timeLevel = Math.max(1, Math.min(5, level)) }),
 
@@ -84,12 +88,14 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         const env = (import.meta as any).env || {}
         const envBase = env?.VITE_API_BASE_URL
         const base = envBase || 'http://localhost:5001'
+
         const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
 
         const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                playerId: state.playerId,
                 name: `Recycler ${state.recyclers.length + 1}`,
                 capacity: 100,
                 location: 'Default'
@@ -109,7 +115,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 level: 0,
                 capacity: newRecycler.capacity,
                 currentBottles: { glass: 0, metal: 0, plastic: 0 },
-                visitor: null
+                visitors: []
             })
             draft.buyingRecycler = false
             draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased Recycler #${newRecycler.id.toString().substring(0, 8)}` })
@@ -138,12 +144,15 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         const env = (import.meta as any).env || {}
         const envBase = env?.VITE_API_BASE_URL
         const base = envBase || 'http://localhost:5001'
+
         const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
 
         const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                playerId: state.playerId,
+                id: crypto.randomUUID(),
                 model: 'Standard Truck',
                 isActive: true
             })
@@ -182,7 +191,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     const picked = { glass: Math.floor(Math.random() * 20) + 5, metal: Math.floor(Math.random() * 15) + 5, plastic: Math.floor(Math.random() * 25) + 10 }
     const total = picked.glass + picked.metal + picked.plastic
     set((draft: any) => {
-      const r = draft.recyclers.find((x: any) => x.id === recyclerId)
+      const r = draft.recyclers.find((x: any) => x.id == recyclerId)
       if (!r) return
       r.currentBottles.glass += picked.glass
       r.currentBottles.metal += picked.metal
@@ -192,20 +201,54 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     setTimeout(() => get().attemptSmartDispatch(), 50)
   },
 
-  upgradeRecycler: (recyclerId: number | string) => set((draft: any) => {
-    const r = draft.recyclers.find((x: any) => x.id === recyclerId)
+  upgradeRecycler: async (recyclerId: number | string) => {
+    const state = get()
+    const r = state.recyclers.find((x: any) => x.id == recyclerId)
     if (!r) return
-    if (r.level >= 3) { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Recycler already at max level!' }); return }
+    if (r.level >= 3) { set((draft: any) => { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Recycler already at max level!' }) }); return }
     const cost = 200 * (r.level + 1)
-    if (draft.credits < cost) { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits for upgrade!' }); return }
-    draft.credits -= cost
-    r.level++
-    draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Recycler #${recyclerId} upgraded to Level ${r.level}` })
-  }),
+    if (state.credits < cost) { set((draft: any) => { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits for upgrade!' }) }); return }
+
+    try {
+        const env = (import.meta as any).env || {}
+        const envBase = env?.VITE_API_BASE_URL
+        const base = envBase || 'http://localhost:5001'
+
+        const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
+
+        const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers/${recyclerId}/upgrade`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                playerId: state.playerId
+            })
+        })
+
+        if (!response.ok) {
+            throw new Error('Failed to upgrade recycler')
+        }
+
+        const updatedRecycler = await response.json()
+
+        set((draft: any) => {
+            draft.credits -= cost
+            const recycler = draft.recyclers.find((x: any) => x.id == recyclerId)
+            if (recycler) {
+                recycler.level = updatedRecycler.capacityLevel
+                recycler.capacity = updatedRecycler.capacity
+            }
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Recycler #${recyclerId} upgraded to Level ${updatedRecycler.capacityLevel}` })
+        })
+    } catch (error) {
+        set((draft: any) => {
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to upgrade recycler.' })
+        })
+    }
+  },
 
   upgradeTruck: async (truckId: number | string) => {
     const state = get()
-    const t = state.trucks.find((x: any) => x.id === truckId)
+    const t = state.trucks.find((x: any) => x.id == truckId)
     if (!t) return
     if (t.level >= 3) { set((draft: any) => { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Truck already at max level!' }) }); return }
     const cost = 300 * (t.level + 1)
@@ -215,12 +258,15 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         const env = (import.meta as any).env || {}
         const envBase = env?.VITE_API_BASE_URL
         const base = envBase || 'http://localhost:5001'
+
         const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
 
         const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck/${truckId}/upgrade`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
+            body: JSON.stringify({
+                playerId: state.playerId
+            })
         })
 
         if (!response.ok) {
@@ -231,12 +277,13 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
         set((draft: any) => {
             draft.credits -= cost
-            const truck = draft.trucks.find((x: any) => x.id === truckId)
+            const truck = draft.trucks.find((x: any) => x.id == truckId)
             if (truck) {
-                truck.level = updatedTruck.level
-                truck.model = updatedTruck.model
+                truck.level = updatedTruck.Level
+                truck.capacity = calculateCapacity(45, truck.level)
+                truck.model = updatedTruck.Model
             }
-            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${truckId} upgraded to Level ${updatedTruck.level}` })
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${truckId} upgraded to Level ${updatedTruck.Level}` })
         })
     } catch (error) {
         set((draft: any) => {
@@ -245,370 +292,260 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     }
   },
 
-  // depositTick: perform per-second deposit using multiplier from time control
-  depositTick: (mult: number) => {
-    if (mult <= 0) return
-    // debug logging removed
-    set((draft: any) => {
-      let updated = false
-      for (const recycler of draft.recyclers) {
-        const v = recycler.visitor
-        for (let i = 0; i < mult; i++) {
-          if (v && v.remaining > 0) {
-            const totalBottles = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
-            const capacity = calculateCapacity(recycler.capacity, recycler.level)
-            if (totalBottles >= capacity) {
-              if (!v.waiting) {
-                v.waiting = true
-                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: `Visitor at Recycler #${recycler.id} waiting - recycler is full (${totalBottles}/${capacity})` })
-              }
-              break
-            }
-            if (v.waiting) {
-              v.waiting = false
-              draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor at Recycler #${recycler.id} can now deposit - space available` })
-            }
-            const types = ['glass', 'metal', 'plastic'].filter((t: any) => v.bottles[t] > 0)
-            if (types.length === 0) { v.remaining = 0; break }
-            const t = types[Math.floor(Math.random() * types.length)]
-            v.bottles[t]--
-            v.remaining--
-            recycler.currentBottles[t] = (recycler.currentBottles[t] || 0) + 1
-            updated = true
-          } else {
-            break
-          }
-        }
-        if (v && v.remaining <= 0) {
-          draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor finished at Recycler #${recycler.id}` })
-          recycler.visitor = null
-          // scheduleNextArrival will be called outside of the immer set to avoid nested setTimeout in mutation
-        }
-      }
-      // always update lastTick so UI reflects the tick regardless of whether bottles changed
-      try { draft.lastTick = Date.now() } catch {}
-    })
-
-    // After state changes, schedule next arrivals for any recycler without visitor
-    const s = get()
-    s.recyclers.forEach((r) => {
-      if (!r.visitor) {
-        // only schedule if there's no existing pending arrival timer for this recycler
-        if (!scheduledArrivalTimers.has(r.id)) {
-          get().scheduleNextArrival(r.id, 3, 8)
-        }
-      }
-    })
-
-    // Trigger smart dispatch if any changes occurred
-    get().attemptSmartDispatch()
-  },
-
-  createVisitorForRecycler: (recyclerId: number | string) => {
-    // clear any scheduled arrival timer for this recycler
-    const existing = scheduledArrivalTimers.get(recyclerId)
-    if (existing) {
-      window.clearTimeout(existing)
-      scheduledArrivalTimers.delete(recyclerId)
-    }
-
-    const recycler = get().recyclers.find(r => r.id === recyclerId)
-    if (!recycler) return
-    const total = Math.floor(Math.random() * 21) + 5
-    const glass = Math.floor(Math.random() * (total + 1))
-    const metal = Math.floor(Math.random() * (total - glass + 1))
-    const plastic = total - glass - metal
-    // debug logging removed
-    set((draft: any) => {
-      const rr = draft.recyclers.find((x: any) => x.id === recyclerId)
-      if (!rr) return
-      rr.visitor = { id: uid(), total, remaining: total, bottles: { glass, metal, plastic } }
-      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor arrived at Recycler #${recyclerId} with ${total} bottles (G:${glass}, M:${metal}, P:${plastic})` })
-    })
-  },
-
-  scheduleNextArrival: (recyclerId: number | string, minSec = 3, maxSec = 8) => {
-    // clear any existing scheduled timer so we always (re)schedule a fresh arrival
-    const existing = scheduledArrivalTimers.get(recyclerId)
-    if (existing) {
-      try { window.clearTimeout(existing) } catch {}
-      scheduledArrivalTimers.delete(recyclerId)
-    }
-
-    const baseDelay = (Math.floor(Math.random() * (maxSec - minSec + 1)) + minSec) * 1000
-    // debug logging removed
-
-    // factor current time multiplier to make arrivals faster on increased speed
-    const mult = timeMultipliers[get().timeLevel] ?? 1
-    if (mult === 0) {
-      // paused: retry later (shorter retry so visitors resume promptly when unpaused)
-      const t = window.setTimeout(() => {
-        scheduledArrivalTimers.delete(recyclerId)
-        get().scheduleNextArrival(recyclerId, 1, 3)
-      }, 2000)
-      scheduledArrivalTimers.set(recyclerId, t)
-      return
-    }
-
-    const effectiveDelay = Math.max(200, Math.floor(baseDelay / mult))
-    // debug logging removed
-    const timerId = window.setTimeout(() => {
-      scheduledArrivalTimers.delete(recyclerId)
-      // debug logging removed
-      const recycler = get().recyclers.find(r => r.id === recyclerId)
-      if (!recycler) return
-      if (recycler.visitor) {
-        // already a visitor, try again later (shorter retry)
-        get().scheduleNextArrival(recyclerId, 3, 8)
-        return
-      }
-      get().createVisitorForRecycler(recyclerId)
-    }, effectiveDelay)
-
-    scheduledArrivalTimers.set(recyclerId, timerId)
-  },
-
   attemptSmartDispatch: () => {
-    const s = get()
-    const idleTrucks = s.trucks.filter((t: any) => t.status === 'idle')
-    if (idleTrucks.length === 0) return
-    const recyclerNeeds = s.recyclers.map((r: any) => {
-      const capacity = calculateCapacity(r.capacity, r.level)
-      const totalBottles = r.currentBottles.glass + r.currentBottles.metal + r.currentBottles.plastic
-      const threshold80 = Math.floor(capacity * 0.8)
-      return { id: r.id, recycler: r, totalBottles, capacity, threshold80 }
-    }).filter((x: any) => x.totalBottles > 0)
-    for (const truck of idleTrucks) {
-      const suitable = recyclerNeeds.filter((r: any) => r.totalBottles >= r.threshold80)
-      if (suitable.length > 0) {
-        // pick recycler with the most bottles
-        const target = suitable.reduce((max: any, r: any) => r.totalBottles > max.totalBottles ? r : max)
-         // perform dispatch asynchronously to simulate travel
-        set((draft: any) => {
-          const tt = draft.trucks.find((x: any) => x.id === truck.id)
-          if (!tt) return
-          tt.status = 'to_recycler'
-          tt.targetRecyclerId = target.recycler.id
-          draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Truck #${tt.id} dispatched to Recycler #${target.recycler.id} (${target.totalBottles} bottles available)` })
+    const state = get()
+    for (const truck of state.trucks) {
+      if (truck.status === 'idle') {
+        const suitableRecycler = state.recyclers.find((recycler) => {
+          const currentLoad = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
+          return currentLoad >= recycler.capacity * 0.8
         })
-        // simulate arrival after travel (uses scheduleWithTime)
-        scheduleWithTime(() => {
-          // loading
+        if (suitableRecycler) {
           set((draft: any) => {
-            const tt = draft.trucks.find((x: any) => x.id === truck.id)
-            if (!tt) return
-            if (tt.status !== 'to_recycler') return
-            tt.status = 'loading'
-            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Truck #${tt.id} arrived at Recycler #${tt.targetRecyclerId}` })
+            const updatedTruck = draft.trucks.find((t: any) => t.id == truck.id)
+            const updatedRecycler = draft.recyclers.find((r: any) => r.id == suitableRecycler.id)
+            if (updatedTruck && updatedRecycler) {
+              updatedTruck.status = 'en route'
+              updatedTruck.targetRecyclerId = updatedRecycler.id
+              updatedTruck.cargo = { glass: 0, metal: 0, plastic: 0 }
+
+              const glassToLoad = Math.min(updatedTruck.capacity - updatedTruck.currentLoad, updatedRecycler.currentBottles.glass)
+              updatedTruck.cargo.glass += glassToLoad
+              updatedRecycler.currentBottles.glass -= glassToLoad
+
+              const metalToLoad = Math.min(updatedTruck.capacity - updatedTruck.currentLoad, updatedRecycler.currentBottles.metal)
+              updatedTruck.cargo.metal += metalToLoad
+              updatedRecycler.currentBottles.metal -= metalToLoad
+
+              const plasticToLoad = Math.min(updatedTruck.capacity - updatedTruck.currentLoad, updatedRecycler.currentBottles.plastic)
+              updatedTruck.cargo.plastic += plasticToLoad
+              updatedRecycler.currentBottles.plastic -= plasticToLoad
+
+              updatedTruck.currentLoad = updatedTruck.cargo.glass + updatedTruck.cargo.metal + updatedTruck.cargo.plastic
+
+              draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Truck #${truck.id} dispatched to Recycler #${suitableRecycler.id}` })
+
+              // Check if this recycler had a waiting visitor and space is now available
+              const currentLoad = updatedRecycler.currentBottles.glass + updatedRecycler.currentBottles.metal + updatedRecycler.currentBottles.plastic
+              if (updatedRecycler.visitors.length > 0 && updatedRecycler.visitors[0].waiting && currentLoad < updatedRecycler.capacity) {
+                updatedRecycler.visitors[0].waiting = false
+                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor resumed depositing at Recycler #${suitableRecycler.id}` })
+              }
+            }
           })
 
-          scheduleWithTime(() => {
-            // pick up
-            set((draft: any) => {
-              const tt = draft.trucks.find((x: any) => x.id === truck.id)
-              if (!tt) return
-              const recycler = draft.recyclers.find((r: any) => r.id === tt.targetRecyclerId)
-              if (!recycler) { tt.status = 'idle'; return }
-              const truckCapacity = Math.floor(tt.capacity * Math.pow(1.25, tt.level))
-              const available = { ...recycler.currentBottles }
-              const picked = { glass: 0, metal: 0, plastic: 0 }
-              let pickedCount = 0
-              while (pickedCount < truckCapacity) {
-                if (available.glass > 0) { picked.glass++; available.glass--; pickedCount++ }
-                else if (available.metal > 0) { picked.metal++; available.metal--; pickedCount++ }
-                else if (available.plastic > 0) { picked.plastic++; available.plastic--; pickedCount++ }
-                else break
-              }
-              const pickedTotal = picked.glass + picked.metal + picked.plastic
-              const remainingTotal = available.glass + available.metal + available.plastic
-              draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${tt.id} picked up ${pickedTotal} bottles (G:${picked.glass}, M:${picked.metal}, P:${picked.plastic}) from Recycler #${recycler.id}` })
-              if (remainingTotal > 0) draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Recycler #${recycler.id} still has ${remainingTotal} bottles remaining` })
-              recycler.currentBottles = available
-              tt.cargo = picked
-              tt.status = 'to_plant'
-              tt.targetRecyclerId = null
-            })
-            // ensure we schedule the next visitor for that recycler so visitors keep arriving (shorter interval)
-            try { get().scheduleNextArrival(target.recycler.id, 3, 8) } catch {}
-            // also schedule a quick check to create a visitor shortly after pickup if nothing is pending
-            try {
-              const rid = target.recycler.id
-              if (!scheduledArrivalTimers.has(rid)) {
-                const quick = window.setTimeout(() => {
-                  scheduledArrivalTimers.delete(rid)
-                  const rr = get().recyclers.find((x: any) => x.id === rid)
-                  if (rr && !rr.visitor) get().createVisitorForRecycler(rid)
-                }, 500)
-                scheduledArrivalTimers.set(rid, quick)
-              }
-            } catch (e) {
-              // ignore
-            }
-
-            // travel to plant
-            scheduleWithTime(() => {
-              set((draft: any) => {
-                const tt = draft.trucks.find((x: any) => x.id === truck.id)
-                if (!tt) return
-                if (!tt.cargo) return
-                tt.status = 'delivering'
-                const deliverTotal = tt.cargo.glass + tt.cargo.metal + tt.cargo.plastic
-                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Truck #${tt.id} arrived at Recycling Plant with ${deliverTotal} bottles (G:${tt.cargo.glass}, M:${tt.cargo.metal}, P:${tt.cargo.plastic})` })
-              })
-
-              // deliver
-              scheduleWithTime(() => {
-                set((draft: any) => {
-                  const tt = draft.trucks.find((x: any) => x.id === truck.id)
-                  if (!tt || !tt.cargo) return
-                  const value = (tt.cargo.glass * 4) + (tt.cargo.metal * 2.5) + (tt.cargo.plastic * 1.75)
-                  draft.credits += Math.floor(value)
-                  draft.totalEarnings += Math.floor(value)
-                  draft.chartPoints.push({ time: Date.now(), bottles: tt.cargo })
-                  if (draft.chartPoints.length > 10) draft.chartPoints.shift()
-                  draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${tt.id} delivered ${tt.cargo.glass + tt.cargo.metal + tt.cargo.plastic} bottles earning ${Math.floor(value)} credits` })
-                  tt.cargo = null
-                  tt.currentLoad = 0
-                  tt.status = 'idle'
-                })
-                // trigger next dispatch
-                get().attemptSmartDispatch()
-              }, 2000)
-            }, 4500)
-          }, 1500)
-        }, 3500)
+          // Schedule arrival at plant after 10 seconds
+          setTimeout(() => get().deliverToPlant(truck.id), 10000)
+        }
       }
     }
   },
 
-  init: () => {
-    // Call initialize endpoint to reset game state
-    const controller = new AbortController()
-    const initializeGame = async () => {
-      try {
+  deliverToPlant: async (truckId: number | string) => {
+    const state = get()
+    const truck = state.trucks.find((t) => t.id == truckId)
+    if (!truck || !truck.cargo) return
+
+    const totalBottles = truck.cargo.glass + truck.cargo.metal + truck.cargo.plastic
+    const earnings = (truck.cargo.glass * 4) + (truck.cargo.metal * 2.5) + (truck.cargo.plastic * 1.75)
+
+    try {
         const env = (import.meta as any).env || {}
         const envBase = env?.VITE_API_BASE_URL
         const base = envBase || 'http://localhost:5001'
-        const url = `${base.replace(/\/$/, '')}/initialize`
-        await fetch(url, { method: 'POST', signal: controller.signal })
 
-        // Fetch trucks from service
-        const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
-        const trucksResp = await fetch(`${truckBase.replace(/\/$/, '')}/truck`, { signal: controller.signal })
-        if (trucksResp.ok) {
-            const truckDtos = await trucksResp.json()
-            set((draft: any) => {
-                draft.trucks = truckDtos.map((dto: any) => ({
-                    id: dto.id,
-                    model: dto.model,
-                    level: dto.level,
-                    capacity: 45,
-                    currentLoad: 0,
-                    status: 'idle',
-                    targetRecyclerId: null,
-                    cargo: null
-                }))
+        // Credit earnings
+        await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deposit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                PlayerId: state.playerId,
+                Amount: earnings,
+                Reason: 'Earnings from recycling'
             })
-        }
-
-        // Fetch recyclers from service
-        const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
-        const recyclersResp = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers`, { signal: controller.signal })
-        if (recyclersResp.ok) {
-            const recyclerDtos = await recyclersResp.json()
-            set((draft: any) => {
-                draft.recyclers = recyclerDtos.map((dto: any) => ({
-                    id: dto.id,
-                    level: 0,
-                    capacity: dto.capacity,
-                    currentBottles: { glass: 0, metal: 0, plastic: 0 },
-                    visitor: null
-                }))
-            })
-        }
-      } catch (e) {
-        // Ignore errors, perhaps log later
-      }
+        })
+    } catch (error) {
+        get().addLog('Failed to credit earnings.', 'error')
     }
-    initializeGame()
 
-    // schedule initial visitor arrivals for all existing recyclers
-    setTimeout(() => {
-      const s = get()
-      s.recyclers.forEach(r => {
-        // create an immediate visitor for a lively demo, then schedule next arrivals
-        if (!r.visitor) get().createVisitorForRecycler(r.id)
-        get().scheduleNextArrival(r.id, 1, 8)
+    set((draft: any) => {
+      const updatedTruck = draft.trucks.find((t: any) => t.id == truckId)
+      if (updatedTruck) {
+        updatedTruck.status = 'idle'
+        updatedTruck.targetRecyclerId = null
+        updatedTruck.currentLoad = 0
+        updatedTruck.cargo = null
+
+        draft.credits += earnings
+        draft.totalEarnings += earnings
+        draft.chartPoints.push({ time: Date.now(), bottles: truck.cargo })
+
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${truckId} delivered ${totalBottles} bottles and earned ${earnings} credits.` })
+      }
+    })
+  },
+
+  depositTick: () => {
+    const state = get()
+    if (!state.playerId) return // Wait for player to be initialized
+
+    set((draft: any) => {
+      for (const recycler of draft.recyclers) {
+        if (recycler.visitors.length > 0 && recycler.visitors[0].remaining > 0) {
+          const currentLoad = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
+          const hasSpace = currentLoad < recycler.capacity
+
+          if (hasSpace) {
+            // Deposit one bottle - randomly choose type from visitor's remaining bottles
+            const visitorBottles = recycler.visitors[0].bottles
+            const availableTypes = []
+            if (visitorBottles.glass > 0) availableTypes.push('glass')
+            if (visitorBottles.metal > 0) availableTypes.push('metal')
+            if (visitorBottles.plastic > 0) availableTypes.push('plastic')
+
+            if (availableTypes.length > 0) {
+              const randomType = availableTypes[Math.floor(Math.random() * availableTypes.length)]
+              recycler.currentBottles[randomType] += 1
+              recycler.visitors[0].bottles[randomType] -= 1
+              recycler.visitors[0].remaining -= 1
+
+
+              // If visitor is done depositing, remove them and schedule next arrival
+              if (recycler.visitors[0].remaining === 0) {
+                draft.logs.unshift({
+                  id: uid(),
+                  time: new Date().toLocaleTimeString(),
+                  type: 'success',
+                  message: `Visitor finished depositing bottles at Recycler #${recycler.id}`
+                })
+                recycler.visitors.shift()
+                // Schedule next visitor arrival
+                get().scheduleNextArrival(recycler.id)
+              }
+            }
+          } else {
+            // Recycler is full, mark visitor as waiting
+            if (!recycler.visitors[0].waiting) {
+              recycler.visitors[0].waiting = true
+              draft.logs.unshift({
+                id: uid(),
+                time: new Date().toLocaleTimeString(),
+                type: 'warning',
+                message: `Visitor waiting at full Recycler #${recycler.id}`
+              })
+            }
+          }
+        }
+      }
+    })
+  },
+
+  createVisitorForRecycler: (recyclerId: number | string) => {
+    const state = get()
+    const recycler = state.recyclers.find((r) => r.id == recyclerId)
+    if (!recycler) return
+
+    // Generate random bottles for visitor (5-25 total bottles)
+    const totalBottles = Math.floor(Math.random() * 21) + 5 // 5-25 bottles
+    const glass = Math.floor(Math.random() * (totalBottles + 1))
+    const metal = Math.floor(Math.random() * (totalBottles - glass + 1))
+    const plastic = totalBottles - glass - metal
+
+    set((draft: any) => {
+      const visitor = {
+        id: uid(),
+        total: totalBottles,
+        remaining: totalBottles,
+        bottles: { glass, metal, plastic },
+        waiting: false
+      }
+      draft.recyclers.find((r: any) => r.id == recyclerId)!.visitors.push(visitor)
+      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor arrived at Recycler #${recyclerId} with ${totalBottles} bottles` })
+    })
+  },
+
+  scheduleNextArrival: (recyclerId: number | string, minSec: number = 5, maxSec: number = 15) => {
+    const state = get()
+    const recycler = state.recyclers.find((r) => r.id == recyclerId)
+    if (!recycler) {
+      return
+    }
+
+    const existingTimer = scheduledArrivalTimers.get(recyclerId)
+    if (existingTimer) {
+      clearTimeout(existingTimer)
+      scheduledArrivalTimers.delete(recyclerId)
+    }
+
+    const randomDelay = Math.floor(Math.random() * (maxSec - minSec + 1) + minSec) * 1000
+    set((draft) => {
+      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor scheduled to arrive at Recycler #${recyclerId} in ${randomDelay / 1000} seconds` })
+      if (draft.logs.length > 50) draft.logs.pop()
+    })
+    const timer = setTimeout(() => {
+      get().createVisitorForRecycler(recyclerId)
+      scheduledArrivalTimers.delete(recyclerId)
+    }, randomDelay)
+
+    scheduledArrivalTimers.set(recyclerId, timer)
+  },
+
+  init: async () => {
+    set((draft: any) => {
+      draft.totalEarnings = 0
+      draft.logs = []
+      draft.chartPoints = []
+      draft.lastTick = null
+      draft.timeLevel = 2
+      draft.buyingRecycler = false
+      draft.buyingTruck = false
+      draft.playerId = null
+    })
+
+    await get().fetchPlayer()
+
+    // Schedule initial visitor arrivals for all recyclers
+    const state = get()
+    for (const recycler of state.recyclers) {
+      get().scheduleNextArrival(recycler.id)
+    }
+  },
+
+  fetchPlayer: async () => {
+    const state = get()
+    if (state.playerId) return
+
+    try {
+      const env = (import.meta as any).env || {}
+      const envBase = env?.VITE_API_BASE_URL
+      const base = envBase || 'http://localhost:5001'
+
+      // Initialize to create default player
+      await fetch(`${base.replace(/\/$/, '')}/initialize`, {
+        method: 'POST'
       })
 
-      // start a watchdog that ensures any recycler without a visitor has a scheduled arrival
-      try {
-        if (arrivalsWatchdog == null) {
-          arrivalsWatchdog = window.setInterval(() => {
-            try {
-              const state = get()
-              state.recyclers.forEach(r => {
-                if (!r.visitor && !scheduledArrivalTimers.has(r.id)) {
-                  // schedule with short bounds to keep the game lively
-                  get().scheduleNextArrival(r.id, 3, 8)
-                }
-              })
-            } catch (e) {
-              // ignore
-            }
-          }, 2000)
-        }
-      } catch (e) {
-        // ignore in non-browser env
+      // Get all players
+      const playersResponse = await fetch(`${base.replace(/\/$/, '')}/player`)
+      if (!playersResponse.ok) {
+        throw new Error('Failed to get players')
       }
-    }, 200)
+      const players = await playersResponse.json()
+      if (players.length === 0) {
+        throw new Error('No players found')
+      }
+      const player = players[0]
+
+      set((draft: any) => {
+        draft.playerId = player.id
+        draft.credits = player.credits
+      })
+    } catch (error) {
+      set((draft: any) => {
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to initialize player data.' })
+      })
+    }
   }
 })))
 
 export default useGameStore
-
-// Dev helpers (attach to window for easy debugging in browser console)
-if (typeof window !== 'undefined') {
-  ;(window as any).forceVisitor = (recyclerId: number) => {
-    try { (useGameStore as any).getState().createVisitorForRecycler(recyclerId) } catch (e) { }
-  }
-  ;(window as any).scheduleVisitor = (recyclerId: number, minSec = 1, maxSec = 5) => {
-    try { (useGameStore as any).getState().scheduleNextArrival(recyclerId, minSec, maxSec) } catch (e) { }
-  }
-  ;(window as any).listScheduledArrivals = () => {
-    try { return Array.from(scheduledArrivalTimers.entries()) } catch (e) { return [] }
-  }
-  ;(window as any).clearArrivalWatchdog = () => {
-    try { if (arrivalsWatchdog != null) { clearInterval(arrivalsWatchdog); arrivalsWatchdog = null } } catch (e) { }
-  }
-  ;(window as any).startAutoVisitors = (periodMs = 3000) => {
-    try {
-      if ((window as any)._autoVisitorsInterval) return
-      (window as any)._autoVisitorsInterval = window.setInterval(() => {
-        try {
-          const s = (useGameStore as any).getState()
-          s.recyclers.forEach((r: any) => { if (!r.visitor) (useGameStore as any).getState().createVisitorForRecycler(r.id) })
-        } catch (e) { }
-      }, periodMs)
-    } catch (e) { }
-  }
-  ;(window as any).stopAutoVisitors = () => {
-    try { if ((window as any)._autoVisitorsInterval) { clearInterval((window as any)._autoVisitorsInterval); (window as any)._autoVisitorsInterval = null } } catch (e) { }
-  }
-}
-
-// helper to schedule timeouts that respect current time speed (multiplier). When paused, retries later.
-function scheduleWithTime(fn: () => void, baseMs: number) {
-  try {
-    const stateTimeLevel = (useGameStore as any).getState().timeLevel as number | undefined
-    const stateMult = timeMultipliers[stateTimeLevel ?? 2] ?? 1
-    if (stateMult === 0) {
-      return window.setTimeout(() => scheduleWithTime(fn, baseMs), 1000)
-    }
-    const effective = Math.max(150, Math.floor(baseMs / stateMult))
-    return window.setTimeout(fn, effective)
-  } catch (e) {
-    const effective = Math.max(150, Math.floor(baseMs))
-    return window.setTimeout(fn, effective)
-  }
-}

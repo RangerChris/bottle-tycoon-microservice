@@ -1,4 +1,5 @@
-﻿﻿using FastEndpoints;
+﻿using FastEndpoints;
+using System.Net.Http.Json;
 using TruckService.Data;
 using TruckService.Models;
 
@@ -7,10 +8,12 @@ namespace TruckService.Endpoints.UpgradeTruck;
 public class UpgradeTruckEndpoint : Endpoint<UpgradeTruckRequest, TruckDto>
 {
     private readonly TruckDbContext _db;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public UpgradeTruckEndpoint(TruckDbContext db)
+    public UpgradeTruckEndpoint(TruckDbContext db, IHttpClientFactory httpClientFactory)
     {
         _db = db;
+        _httpClientFactory = httpClientFactory;
     }
 
     public override void Configure()
@@ -35,6 +38,15 @@ public class UpgradeTruckEndpoint : Endpoint<UpgradeTruckRequest, TruckDto>
             return;
         }
 
+        // Calculate cost: 300 * (current level + 1)
+        var cost = 300m * (truck.CapacityLevel + 1);
+        var debitSuccess = await DebitCreditsAsync(req.PlayerId, cost, $"Upgraded truck to level {truck.CapacityLevel + 1}", ct);
+        if (!debitSuccess)
+        {
+            await Send.ErrorsAsync(400, ct);
+            return;
+        }
+
         truck.CapacityLevel++;
 
         // Update model name to reflect upgrade if it's the standard name
@@ -54,5 +66,25 @@ public class UpgradeTruckEndpoint : Endpoint<UpgradeTruckRequest, TruckDto>
         };
 
         await Send.OkAsync(dto, ct);
+    }
+
+    private async Task<bool> DebitCreditsAsync(Guid playerId, decimal amount, string reason, CancellationToken ct)
+    {
+        try
+        {
+            using var client = _httpClientFactory.CreateClient("GameService");
+            var response = await client.PostAsJsonAsync($"/player/{playerId}/deduct", new
+            {
+                PlayerId = playerId,
+                Amount = amount,
+                Reason = reason
+            }, ct);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception)
+        {
+            // If GameService is not available, return false
+            return false;
+        }
     }
 }
