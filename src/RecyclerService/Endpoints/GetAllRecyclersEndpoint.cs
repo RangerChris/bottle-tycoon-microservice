@@ -1,4 +1,4 @@
-﻿using FastEndpoints;
+﻿﻿using FastEndpoints;
 using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
@@ -22,7 +22,7 @@ public class GetAllRecyclersEndpoint : EndpointWithoutRequest<List<GetAllRecycle
     public override async Task HandleAsync(CancellationToken ct)
     {
         var recyclers = await _service.GetAllAsync(ct);
-        var response = recyclers.Select(r => new RecyclerResponse { Id = r.Id, Name = r.Name, CurrentLoad = r.CurrentLoad, Capacity = r.Capacity }).ToList();
+        var response = recyclers.Select(r => new RecyclerResponse { Id = r.Id, Name = r.Name, CurrentLoad = r.CurrentLoad, Capacity = r.Capacity, CapacityLevel = r.CapacityLevel }).ToList();
         await Send.ResultAsync(TypedResults.Ok(response));
     }
 
@@ -32,5 +32,6 @@ public class GetAllRecyclersEndpoint : EndpointWithoutRequest<List<GetAllRecycle
         public string Name { get; init; } = null!;
         public int CurrentLoad { get; init; }
         public int Capacity { get; init; }
+        public int CapacityLevel { get; init; }
     }
 }
