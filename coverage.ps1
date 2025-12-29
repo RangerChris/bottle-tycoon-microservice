@@ -36,3 +36,4 @@ if ($LASTEXITCODE -ne 0) { throw "reportgenerator failed" }
 
 Write-Host "HTML report: $target\index.html"
 Write-Host "Done."
+Start-Process "$target\index.html"
