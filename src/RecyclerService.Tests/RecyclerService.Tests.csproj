@@ -30,4 +30,8 @@
         <ProjectReference Include="..\RecyclerService\RecyclerService.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="TestResults\" />
+    </ItemGroup>
+
 </Project>

@@ -35,6 +35,7 @@ bld/
 [Ll]ogs/
 dist/
 [Cc]overage/
+test-results/
 
 # Build results on 'Bin' directories
 **/[Bb]in/*
