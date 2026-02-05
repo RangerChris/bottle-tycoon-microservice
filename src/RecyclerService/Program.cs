@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
@@ -70,20 +71,24 @@ builder.Services.AddOpenTelemetry()
         .AddJaegerExporter())
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
+        .AddMeter("RecyclerService")
+        .AddMeter("Microsoft.AspNetCore.Hosting")
+        .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
         .AddPrometheusExporter());
+
+// Metrics initialization - create meter and register it
+var meterName = "RecyclerService";
+var meter = new Meter(meterName, "1.0");
+builder.Services.AddSingleton(meter);
 
 // Health Checks
 var healthChecks = builder.Services.AddHealthChecks();
-if (!builder.Environment.IsEnvironment("Testing"))
+var recyclerConn2 = builder.Configuration.GetConnectionString("RecyclerConnection");
+if (!string.IsNullOrEmpty(recyclerConn2))
 {
-    var conn = builder.Configuration.GetConnectionString("RecyclerConnection");
-    if (!string.IsNullOrEmpty(conn))
-    {
-        healthChecks.AddNpgSql(conn);
-    }
+    healthChecks.AddNpgSql(recyclerConn2);
 }
 
-// Business Services
 builder.Services.AddScoped<IRecyclerService, RecyclerService.Services.RecyclerService>();
 builder.Services.AddCors(options =>
 {

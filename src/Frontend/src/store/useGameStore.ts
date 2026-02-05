@@ -7,6 +7,32 @@ function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2,9)}`
 }
 
+// helper to get correct API base URLs based on environment
+function getApiBaseUrls() {
+  const env = (import.meta as any).env || {}
+  let base = env?.VITE_API_BASE_URL || 'http://localhost:5001'
+
+  // When running in Docker, services communicate via container names, not localhost
+  // Check if we're in a Docker environment by looking at the location
+  const isDocker = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+
+  if (isDocker) {
+    // Use container service names for inter-container communication
+    base = 'http://gameservice'
+  }
+
+  const gameServiceBase = base
+  const recyclerBase = base.includes('5001') || base.includes('gameservice')
+    ? (isDocker ? 'http://recyclerservice' : base.replace('5001', '5002'))
+    : 'http://recyclerservice'
+  const truckBase = base.includes('5001') || base.includes('gameservice')
+    ? (isDocker ? 'http://truckservice' : base.replace('5001', '5003'))
+    : 'http://truckservice'
+
+  return { gameServiceBase, recyclerBase, truckBase }
+}
+
+
 export type GameState = {
   credits: number
   totalEarnings: number
@@ -88,11 +114,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (state.credits < cost) { set((draft: any) => { draft.buyingRecycler = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits to buy recycler!' }) }); return }
 
     try {
-        const env = (import.meta as any).env || {}
-        const envBase = env?.VITE_API_BASE_URL
-        const base = envBase || 'http://localhost:5001'
-
-        const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
+        const { recyclerBase } = getApiBaseUrls()
 
         const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers`, {
             method: 'POST',
@@ -144,11 +166,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (state.credits < cost) { set((draft: any) => { draft.buyingTruck = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits to buy truck!' }) }); return }
 
     try {
-        const env = (import.meta as any).env || {}
-        const envBase = env?.VITE_API_BASE_URL
-        const base = envBase || 'http://localhost:5001'
-
-        const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
+        const { truckBase } = getApiBaseUrls()
 
         const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck`, {
             method: 'POST',
@@ -190,9 +208,32 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     }
   },
 
-  deliverBottlesRandom: (recyclerId: number | string) => {
+  deliverBottlesRandom: async (recyclerId: number | string) => {
     const picked = { glass: Math.floor(Math.random() * 20) + 5, metal: Math.floor(Math.random() * 15) + 5, plastic: Math.floor(Math.random() * 25) + 10 }
     const total = picked.glass + picked.metal + picked.plastic
+
+    try {
+      const { recyclerBase } = getApiBaseUrls()
+
+      const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers/${recyclerId}/visitors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          visitorType: 'Delivery',
+          bottleCounts: picked
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to deliver bottles')
+      }
+    } catch (error) {
+      set((draft: any) => {
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to deliver bottles to recycler' })
+      })
+      return
+    }
+
     set((draft: any) => {
       const r = draft.recyclers.find((x: any) => x.id == recyclerId)
       if (!r) return
@@ -213,11 +254,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (state.credits < cost) { set((draft: any) => { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits for upgrade!' }) }); return }
 
     try {
-        const env = (import.meta as any).env || {}
-        const envBase = env?.VITE_API_BASE_URL
-        const base = envBase || 'http://localhost:5001'
-
-        const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
+        const { recyclerBase } = getApiBaseUrls()
 
         const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers/${recyclerId}/upgrade`, {
             method: 'POST',
@@ -258,11 +295,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (state.credits < cost) { set((draft: any) => { draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits for upgrade!' }) }); return }
 
     try {
-        const env = (import.meta as any).env || {}
-        const envBase = env?.VITE_API_BASE_URL
-        const base = envBase || 'http://localhost:5001'
-
-        const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
+        const { truckBase } = getApiBaseUrls()
 
         const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck/${truckId}/upgrade`, {
             method: 'POST',
@@ -536,17 +569,15 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (state.playerId) return
 
     try {
-      const env = (import.meta as any).env || {}
-      const envBase = env?.VITE_API_BASE_URL
-      const base = envBase || 'http://localhost:5001'
+      const { gameServiceBase } = getApiBaseUrls()
 
       // Initialize to create default player
-      await fetch(`${base.replace(/\/$/, '')}/initialize`, {
+      await fetch(`${gameServiceBase.replace(/\/$/, '')}/initialize`, {
         method: 'POST'
       })
 
       // Get all players
-      const playersResponse = await fetch(`${base.replace(/\/$/, '')}/player`)
+      const playersResponse = await fetch(`${gameServiceBase.replace(/\/$/, '')}/player`)
       if (!playersResponse.ok) {
         throw new Error('Failed to get players')
       }
@@ -569,12 +600,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
   initializeServices: async () => {
     try {
-      const env = (import.meta as any).env || {}
-      const envBase = env?.VITE_API_BASE_URL
-      const base = envBase || 'http://localhost:5001'
-
-      const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
-      const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
+      const { recyclerBase, truckBase } = getApiBaseUrls()
 
       // Initialize RecyclerService
       await fetch(`${recyclerBase.replace(/\/$/, '')}/initialize`, {
@@ -592,11 +618,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
   fetchRecyclers: async () => {
     try {
-      const env = (import.meta as any).env || {}
-      const envBase = env?.VITE_API_BASE_URL
-      const base = envBase || 'http://localhost:5001'
-
-      const recyclerBase = base.includes('5001') ? base.replace('5001', '5002') : 'http://localhost:5002'
+      const { recyclerBase } = getApiBaseUrls()
 
       const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers`)
       if (!response.ok) {
@@ -609,7 +631,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
           id: r.id,
           level: r.capacityLevel,
           capacity: r.capacity,
-          currentBottles: { glass: 0, metal: 0, plastic: 0 }, // Assuming CurrentLoad is total, but we need breakdown
+          currentBottles: { glass: 0, metal: 0, plastic: 0 },
           visitors: []
         }))
       })
@@ -620,11 +642,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
   fetchTrucks: async () => {
     try {
-      const env = (import.meta as any).env || {}
-      const envBase = env?.VITE_API_BASE_URL
-      const base = envBase || 'http://localhost:5001'
-
-      const truckBase = base.includes('5001') ? base.replace('5001', '5003') : 'http://localhost:5003'
+      const { truckBase } = getApiBaseUrls()
 
       const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck`)
       if (!response.ok) {

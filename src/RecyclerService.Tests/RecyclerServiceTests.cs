@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics.Metrics;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RecyclerService.Data;
@@ -28,7 +29,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         using var scope = _fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
-        var svc = new Services.RecyclerService(db, logger);
+        var meter = new Meter("RecyclerService.Tests");
+        var svc = new Services.RecyclerService(db, logger, meter);
 
         // Clean up any existing data
         await db.Recyclers.ExecuteDeleteAsync(Xunit.TestContext.Current.CancellationToken);
@@ -55,7 +57,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         using var scope = _fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
-        var svc = new Services.RecyclerService(db, logger);
+        var meter = new Meter("RecyclerService.Tests");
+        var svc = new Services.RecyclerService(db, logger, meter);
 
         // Clean up any existing data
         await db.Recyclers.ExecuteDeleteAsync(Xunit.TestContext.Current.CancellationToken);
