@@ -53,13 +53,9 @@ public class RecyclerService : IRecyclerService
         {
             recyclerInventory[kv.Key] = recyclerInventory.GetValueOrDefault(kv.Key) + kv.Value;
 
-            if (kv.Value > 0)
+            if (kv.Value > 0 && !string.IsNullOrWhiteSpace(kv.Key))
             {
-                var bottleType = kv.Key?.Trim().ToLowerInvariant();
-                if (!string.IsNullOrWhiteSpace(bottleType))
-                {
-                    _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", bottleType));
-                }
+                _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
             }
         }
 
