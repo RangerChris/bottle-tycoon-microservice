@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.Metrics;
+﻿﻿﻿﻿using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;
@@ -10,8 +10,8 @@ public class RecyclerService : IRecyclerService
     private readonly RecyclerDbContext _db;
     private readonly ILogger<RecyclerService> _logger;
     private readonly Counter<long> _bottlesProcessed;
+    private readonly Counter<long> _customersArrived;
 
-    // Single constructor that accepts an optional Meter. If not supplied by DI, create one locally.
     public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter? meter = null)
     {
         _db = db;
@@ -21,19 +21,23 @@ public class RecyclerService : IRecyclerService
             "bottles_processed",
             unit: "bottles",
             description: "Number of bottles processed by type");
+        _customersArrived = meter.CreateCounter<long>(
+            "customers_arrived",
+            unit: "customers",
+            description: "Number of customers arriving by bottle type");
     }
 
     public async Task<Recycler?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await _db.Recyclers.Include(r => r.Visitors).FirstOrDefaultAsync(r => r.Id == id, ct);
+        return await _db.Recyclers.Include(r => r.Customers).FirstOrDefaultAsync(r => r.Id == id, ct);
     }
 
     public async Task<List<Recycler>> GetAllAsync(CancellationToken ct = default)
     {
-        return await _db.Recyclers.Include(r => r.Visitors).ToListAsync(ct);
+        return await _db.Recyclers.Include(r => r.Customers).ToListAsync(ct);
     }
 
-    public async Task<Recycler> VisitorArrivedAsync(Guid recyclerId, Visitor visitor, CancellationToken ct = default)
+    public async Task<Recycler> CustomerArrivedAsync(Guid recyclerId, Customer customer, CancellationToken ct = default)
     {
         var recycler = await _db.Recyclers.FirstOrDefaultAsync(r => r.Id == recyclerId, ct);
         if (recycler == null)
@@ -41,23 +45,21 @@ public class RecyclerService : IRecyclerService
             throw new KeyNotFoundException($"Recycler {recyclerId} not found");
         }
 
-        // Add visitor record
-        visitor.Id = visitor.Id == Guid.Empty ? Guid.NewGuid() : visitor.Id;
-        visitor.RecyclerId = recyclerId;
-        visitor.ArrivedAt = visitor.ArrivedAt == default ? DateTimeOffset.UtcNow : visitor.ArrivedAt;
+        customer.Id = customer.Id == Guid.Empty ? Guid.NewGuid() : customer.Id;
+        customer.RecyclerId = recyclerId;
+        customer.ArrivedAt = customer.ArrivedAt == default ? DateTimeOffset.UtcNow : customer.ArrivedAt;
 
-        _db.Visitors.Add(visitor);
+        _db.Customers.Add(customer);
 
-        // Increase current load by the number of bottles by type
         var recyclerInventory = recycler.GetBottleInventory();
-        var visitorCounts = visitor.GetBottleCounts();
-        foreach (var kv in visitorCounts)
+        var customerCounts = customer.GetBottleCounts();
+        foreach (var kv in customerCounts)
         {
             recyclerInventory[kv.Key] = recyclerInventory.GetValueOrDefault(kv.Key) + kv.Value;
 
             if (kv.Value > 0 && !string.IsNullOrWhiteSpace(kv.Key))
             {
-                _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
+                _customersArrived.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
             }
         }
 
@@ -65,11 +67,11 @@ public class RecyclerService : IRecyclerService
 
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Visitor {VisitorId} arrived at Recycler {RecyclerId}, new load {CurrentLoad}/{Capacity}", visitor.Id, recyclerId, recycler.CurrentLoad, recycler.Capacity);
+        _logger.LogInformation("Customer {CustomerId} arrived at Recycler {RecyclerId}, new load {CurrentLoad}/{Capacity}", customer.Id, recyclerId, recycler.CurrentLoad, recycler.Capacity);
 
         if (recycler.CurrentLoad >= recycler.Capacity)
         {
-            _logger.LogInformation("Recycler {RecyclerId} reached capacity, publishing RecyclerFull event", recyclerId);
+            _logger.LogInformation("Recycler {RecyclerId} reached capacity", recyclerId);
         }
 
         return recycler;
@@ -77,6 +79,7 @@ public class RecyclerService : IRecyclerService
 
     public async Task ResetAsync()
     {
+        _db.Customers.RemoveRange(_db.Customers);
         _db.Recyclers.RemoveRange(_db.Recyclers);
         await _db.SaveChangesAsync();
     }

@@ -102,12 +102,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (bottle_type) (rate(bottles_processed_bottles_total{job=\"recyclerservice\"}[5m]))",
+          "expr": "sum by (bottle_type) (rate(customers_arrived_customers_total{job=\"recyclerservice\"}[5m]))",
           "legendFormat": "{{ bottle_type }}",
           "refId": "A"
         }
       ],
-      "title": "Bottles Picked Up by Trucks (Rate by Type, 5m avg)",
+      "title": "Customers Arriving Rate by Type (5m avg)",
       "type": "timeseries"
     },
     {
@@ -191,12 +191,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (bottle_type) (bottles_processed_bottles_total{job=\"recyclerservice\"})",
+          "expr": "sum by (bottle_type) (customers_arrived_customers_total{job=\"recyclerservice\"})",
           "legendFormat": "{{ bottle_type }}",
           "refId": "A"
         }
       ],
-      "title": "Total Bottles Picked Up by Trucks (by Type)",
+      "title": "Total Bottles Brought by Customers (by Type)",
       "type": "timeseries"
     }
   ],

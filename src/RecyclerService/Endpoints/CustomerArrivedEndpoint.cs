@@ -1,4 +1,4 @@
-﻿﻿using System.ComponentModel.DataAnnotations;
+﻿﻿﻿using System.ComponentModel.DataAnnotations;
 using FastEndpoints;
 using FluentValidation;
 using RecyclerService.Models;
@@ -6,11 +6,11 @@ using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
-public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, VisitorArrivedEndpoint.VisitorResponse>
+public class CustomerArrivedEndpoint : Endpoint<CustomerArrivedEndpoint.Request, CustomerArrivedEndpoint.CustomerResponse>
 {
     private readonly IRecyclerService _service;
 
-    public VisitorArrivedEndpoint(IRecyclerService service)
+    public CustomerArrivedEndpoint(IRecyclerService service)
     {
         _service = service;
     }
@@ -18,7 +18,7 @@ public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, V
     public override void Configure()
     {
         Verbs("POST");
-        Routes("/recyclers/{id:guid}/visitors");
+        Routes("/recyclers/{id:guid}/customers");
         AllowAnonymous();
         Options(x => x.WithTags("Recycler"));
     }
@@ -26,13 +26,13 @@ public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, V
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
         var recyclerId = Route<Guid>("id");
-        var visitor = new Visitor();
-        visitor.SetBottleCounts(BuildBottleCounts(req));
-        visitor.VisitorType = req.VisitorType;
+        var customer = new Customer();
+        customer.SetBottleCounts(BuildBottleCounts(req));
+        customer.CustomerType = req.CustomerType;
         try
         {
-            var recycler = await _service.VisitorArrivedAsync(recyclerId, visitor, ct);
-            await Send.ResultAsync(TypedResults.Ok(new VisitorResponse { RecyclerId = recycler.Id, CurrentLoad = recycler.CurrentLoad, Capacity = recycler.Capacity }));
+            var recycler = await _service.CustomerArrivedAsync(recyclerId, customer, ct);
+            await Send.ResultAsync(TypedResults.Ok(new CustomerResponse { RecyclerId = recycler.Id, CurrentLoad = recycler.CurrentLoad, Capacity = recycler.Capacity }));
         }
         catch (KeyNotFoundException)
         {
@@ -82,7 +82,7 @@ public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, V
     {
         public int Bottles { get; set; }
 
-        public string? VisitorType { get; set; }
+        public string? CustomerType { get; set; }
 
         public int? Glass { get; set; }
 
@@ -93,7 +93,7 @@ public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, V
         public Dictionary<string, int>? BottleCounts { get; set; }
     }
 
-    public record VisitorResponse
+    public record CustomerResponse
     {
         public Guid RecyclerId { get; set; }
         public int CurrentLoad { get; set; }

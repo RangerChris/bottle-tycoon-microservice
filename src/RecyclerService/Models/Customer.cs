@@ -1,14 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
 namespace RecyclerService.Models;
 
-public class Visitor
+public class Customer
 {
     [Key] public Guid Id { get; set; }
 
     public Guid RecyclerId { get; set; }
-    public string? VisitorType { get; set; }
+    public string? CustomerType { get; set; }
     public string BottleCountsJson { get; set; } = "{}";
     public DateTimeOffset ArrivedAt { get; set; }
 

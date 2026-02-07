@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
@@ -118,6 +118,18 @@ try
             if (dbContext.Database.ProviderName?.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 dbContext.Database.EnsureCreated();
+
+                try
+                {
+                    dbContext.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS \"Visitors\" RENAME TO \"Customers\"");
+                    dbContext.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS \"Customers\" RENAME COLUMN \"VisitorType\" TO \"CustomerType\"");
+                    Log.Information("Migrated Visitors table to Customers");
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug(ex, "Visitors table migration skipped (may already be done or table doesn't exist)");
+                }
+
                 Log.Information("Database.EnsureCreated() executed at startup");
             }
             else

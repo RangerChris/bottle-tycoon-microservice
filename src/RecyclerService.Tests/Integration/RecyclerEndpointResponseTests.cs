@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿﻿using System.Net;
 using System.Net.Http.Json;
 using RecyclerService.Tests.TestFixtures;
 using Shouldly;
@@ -48,12 +48,12 @@ public class RecyclerEndpointResponseTests : IClassFixture<TestcontainersFixture
     }
 
     [Fact]
-    public async Task VisitorArrived_NonexistentRecycler_ReturnsErrorPayload()
+    public async Task CustomerArrived_NonexistentRecycler_ReturnsErrorPayload()
     {
         var client = _fixture.Client;
 
-        var visitorRequest = new VisitorRequest { Bottles = 15, VisitorType = "WalkIn" };
-        var res = await client.PostAsJsonAsync($"/recyclers/{Guid.NewGuid()}/visitors", visitorRequest, TestContext.Current.CancellationToken);
+        var customerRequest = new CustomerRequest { Bottles = 15, CustomerType = "WalkIn" };
+        var res = await client.PostAsJsonAsync($"/recyclers/{Guid.NewGuid()}/customers", customerRequest, TestContext.Current.CancellationToken);
 
         res.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         var body = await res.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
@@ -65,9 +65,9 @@ public class RecyclerEndpointResponseTests : IClassFixture<TestcontainersFixture
 
     private sealed record CreateResponse(Guid Id, string Name, int Capacity, int CurrentLoad, string? Location);
 
-    private sealed record VisitorRequest
+    private sealed record CustomerRequest
     {
         public int Bottles { get; set; }
-        public string? VisitorType { get; set; }
+        public string? CustomerType { get; set; }
     }
 }

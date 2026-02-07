@@ -215,11 +215,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     try {
       const { recyclerBase } = getApiBaseUrls()
 
-      const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers/${recyclerId}/visitors`, {
+      const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers/${recyclerId}/customers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          visitorType: 'Delivery',
+          customerType: 'Delivery',
           bottleCounts: picked
         })
       })
