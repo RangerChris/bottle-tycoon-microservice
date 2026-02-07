@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Microsoft.EntityFrameworkCore;
@@ -110,16 +110,10 @@ builder.Services.AddOpenTelemetry()
 
 var app = builder.Build();
 
-try
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
-    db.Database.EnsureCreated();
-    Log.Information("TruckService: ensured database exists");
-}
-catch (Exception ex)
-{
-    Log.Error(ex, "An error occurred while ensuring the TruckService database exists");
+    var dbContext = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
+    dbContext.Database.EnsureCreated();
 }
 
 var swaggerEnabled = true; // same for all environments

@@ -1,11 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FastEndpoints;
 using GameService.Data;
 using GameService.Services;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -105,32 +104,11 @@ var useHttpsRedirection = enableHttpsRedirection && httpsUrlConfigured;
 try
 {
     var app = builder.Build();
-    // Log which connection string key was used
-    Log.Information("Using database connection string key GameStateConnection");
 
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        using var scope = app.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<GameDbContext>();
-
-        var dbConnection = dbContext.Database.GetDbConnection();
-        var connectionString = dbConnection.ConnectionString;
-        try
-        {
-            var csb = new NpgsqlConnectionStringBuilder(connectionString);
-            Log.Information("Applying DB initialization to {Host}/{Database} in {Env}", csb.Host, csb.Database, app.Environment.EnvironmentName);
-        }
-        catch
-        {
-            Log.Information("Applying DB initialization in {Env}", app.Environment.EnvironmentName);
-        }
-
         dbContext.Database.EnsureCreated();
-        Log.Information("GameService: Database ensured to exist");
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "An error occurred while applying database migrations. The application will continue to start, but database functionality may be degraded");
     }
 
     app.UseSwagger();

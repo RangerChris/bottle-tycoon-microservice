@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (bottle_type) (rate(customers_arrived_customers_total{job=\"recyclerservice\"}[5m]))",
+          "expr": "sum by (bottle_type) (rate(recyclerservice_bottles_processed_bottles_total{job=\"recyclerservice\"}[5m]))",
           "legendFormat": "{{ bottle_type }}",
           "refId": "A"
         }
@@ -191,7 +191,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (bottle_type) (customers_arrived_customers_total{job=\"recyclerservice\"})",
+          "expr": "bottles_processed_bottles_total{job=\"recyclerservice\"}",
           "legendFormat": "{{ bottle_type }}",
           "refId": "A"
         }

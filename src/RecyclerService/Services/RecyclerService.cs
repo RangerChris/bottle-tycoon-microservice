@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using System.Diagnostics.Metrics;
+﻿using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;
@@ -10,7 +10,6 @@ public class RecyclerService : IRecyclerService
     private readonly RecyclerDbContext _db;
     private readonly ILogger<RecyclerService> _logger;
     private readonly Counter<long> _bottlesProcessed;
-    private readonly Counter<long> _customersArrived;
 
     public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter? meter = null)
     {
@@ -21,10 +20,6 @@ public class RecyclerService : IRecyclerService
             "bottles_processed",
             unit: "bottles",
             description: "Number of bottles processed by type");
-        _customersArrived = meter.CreateCounter<long>(
-            "customers_arrived",
-            unit: "customers",
-            description: "Number of customers arriving by bottle type");
     }
 
     public async Task<Recycler?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -53,13 +48,19 @@ public class RecyclerService : IRecyclerService
 
         var recyclerInventory = recycler.GetBottleInventory();
         var customerCounts = customer.GetBottleCounts();
+
+        _logger.LogInformation("Customer arrived with bottles - Glass: {Glass}, Metal: {Metal}, Plastic: {Plastic}",
+            customerCounts.GetValueOrDefault("glass"),
+            customerCounts.GetValueOrDefault("metal"),
+            customerCounts.GetValueOrDefault("plastic"));
+
         foreach (var kv in customerCounts)
         {
             recyclerInventory[kv.Key] = recyclerInventory.GetValueOrDefault(kv.Key) + kv.Value;
 
             if (kv.Value > 0 && !string.IsNullOrWhiteSpace(kv.Key))
             {
-                _customersArrived.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
+                _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
             }
         }
 

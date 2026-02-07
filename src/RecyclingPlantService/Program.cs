@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
@@ -101,23 +101,10 @@ try
 {
     var app = builder.Build();
 
-    // Apply migrations if using Postgres, otherwise EnsureCreated for in-memory
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        using var scope = app.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
-        if (dbContext.Database.ProviderName?.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
-        {
-            dbContext.Database.EnsureCreated();
-        }
-        else
-        {
-            dbContext.Database.EnsureCreated();
-        }
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "An error occurred while initializing the database");
+        dbContext.Database.EnsureCreated();
     }
 
     var swaggerEnabled = true;

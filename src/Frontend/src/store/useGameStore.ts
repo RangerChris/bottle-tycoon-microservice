@@ -484,16 +484,31 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     })
   },
 
-  createVisitorForRecycler: (recyclerId: number | string) => {
+  createVisitorForRecycler: async (recyclerId: number | string) => {
     const state = get()
     const recycler = state.recyclers.find((r) => r.id == recyclerId)
     if (!recycler) return
 
-    // Generate random bottles for visitor (5-25 total bottles)
-    const totalBottles = Math.floor(Math.random() * 21) + 5 // 5-25 bottles
+    const totalBottles = Math.floor(Math.random() * 21) + 5
     const glass = Math.floor(Math.random() * (totalBottles + 1))
     const metal = Math.floor(Math.random() * (totalBottles - glass + 1))
     const plastic = totalBottles - glass - metal
+
+    try {
+      const { recyclerBase } = getApiBaseUrls()
+      await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers/${recyclerId}/visitors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          Glass: glass,
+          Metal: metal,
+          Plastic: plastic,
+          VisitorType: 'Regular'
+        })
+      })
+    } catch (error) {
+      console.error('Failed to notify backend of visitor arrival:', error)
+    }
 
     set((draft: any) => {
       const visitor = {
