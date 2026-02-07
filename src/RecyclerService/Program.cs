@@ -83,10 +83,9 @@ builder.Services.AddSingleton(meter);
 
 // Health Checks
 var healthChecks = builder.Services.AddHealthChecks();
-var recyclerConn2 = builder.Configuration.GetConnectionString("RecyclerConnection");
-if (!string.IsNullOrEmpty(recyclerConn2))
+if (!string.IsNullOrEmpty(recyclerConn))
 {
-    healthChecks.AddNpgSql(recyclerConn2);
+    healthChecks.AddNpgSql(recyclerConn);
 }
 
 builder.Services.AddScoped<IRecyclerService, RecyclerService.Services.RecyclerService>();
