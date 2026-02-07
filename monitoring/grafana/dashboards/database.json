@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -107,7 +107,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "pg_up{job=~\"bottle-tycoon-.*-postgres\"}",
           "legendFormat": "{{ job }}",
@@ -120,7 +120,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -199,7 +199,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "pg_database_size_bytes{job=~\"bottle-tycoon-(gameservice|truck|recycler|recyclingplant)-postgres\"}",
           "legendFormat": "{{ job }}",
@@ -212,7 +212,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -291,7 +291,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rate(pg_stat_database_tup_fetched{job=~\"bottle-tycoon-(gameservice|truck|recycler|recyclingplant)-postgres\"}[5m])",
           "legendFormat": "{{ job }} - fetched",
@@ -300,7 +300,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rate(pg_stat_database_tup_inserted{job=~\"bottle-tycoon-(gameservice|truck|recycler|recyclingplant)-postgres\"}[5m])",
           "legendFormat": "{{ job }} - inserted",
@@ -309,7 +309,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rate(pg_stat_database_tup_updated{job=~\"bottle-tycoon-(gameservice|truck|recycler|recyclingplant)-postgres\"}[5m])",
           "legendFormat": "{{ job }} - updated",
@@ -318,7 +318,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rate(pg_stat_database_tup_deleted{job=~\"bottle-tycoon-(gameservice|truck|recycler|recyclingplant)-postgres\"}[5m])",
           "legendFormat": "{{ job }} - deleted",
@@ -331,7 +331,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -410,7 +410,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "pg_stat_database_conflicts{job=~\"bottle-tycoon-(gameservice|truck|recycler|recyclingplant)-postgres\"}",
           "legendFormat": "{{ job }}",
@@ -423,7 +423,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -502,7 +502,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "pg_stat_database_numbackends{job=~\"bottle-tycoon-(gameservice|truck|recycler|recyclingplant)-postgres\"}",
           "legendFormat": "{{ job }}",
@@ -515,7 +515,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -594,7 +594,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rate(pg_stat_database_xact_commit{job=~\"bottle-tycoon-(gameservice|truck|recycler|recyclingplant)-postgres\"}[5m])",
           "legendFormat": "{{ job }} - commits",
@@ -603,7 +603,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "rate(pg_stat_database_xact_rollback{job=~\"bottle-tycoon-(gameservice|truck|recycler|recyclingplant)-postgres\"}[5m])",
           "legendFormat": "{{ job }} - rollbacks",
