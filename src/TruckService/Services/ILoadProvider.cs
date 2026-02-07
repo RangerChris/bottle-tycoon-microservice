@@ -1,6 +1,6 @@
-﻿namespace TruckService.Services;
+﻿﻿namespace TruckService.Services;
 
 public interface ILoadProvider
 {
-    (int glass, int metal, int plastic) GetLoadForRecycler(Guid recyclerId);
+    Task<(int glass, int metal, int plastic)> GetLoadForRecyclerAsync(Guid recyclerId, int maxCapacity, CancellationToken ct = default);
 }

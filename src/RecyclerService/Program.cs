@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
@@ -108,43 +108,10 @@ try
 {
     var app = builder.Build();
 
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        // Apply migrations if using Postgres, otherwise EnsureCreated for in-memory
-        try
-        {
-            using var scope = app.Services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
-            if (dbContext.Database.ProviderName?.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                dbContext.Database.EnsureCreated();
-                Log.Information("Database.EnsureCreated() executed at startup");
-            }
-            else
-            {
-                dbContext.Database.EnsureCreated();
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "An error occurred while initializing the database");
-        }
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "An error occurred while attempting database migrations during startup. The application will continue to start, but database functionality may be degraded");
-    }
-
-    // Ensure schema exists
-    try
-    {
-        using var scope = app.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         dbContext.Database.EnsureCreated();
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "An error occurred while ensuring database creation");
     }
 
     var swaggerEnabled = true;

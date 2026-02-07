@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -100,20 +100,20 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
-          "expr": "sum by (bottle_type) (rate(bottles_processed_bottles_total{job=\"recyclerservice\"}[5m]))",
+          "expr": "sum by (bottle_type) (rate(recyclerservice_bottles_processed_bottles_total{job=\"recyclerservice\"}[5m]))",
           "legendFormat": "{{ bottle_type }}",
           "refId": "A"
         }
       ],
-      "title": "Bottles Processed Rate by Type (5m avg)",
+      "title": "Customers Arriving Rate by Type (5m avg)",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -189,19 +189,19 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
-          "expr": "sum by (bottle_type) (bottles_processed_bottles_total{job=\"recyclerservice\"})",
+          "expr": "bottles_processed_bottles_total{job=\"recyclerservice\"}",
           "legendFormat": "{{ bottle_type }}",
           "refId": "A"
         }
       ],
-      "title": "Bottles Processed Total by Type",
+      "title": "Total Bottles Brought by Customers (by Type)",
       "type": "timeseries"
     }
   ],
   "preload": false,
-  "refresh": "10s",
+  "refresh": "auto",
   "schemaVersion": 42,
   "tags": [
     "bottle-tycoon",
@@ -212,7 +212,7 @@
     "list": []
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},

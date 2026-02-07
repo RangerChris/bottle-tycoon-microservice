@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿﻿using System.Net;
 using System.Net.Http.Json;
 using RecyclerService.Tests.TestFixtures;
 using Shouldly;
@@ -25,13 +25,13 @@ public class MetricsEndpointTests : IClassFixture<TestcontainersFixture>
         var createRes = await client.PostAsJsonAsync("/recyclers", createRequest, TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        var visitor = new VisitorRequest
+        var visitor = new CustomerRequest
         {
             BottleCounts = new Dictionary<string, int> { { "glass", 3 }, { "metal", 2 }, { "plastic", 1 } },
-            VisitorType = "Metrics"
+            CustomerType = "Metrics"
         };
 
-        var res = await client.PostAsJsonAsync($"/recyclers/{recyclerId}/visitors", visitor, TestContext.Current.CancellationToken);
+        var res = await client.PostAsJsonAsync($"/recyclers/{recyclerId}/customers", visitor, TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var metricsRes = await client.GetAsync("/metrics", TestContext.Current.CancellationToken);
@@ -46,9 +46,9 @@ public class MetricsEndpointTests : IClassFixture<TestcontainersFixture>
 
     private sealed record CreateRequest(Guid Id, string Name, int Capacity, string? Location);
 
-    private sealed record VisitorRequest
+    private sealed record CustomerRequest
     {
         public Dictionary<string, int>? BottleCounts { get; init; }
-        public string? VisitorType { get; init; }
+        public string? CustomerType { get; init; }
     }
 }

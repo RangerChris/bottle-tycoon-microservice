@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿using Microsoft.EntityFrameworkCore;
 using RecyclerService.Models;
 
 namespace RecyclerService.Data;
@@ -10,7 +10,7 @@ public class RecyclerDbContext : DbContext
     }
 
     public DbSet<Recycler> Recyclers { get; set; } = null!;
-    public DbSet<Visitor> Visitors { get; set; } = null!;
+    public DbSet<Customer> Customers { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,15 +21,15 @@ public class RecyclerDbContext : DbContext
             eb.Property(r => r.Capacity).IsRequired();
             eb.Property(r => r.BottleInventoryJson).IsRequired();
             eb.Property(r => r.CreatedAt).HasDefaultValueSql("now()");
-            eb.HasMany(r => r.Visitors).WithOne(v => v.Recycler).HasForeignKey(v => v.RecyclerId).OnDelete(DeleteBehavior.Restrict);
+            eb.HasMany(r => r.Customers).WithOne(v => v.Recycler).HasForeignKey(v => v.RecyclerId).OnDelete(DeleteBehavior.Restrict);
             eb.HasIndex(r => r.Capacity);
         });
 
-        modelBuilder.Entity<Visitor>(eb =>
+        modelBuilder.Entity<Customer>(eb =>
         {
             eb.HasKey(v => v.Id);
             eb.Property(v => v.BottleCountsJson).IsRequired();
-            eb.Property(v => v.VisitorType).HasMaxLength(50);
+            eb.Property(v => v.CustomerType).HasMaxLength(50);
             eb.Property(v => v.ArrivedAt).HasDefaultValueSql("now()");
         });
 

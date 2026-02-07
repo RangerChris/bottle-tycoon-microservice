@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿using Microsoft.EntityFrameworkCore;
 using TruckService.Data;
 using TruckService.Models;
 
@@ -50,8 +50,9 @@ public class TruckManager : ITruckManager
         }
 
         _logger.LogInformation("Dispatching truck {TruckId} to recycler {RecyclerId} (distance {Distance} km)", truckId, recyclerId, distanceKm);
-        // Use load provider to get deterministic load in tests
-        var (glass, metal, plastic) = _loadProvider.GetLoadForRecycler(recyclerId);
+
+        var truckCapacity = (int)CalculateMaxCapacityUnits(100, 0);
+        var (glass, metal, plastic) = await _loadProvider.GetLoadForRecyclerAsync(recyclerId, truckCapacity, ct);
 
         var loadUnits = CalculateCurrentLoadUnits(glass, metal, plastic);
         var maxUnits = CalculateMaxCapacityUnits(100, 0);

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
 namespace RecyclerService.Models;
@@ -15,7 +15,7 @@ public class Recycler
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? LastEmptiedAt { get; set; }
 
-    public ICollection<Visitor> Visitors { get; set; } = new List<Visitor>();
+    public ICollection<Customer> Customers { get; set; } = new List<Customer>();
 
     public int CurrentLoad => GetBottleInventory().Values.Sum();
 
