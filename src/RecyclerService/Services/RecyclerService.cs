@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Metrics;
+﻿﻿using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;
@@ -96,5 +96,17 @@ public class RecyclerService : IRecyclerService
         _db.Recyclers.Add(r);
         await _db.SaveChangesAsync();
         return r;
+    }
+
+    public Task RecordBottlesProcessedAsync(Dictionary<string, int> bottlesByType, CancellationToken ct = default)
+    {
+        foreach (var kv in bottlesByType)
+        {
+            if (kv.Value > 0 && !string.IsNullOrWhiteSpace(kv.Key))
+            {
+                _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
+            }
+        }
+        return Task.CompletedTask;
     }
 }

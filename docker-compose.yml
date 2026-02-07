@@ -252,6 +252,7 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__DefaultConnection: Host=truckpostgres;Database=TruckServiceOwner;Username=postgres;Password=password
+      RecyclerService__Url: http://recyclerservice:80
       OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
       OTEL_SERVICE_NAME: TruckService
     ports:

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Microsoft.EntityFrameworkCore;
@@ -45,7 +45,16 @@ else
 }
 
 builder.Services.AddScoped<ITruckRepository, EfTruckRepository>();
-builder.Services.AddScoped<ILoadProvider, RandomLoadProvider>();
+
+if (builder.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("UseRandomLoadProvider"))
+{
+    builder.Services.AddScoped<ILoadProvider, RandomLoadProvider>();
+}
+else
+{
+    builder.Services.AddScoped<ILoadProvider, RecyclerServiceLoadProvider>();
+}
+
 builder.Services.AddScoped<ITruckManager, TruckManager>(sp =>
 {
     var repo = sp.GetRequiredService<ITruckRepository>();
