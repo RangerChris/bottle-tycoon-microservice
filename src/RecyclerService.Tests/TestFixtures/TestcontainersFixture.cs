@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics.Metrics;
+using System.Net;
 using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
 using FastEndpoints;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using OpenTelemetry.Metrics;
 using RecyclerService.Data;
@@ -92,6 +94,9 @@ public class TestcontainersFixture : IAsyncLifetime
                 .AddMeter("RecyclerService")
                 .AddPrometheusExporter());
 
+        // register Meter singleton used by the app's services
+        builder.Services.AddSingleton<Meter>(sp => new Meter("RecyclerService", "1.0"));
+
         // Add HttpClient for inter-service communication (mocked for tests)
         builder.Services.AddHttpClient("GameService", client =>
             {
@@ -101,8 +106,14 @@ public class TestcontainersFixture : IAsyncLifetime
 
         builder.Services.AddDbContext<RecyclerDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("RecyclerConnection")));
 
-        // Business services
-        builder.Services.AddScoped<IRecyclerService, Services.RecyclerService>();
+        // Business services: construct RecyclerService via factory and pass a Meter directly to avoid DI lookup issues in tests
+        builder.Services.AddScoped<IRecyclerService>(sp =>
+        {
+            var db = sp.GetRequiredService<RecyclerDbContext>();
+            var logger = sp.GetRequiredService<ILogger<Services.RecyclerService>>();
+            var meter = new Meter("RecyclerService", "1.0");
+            return new Services.RecyclerService(db, logger, meter);
+        });
 
         // JSON options (same shape as app)
         builder.Services.Configure<JsonOptions>(options =>

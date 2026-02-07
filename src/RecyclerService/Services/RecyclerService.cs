@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.Metrics;
+﻿using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;
@@ -11,10 +11,12 @@ public class RecyclerService : IRecyclerService
     private readonly ILogger<RecyclerService> _logger;
     private readonly Counter<long> _bottlesProcessed;
 
-    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter meter)
+    // Single constructor that accepts an optional Meter. If not supplied by DI, create one locally.
+    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter? meter = null)
     {
         _db = db;
         _logger = logger;
+        meter ??= new Meter("RecyclerService", "1.0");
         _bottlesProcessed = meter.CreateCounter<long>(
             "bottles_processed",
             unit: "bottles",
