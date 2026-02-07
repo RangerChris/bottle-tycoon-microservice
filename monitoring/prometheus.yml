@@ -54,3 +54,23 @@ scrape_configs:
       - targets: ['frontend:3000']
     metrics_path: '/metrics'
     scrape_interval: 15s
+
+  - job_name: 'bottle-tycoon-gameservice-postgres'
+    static_configs:
+      - targets: ['gameservice-postgres-exporter:9187']
+    scrape_interval: 15s
+
+  - job_name: 'bottle-tycoon-truck-postgres'
+    static_configs:
+      - targets: ['truck-postgres-exporter:9187']
+    scrape_interval: 15s
+
+  - job_name: 'bottle-tycoon-recycler-postgres'
+    static_configs:
+      - targets: ['recycler-postgres-exporter:9187']
+    scrape_interval: 15s
+
+  - job_name: 'bottle-tycoon-recyclingplant-postgres'
+    static_configs:
+      - targets: ['recyclingplant-postgres-exporter:9187']
+    scrape_interval: 15s

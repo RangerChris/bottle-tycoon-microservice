@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
+using OpenTelemetry.Metrics;
 using RecyclerService.Data;
 using RecyclerService.Services;
 using Serilog;
@@ -86,6 +87,11 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddHealthChecks();
         builder.Services.AddHttpClient();
 
+        builder.Services.AddOpenTelemetry()
+            .WithMetrics(metrics => metrics
+                .AddMeter("RecyclerService")
+                .AddPrometheusExporter());
+
         // Add HttpClient for inter-service communication (mocked for tests)
         builder.Services.AddHttpClient("GameService", client =>
             {
@@ -112,6 +118,8 @@ public class TestcontainersFixture : IAsyncLifetime
 
         // Configure minimal request pipeline so FastEndpoints routes are registered
         app.UseFastEndpoints();
+
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         app.UseSwagger();
         app.UseSwaggerUI(c =>

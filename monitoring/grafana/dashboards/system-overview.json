@@ -1,239 +1,557 @@
 {
-  "id": null,
-  "title": "System Overview",
-  "tags": ["bottle-tycoon", "microservices"],
-  "timezone": "browser",
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
   "panels": [
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "from": 0,
+                "result": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "Not running"
+                },
+                "to": 0.8
+              },
+              "type": "range"
+            },
+            {
+              "options": {
+                "from": 0.81,
+                "result": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "Running"
+                },
+                "to": 1
+              },
+              "type": "range"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
-      "title": "Game Service Health",
-      "type": "stat",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.1",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "up{job=\"gameservice\"}",
           "refId": "A"
         }
       ],
+      "title": "Game Service Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
               "options": {
-                "0": {
-                  "text": "DOWN",
-                  "color": "red"
+                "from": 0,
+                "result": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "Not running"
                 },
-                "1": {
-                  "text": "UP",
-                  "color": "green"
-                }
+                "to": 0.8
               },
-              "type": "value"
+              "type": "range"
+            },
+            {
+              "options": {
+                "from": 0.81,
+                "result": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "Running"
+                },
+                "to": 1
+              },
+              "type": "range"
             }
-          ]
-        }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
+        "x": 12,
         "y": 0
-      }
-    },
-    {
+      },
       "id": 2,
-      "title": "Recycler Service Health",
-      "type": "stat",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.1",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "up{job=\"recyclerservice\"}",
           "refId": "A"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "text": "DOWN",
-                  "color": "red"
-                },
-                "1": {
-                  "text": "UP",
-                  "color": "green"
-                }
-              },
-              "type": "value"
-            }
-          ]
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      }
+      "title": "Recycler Service Health",
+      "type": "stat"
     },
     {
-      "id": 3,
-      "title": "Truck Service Health",
-      "type": "stat",
-      "targets": [
-        {
-          "expr": "up{job=\"truckservice\"}",
-          "refId": "A"
-        }
-      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
               "options": {
-                "0": {
-                  "text": "DOWN",
-                  "color": "red"
+                "from": 0,
+                "result": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "Not running"
                 },
-                "1": {
-                  "text": "UP",
-                  "color": "green"
-                }
+                "to": 0.8
               },
-              "type": "value"
+              "type": "range"
+            },
+            {
+              "options": {
+                "from": 0.81,
+                "result": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "Running"
+                },
+                "to": 1
+              },
+              "type": "range"
             }
-          ]
-        }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
         "y": 8
-      }
-    },
-    {
-      "id": 4,
-      "title": "Headquarters Service Health",
-      "type": "stat",
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.1",
       "targets": [
         {
-          "expr": "up{job=\"headquartersservice\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "up{job=\"truckservice\"}",
           "refId": "A"
         }
       ],
+      "title": "Truck Service Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
               "options": {
-                "0": {
-                  "text": "DOWN",
-                  "color": "red"
+                "from": 0,
+                "result": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "Not running"
                 },
-                "1": {
-                  "text": "UP",
-                  "color": "green"
-                }
+                "to": 0.8
               },
-              "type": "value"
+              "type": "range"
+            },
+            {
+              "options": {
+                "from": 0.81,
+                "result": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "Running"
+                },
+                "to": 1
+              },
+              "type": "range"
             }
-          ]
-        }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
         "y": 8
-      }
-    },
-    {
-      "id": 5,
-      "title": "Recycling Plant Service Health",
-      "type": "stat",
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.1",
       "targets": [
         {
-          "expr": "up{job=\"recyclingplantservice\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "up{job=\"frontend\"}",
           "refId": "A"
         }
       ],
+      "title": "Frontend Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
               "options": {
-                "0": {
-                  "text": "DOWN",
-                  "color": "red"
+                "from": 0,
+                "result": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "Not running"
                 },
-                "1": {
-                  "text": "UP",
-                  "color": "green"
-                }
+                "to": 0.8
               },
-              "type": "value"
+              "type": "range"
+            },
+            {
+              "options": {
+                "from": 0.81,
+                "result": {
+                  "index": 1,
+                  "text": "Running"
+                },
+                "to": 1
+              },
+              "type": "range"
             }
-          ]
-        }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
         "y": 16
-      }
-    },
-    {
-      "id": 6,
-      "title": "Frontend Health",
-      "type": "stat",
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.1",
       "targets": [
         {
-          "expr": "up{job=\"frontend\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "up{job=\"recyclingplantservice\"}",
           "refId": "A"
         }
       ],
+      "title": "Recycling Plant Service Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
               "options": {
-                "0": {
-                  "text": "DOWN",
-                  "color": "red"
+                "from": 0,
+                "result": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "Not running"
                 },
-                "1": {
-                  "text": "UP",
-                  "color": "green"
-                }
+                "to": 0.8
               },
-              "type": "value"
+              "type": "range"
+            },
+            {
+              "options": {
+                "from": 0.81,
+                "result": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "Running"
+                },
+                "to": 1
+              },
+              "type": "range"
             }
-          ]
-        }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
-      }
+        "y": 16
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "up{job=\"headquartersservice\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Headquarters Service Health",
+      "type": "stat"
     }
   ],
+  "preload": false,
+  "refresh": "5s",
+  "schemaVersion": 42,
+  "tags": [
+    "bottle-tycoon",
+    "microservices"
+  ],
+  "templating": {
+    "list": []
+  },
   "time": {
     "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
-  "templating": {
-    "list": []
-  },
-  "annotations": {
-    "list": []
-  },
-  "refresh": "5s",
-  "schemaVersion": 27,
-  "version": 0,
-  "links": []
+  "timezone": "browser",
+  "title": "API health Overview",
+  "uid": "72d0c8ee-7e12-4957-bb52-668fef76b104",
+  "version": 1
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿using System.Diagnostics.Metrics;
+using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;
 
@@ -8,11 +9,16 @@ public class RecyclerService : IRecyclerService
 {
     private readonly RecyclerDbContext _db;
     private readonly ILogger<RecyclerService> _logger;
+    private readonly Counter<long> _bottlesProcessed;
 
-    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger)
+    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter meter)
     {
         _db = db;
         _logger = logger;
+        _bottlesProcessed = meter.CreateCounter<long>(
+            "bottles_processed",
+            unit: "bottles",
+            description: "Number of bottles processed by type");
     }
 
     public async Task<Recycler?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -46,6 +52,11 @@ public class RecyclerService : IRecyclerService
         foreach (var kv in visitorCounts)
         {
             recyclerInventory[kv.Key] = recyclerInventory.GetValueOrDefault(kv.Key) + kv.Value;
+
+            if (kv.Value > 0 && !string.IsNullOrWhiteSpace(kv.Key))
+            {
+                _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
+            }
         }
 
         recycler.SetBottleInventory(recyclerInventory);

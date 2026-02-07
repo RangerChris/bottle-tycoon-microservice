@@ -75,6 +75,58 @@
     networks:
       - bottle-tycoon
 
+  gameservice-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: bottle-tycoon-gameservice-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:password@gameservicepostgres:5432/GameServiceOwner?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      gameservicepostgres:
+        condition: service_healthy
+    networks:
+      - bottle-tycoon
+
+  truck-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: bottle-tycoon-truck-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:password@truckpostgres:5432/TruckServiceOwner?sslmode=disable"
+    ports:
+      - "9188:9187"
+    depends_on:
+      truckpostgres:
+        condition: service_healthy
+    networks:
+      - bottle-tycoon
+
+  recycler-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: bottle-tycoon-recycler-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:password@recyclerpostgres:5432/RecyclerServiceOwner?sslmode=disable"
+    ports:
+      - "9189:9187"
+    depends_on:
+      recyclerpostgres:
+        condition: service_healthy
+    networks:
+      - bottle-tycoon
+
+  recyclingplant-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: bottle-tycoon-recyclingplant-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:password@recyclingplantpostgres:5432/RecyclingPlantServiceOwner?sslmode=disable"
+    ports:
+      - "9190:9187"
+    depends_on:
+      recyclingplantpostgres:
+        condition: service_healthy
+    networks:
+      - bottle-tycoon
+
   # Observability Services
   jaeger:
     image: jaegertracing/all-in-one:1.52
