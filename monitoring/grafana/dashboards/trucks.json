@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "truck_current_load{job=\"truckservice\"}",
+          "expr": "truck_current_load_bottles{job=\"truckservice\"}",
           "legendFormat": "{{ truck_id }} ({{ status }})",
           "refId": "A"
         }
@@ -191,7 +191,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "truck_capacity{job=\"truckservice\"}",
+          "expr": "truck_capacity_bottles{job=\"truckservice\"}",
           "legendFormat": "{{ truck_id }}",
           "refId": "A"
         }
@@ -293,9 +293,7 @@
   "refresh": "auto",
   "schemaVersion": 42,
   "tags": [
-    "bottle-tycoon",
-    "truck",
-    "metrics"
+    "truck"
   ],
   "templating": {
     "list": []

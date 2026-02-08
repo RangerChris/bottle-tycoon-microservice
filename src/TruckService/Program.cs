@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using FastEndpoints;
 using FastEndpoints.Swagger;
@@ -62,7 +62,8 @@ builder.Services.AddScoped<ITruckManager, TruckManager>(sp =>
     var db = sp.GetRequiredService<TruckDbContext>();
     var load = sp.GetRequiredService<ILoadProvider>();
     var logger = sp.GetRequiredService<ILogger<TruckManager>>();
-    return new TruckManager(repo, db, load, logger);
+    var telemetryStore = sp.GetRequiredService<ITruckTelemetryStore>();
+    return new TruckManager(repo, db, load, logger, telemetryStore);
 });
 builder.Services.AddScoped<IRouteWorker, RouteWorker>();
 builder.Services.AddScoped<ITruckService, TruckService.Services.TruckService>();

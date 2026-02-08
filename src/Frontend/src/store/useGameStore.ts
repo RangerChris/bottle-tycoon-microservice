@@ -59,6 +59,7 @@ export type GameState = {
   createVisitorForRecycler: (recyclerId: number | string) => void
   scheduleNextArrival: (recyclerId: number | string, minSec?: number, maxSec?: number) => void
   reportRecyclerTelemetry: () => Promise<void>
+  reportTruckTelemetry: () => Promise<void>
   // internal helpers for init
   init: () => Promise<void>
   fetchPlayer: () => Promise<void>
@@ -209,6 +210,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             draft.buyingTruck = false
             draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased Truck #${newTruck.id.toString().substring(0, 8)}` })
         })
+
+        await get().reportTruckTelemetry()
     } catch (error) {
         set((draft: any) => {
             draft.buyingTruck = false;
@@ -663,6 +666,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     await get().fetchPlayer()
     await get().fetchRecyclers()
     await get().fetchTrucks()
+    await get().reportTruckTelemetry()
 
     if (arrivalsWatchdog === null) {
       arrivalsWatchdog = window.setInterval(() => {
@@ -694,6 +698,33 @@ const useGameStore = create(immer<GameState>((set, get) => ({
               metal: bottles.metal,
               plastic: bottles.plastic
             }
+          })
+        })
+      })
+
+    if (requests.length === 0) return
+
+    await Promise.allSettled(requests)
+  },
+
+  reportTruckTelemetry: async () => {
+    const state = get()
+    const { truckBase } = getApiBaseUrls()
+    const baseUrl = truckBase.replace(/\/$/, '')
+
+    const requests = state.trucks
+      .filter(t => typeof t.id === 'string')
+      .map(t => {
+        const currentLoad = t.currentLoad || 0
+        const capacity = t.capacity || 45
+        const status = t.status || 'idle'
+        return fetch(`${baseUrl}/trucks/${t.id}/telemetry`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentLoad,
+            capacity,
+            status
           })
         })
       })

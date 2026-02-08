@@ -539,8 +539,7 @@
   "refresh": "auto",
   "schemaVersion": 42,
   "tags": [
-    "bottle-tycoon",
-    "microservices"
+    "health"
   ],
   "templating": {
     "list": []
