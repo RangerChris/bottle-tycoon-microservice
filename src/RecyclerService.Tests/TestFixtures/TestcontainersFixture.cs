@@ -97,7 +97,7 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddSingleton<Meter>(sp => new Meter("RecyclerService", "1.0"));
 
         // register the bottles_processed counter on the shared meter for tests
-        builder.Services.AddSingleton<Counter<long>>(sp => sp.GetRequiredService<Meter>().CreateCounter<long>("bottles_processed", unit: "bottles", description: "Number of bottles processed by type"));
+        builder.Services.AddSingleton<Counter<long>>(sp => sp.GetRequiredService<Meter>().CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type"));
 
         builder.Services.AddSingleton<IRecyclerTelemetryStore, RecyclerTelemetryStore>();
         builder.Services.AddSingleton<RecyclerMetrics>();
