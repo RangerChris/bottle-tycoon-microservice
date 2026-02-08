@@ -120,6 +120,7 @@ Pre-configured dashboards for:
 - Per-service performance
 - Business metrics (credits, deliveries, earnings)
 - Infrastructure health (database)
+- Recycler metrics (current bottles, bottles processed by type)
 
 Access Grafana: http://localhost:3001 (admin/admin)
 

@@ -9,6 +9,7 @@ export default function useGameLoop() {
 
   const depositIntervalRef = useRef<number | null>(null)
   const dispatchIntervalRef = useRef<number | null>(null)
+  const telemetryIntervalRef = useRef<number | null>(null)
 
   useEffect(() => {
     // expose store for quick debugging in browser console
@@ -24,6 +25,10 @@ export default function useGameLoop() {
     if (dispatchIntervalRef.current) {
       window.clearInterval(dispatchIntervalRef.current)
       dispatchIntervalRef.current = null
+    }
+    if (telemetryIntervalRef.current) {
+      window.clearInterval(telemetryIntervalRef.current)
+      telemetryIntervalRef.current = null
     }
 
     const mult = timeMultipliers[timeLevel] ?? 1
@@ -60,10 +65,15 @@ export default function useGameLoop() {
       }, 2000)
     }
 
+    telemetryIntervalRef.current = window.setInterval(() => {
+      const s = (useGameStore as any).getState()
+      s.reportRecyclerTelemetry()
+    }, 10000)
 
     return () => {
       if (depositIntervalRef.current) { window.clearInterval(depositIntervalRef.current); depositIntervalRef.current = null }
       if (dispatchIntervalRef.current) { window.clearInterval(dispatchIntervalRef.current); dispatchIntervalRef.current = null }
+      if (telemetryIntervalRef.current) { window.clearInterval(telemetryIntervalRef.current); telemetryIntervalRef.current = null }
     }
   }, [timeLevel])
 }

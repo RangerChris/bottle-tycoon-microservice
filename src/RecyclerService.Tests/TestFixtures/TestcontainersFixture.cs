@@ -94,8 +94,9 @@ public class TestcontainersFixture : IAsyncLifetime
                 .AddMeter("RecyclerService")
                 .AddPrometheusExporter());
 
-        // register Meter singleton used by the app's services
         builder.Services.AddSingleton<Meter>(sp => new Meter("RecyclerService", "1.0"));
+        builder.Services.AddSingleton<IRecyclerTelemetryStore, RecyclerTelemetryStore>();
+        builder.Services.AddSingleton<RecyclerMetrics>();
 
         // Add HttpClient for inter-service communication (mocked for tests)
         builder.Services.AddHttpClient("GameService", client =>
@@ -106,12 +107,11 @@ public class TestcontainersFixture : IAsyncLifetime
 
         builder.Services.AddDbContext<RecyclerDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("RecyclerConnection")));
 
-        // Business services: construct RecyclerService via factory and pass a Meter directly to avoid DI lookup issues in tests
         builder.Services.AddScoped<IRecyclerService>(sp =>
         {
             var db = sp.GetRequiredService<RecyclerDbContext>();
             var logger = sp.GetRequiredService<ILogger<Services.RecyclerService>>();
-            var meter = new Meter("RecyclerService", "1.0");
+            var meter = sp.GetRequiredService<Meter>();
             return new Services.RecyclerService(db, logger, meter);
         });
 
@@ -126,6 +126,8 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.WebHost.UseTestServer();
 
         var app = builder.Build();
+
+        app.Services.GetRequiredService<RecyclerMetrics>();
 
         // Configure minimal request pipeline so FastEndpoints routes are registered
         app.UseFastEndpoints();

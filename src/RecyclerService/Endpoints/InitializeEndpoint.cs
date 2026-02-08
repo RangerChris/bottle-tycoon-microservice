@@ -6,10 +6,12 @@ namespace RecyclerService.Endpoints;
 public class InitializeEndpoint : EndpointWithoutRequest
 {
     private readonly IRecyclerService _recyclerService;
+    private readonly IRecyclerTelemetryStore _telemetryStore;
 
-    public InitializeEndpoint(IRecyclerService recyclerService)
+    public InitializeEndpoint(IRecyclerService recyclerService, IRecyclerTelemetryStore telemetryStore)
     {
         _recyclerService = recyclerService;
+        _telemetryStore = telemetryStore;
     }
 
     public override void Configure()
@@ -21,6 +23,8 @@ public class InitializeEndpoint : EndpointWithoutRequest
     public override async Task HandleAsync(CancellationToken ct)
     {
         await _recyclerService.ResetAsync();
-        await _recyclerService.CreateRecyclerAsync();
+        _telemetryStore.RemoveAll();
+        var recycler = await _recyclerService.CreateRecyclerAsync();
+        _telemetryStore.Set(recycler.Id, 0);
     }
 }
