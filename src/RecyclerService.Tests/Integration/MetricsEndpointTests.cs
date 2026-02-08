@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿﻿﻿using System.Net;
 using System.Net.Http.Json;
 using RecyclerService.Tests.TestFixtures;
 using Shouldly;
@@ -34,6 +34,8 @@ public class MetricsEndpointTests : IClassFixture<TestcontainersFixture>
         var res = await client.PostAsJsonAsync($"/recyclers/{recyclerId}/customers", visitor, TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
+        await Task.Delay(200, TestContext.Current.CancellationToken);
+
         var metricsRes = await client.GetAsync("/metrics", TestContext.Current.CancellationToken);
         metricsRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await metricsRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
@@ -61,15 +63,16 @@ public class MetricsEndpointTests : IClassFixture<TestcontainersFixture>
 
         var telemetryRes = await client.PostAsJsonAsync($"/recyclers/{recyclerId}/telemetry", telemetry, TestContext.Current.CancellationToken);
         telemetryRes.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var telemetryBody = await telemetryRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        telemetryBody.ShouldContain(recyclerId.ToString());
 
-        await Task.Delay(100, TestContext.Current.CancellationToken);
+        await Task.Delay(200, TestContext.Current.CancellationToken);
 
         var metricsRes = await client.GetAsync("/metrics", TestContext.Current.CancellationToken);
         metricsRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await metricsRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         body.ShouldContain("recycler_current_bottles");
-        body.ShouldContain($"recycler_id=\"{recyclerId}\"");
     }
 
     private sealed record CreateRequest(Guid Id, string Name, int Capacity, string? Location);

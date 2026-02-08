@@ -1,4 +1,4 @@
-﻿public static class TestContext
+public static class TestContext
 {
     public static TestContextInstance Current { get; } = new();
 

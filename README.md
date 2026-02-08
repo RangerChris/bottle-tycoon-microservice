@@ -78,6 +78,7 @@ Grafana Dashboards (http://localhost:3001, admin/admin):
 - **Metrics Dashboard** — Grafana and Loki monitoring metrics
 - **Recycler Bottles Metrics** — Bottles processed by type and customer arrival rates
 - **Recyclers** — Current bottles by recycler (may require Grafana restart after first run)
+- **Trucks** — Truck current load, capacity, and delivery metrics
 
 > **Note**: If dashboards don't appear after starting Docker Compose, restart Grafana: `docker restart bottle-tycoon-grafana`
 

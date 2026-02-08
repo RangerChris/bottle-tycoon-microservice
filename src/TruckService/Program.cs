@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Microsoft.EntityFrameworkCore;
@@ -94,6 +95,13 @@ var hc = builder.Services.AddHealthChecks();
 
 // Messaging removed: MassTransit and RabbitMQ are no longer used
 
+// OpenTelemetry - Metrics
+var truckMeterName = "TruckService";
+var truckMeter = new Meter(truckMeterName, "1.0");
+builder.Services.AddSingleton(truckMeter);
+builder.Services.AddSingleton<ITruckTelemetryStore, TruckTelemetryStore>();
+builder.Services.AddSingleton<TruckMetrics>();
+
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
@@ -106,9 +114,14 @@ builder.Services.AddOpenTelemetry()
         .AddJaegerExporter())
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
+        .AddMeter(truckMeterName)
+        .AddMeter("Microsoft.AspNetCore.Hosting")
+        .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
         .AddPrometheusExporter());
 
 var app = builder.Build();
+
+app.Services.GetRequiredService<TruckMetrics>();
 
 using (var scope = app.Services.CreateScope())
 {
