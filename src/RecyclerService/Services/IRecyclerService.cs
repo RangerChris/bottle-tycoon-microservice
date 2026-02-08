@@ -1,4 +1,4 @@
-﻿﻿using RecyclerService.Models;
+﻿using RecyclerService.Models;
 
 namespace RecyclerService.Services;
 

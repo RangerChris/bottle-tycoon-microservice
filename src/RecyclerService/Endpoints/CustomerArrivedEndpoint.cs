@@ -1,5 +1,4 @@
-﻿﻿﻿using System.ComponentModel.DataAnnotations;
-using FastEndpoints;
+﻿using FastEndpoints;
 using FluentValidation;
 using RecyclerService.Models;
 using RecyclerService.Services;

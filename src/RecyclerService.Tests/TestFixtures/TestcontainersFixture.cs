@@ -95,6 +95,10 @@ public class TestcontainersFixture : IAsyncLifetime
                 .AddPrometheusExporter());
 
         builder.Services.AddSingleton<Meter>(sp => new Meter("RecyclerService", "1.0"));
+
+        // register the bottles_processed counter on the shared meter for tests
+        builder.Services.AddSingleton<Counter<long>>(sp => sp.GetRequiredService<Meter>().CreateCounter<long>("bottles_processed", unit: "bottles", description: "Number of bottles processed by type"));
+
         builder.Services.AddSingleton<IRecyclerTelemetryStore, RecyclerTelemetryStore>();
         builder.Services.AddSingleton<RecyclerMetrics>();
 
@@ -111,8 +115,8 @@ public class TestcontainersFixture : IAsyncLifetime
         {
             var db = sp.GetRequiredService<RecyclerDbContext>();
             var logger = sp.GetRequiredService<ILogger<Services.RecyclerService>>();
-            var meter = sp.GetRequiredService<Meter>();
-            return new Services.RecyclerService(db, logger, meter);
+            var counter = sp.GetRequiredService<Counter<long>>();
+            return new Services.RecyclerService(db, logger, counter);
         });
 
         // JSON options (same shape as app)

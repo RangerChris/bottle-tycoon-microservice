@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.Metrics;
+﻿using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;
@@ -7,19 +7,23 @@ namespace RecyclerService.Services;
 
 public class RecyclerService : IRecyclerService
 {
+    private readonly Counter<long> _bottlesProcessed;
     private readonly RecyclerDbContext _db;
     private readonly ILogger<RecyclerService> _logger;
-    private readonly Counter<long> _bottlesProcessed;
 
-    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter? meter = null)
+    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter? meter)
     {
         _db = db;
         _logger = logger;
         meter ??= new Meter("RecyclerService", "1.0");
-        _bottlesProcessed = meter.CreateCounter<long>(
-            "bottles_processed",
-            unit: "bottles",
-            description: "Number of bottles processed by type");
+        _bottlesProcessed = meter.CreateCounter<long>("bottles_processed", unit: "bottles", description: "Number of bottles processed by type");
+    }
+
+    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Counter<long> bottlesProcessed)
+    {
+        _db = db;
+        _logger = logger;
+        _bottlesProcessed = bottlesProcessed;
     }
 
     public async Task<Recycler?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -34,25 +38,17 @@ public class RecyclerService : IRecyclerService
 
     public async Task<Recycler> CustomerArrivedAsync(Guid recyclerId, Customer customer, CancellationToken ct = default)
     {
-        var recycler = await _db.Recyclers.FirstOrDefaultAsync(r => r.Id == recyclerId, ct);
-        if (recycler == null)
+        var recycler = await GetByIdAsync(recyclerId, ct);
+        if (recycler is null)
         {
             throw new KeyNotFoundException($"Recycler {recyclerId} not found");
         }
 
-        customer.Id = customer.Id == Guid.Empty ? Guid.NewGuid() : customer.Id;
-        customer.RecyclerId = recyclerId;
-        customer.ArrivedAt = customer.ArrivedAt == default ? DateTimeOffset.UtcNow : customer.ArrivedAt;
-
-        _db.Customers.Add(customer);
-
-        var recyclerInventory = recycler.GetBottleInventory();
         var customerCounts = customer.GetBottleCounts();
+        var recyclerInventory = recycler.GetBottleInventory();
 
-        _logger.LogInformation("Customer arrived with bottles - Glass: {Glass}, Metal: {Metal}, Plastic: {Plastic}",
-            customerCounts.GetValueOrDefault("glass"),
-            customerCounts.GetValueOrDefault("metal"),
-            customerCounts.GetValueOrDefault("plastic"));
+        _logger.LogInformation("Customer {CustomerId} arrived at Recycler {RecyclerId} with Glass={Glass}, Metal={Metal}, Plastic={Plastic}",
+            customer.Id, recyclerId, customerCounts.GetValueOrDefault("glass"), customerCounts.GetValueOrDefault("metal"), customerCounts.GetValueOrDefault("plastic"));
 
         foreach (var kv in customerCounts)
         {
@@ -70,10 +66,6 @@ public class RecyclerService : IRecyclerService
 
         _logger.LogInformation("Customer {CustomerId} arrived at Recycler {RecyclerId}, new load {CurrentLoad}/{Capacity}", customer.Id, recyclerId, recycler.CurrentLoad, recycler.Capacity);
 
-        if (recycler.CurrentLoad >= recycler.Capacity)
-        {
-            _logger.LogInformation("Recycler {RecyclerId} reached capacity", recyclerId);
-        }
 
         return recycler;
     }
@@ -115,6 +107,7 @@ public class RecyclerService : IRecyclerService
                 _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
             }
         }
+
         return Task.CompletedTask;
     }
 }

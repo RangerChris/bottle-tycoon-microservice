@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
@@ -80,6 +80,11 @@ builder.Services.AddOpenTelemetry()
 var meterName = "RecyclerService";
 var meter = new Meter(meterName, "1.0");
 builder.Services.AddSingleton(meter);
+
+// create and register the bottles_processed counter on the shared meter so DI can inject it
+var bottlesProcessedCounter = meter.CreateCounter<long>("bottles_processed", unit: "bottles", description: "Number of bottles processed by type");
+builder.Services.AddSingleton<Counter<long>>(bottlesProcessedCounter);
+
 builder.Services.AddSingleton<IRecyclerTelemetryStore, RecyclerTelemetryStore>();
 builder.Services.AddSingleton<RecyclerMetrics>();
 

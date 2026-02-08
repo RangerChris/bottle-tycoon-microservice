@@ -1,4 +1,4 @@
-﻿﻿namespace TruckService.Services;
+﻿namespace TruckService.Services;
 
 public interface ILoadProvider
 {

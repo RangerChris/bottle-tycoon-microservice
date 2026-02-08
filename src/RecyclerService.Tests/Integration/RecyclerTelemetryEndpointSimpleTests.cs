@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using Shouldly;
 using RecyclerService.Tests.TestFixtures;
+using Shouldly;
 using Xunit;
 
 namespace RecyclerService.Tests.Integration;
