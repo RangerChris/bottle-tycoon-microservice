@@ -12,7 +12,7 @@ public sealed class RecyclerMetrics
             "recycler_current_bottles",
             () => telemetryStore.GetAll().Select(snapshot =>
                 new Measurement<int>(snapshot.CurrentBottles, new KeyValuePair<string, object?>("recycler_id", snapshot.RecyclerId.ToString()))),
-            unit: "bottles",
-            description: "Current bottles per recycler");
+            "bottles",
+            "Current bottles per recycler");
     }
 }

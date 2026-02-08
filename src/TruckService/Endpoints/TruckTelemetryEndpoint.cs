@@ -8,8 +8,8 @@ namespace TruckService.Endpoints;
 public sealed class TruckTelemetryEndpoint : Endpoint<TruckTelemetryEndpoint.Request, TruckTelemetryEndpoint.Response>
 {
     private readonly TruckDbContext _db;
-    private readonly ITruckTelemetryStore _telemetryStore;
     private readonly ILogger<TruckTelemetryEndpoint> _logger;
+    private readonly ITruckTelemetryStore _telemetryStore;
 
     public TruckTelemetryEndpoint(TruckDbContext db, ITruckTelemetryStore telemetryStore, ILogger<TruckTelemetryEndpoint> logger)
     {

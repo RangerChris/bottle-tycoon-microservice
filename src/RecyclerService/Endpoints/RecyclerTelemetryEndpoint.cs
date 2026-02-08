@@ -1,4 +1,4 @@
-﻿﻿using FastEndpoints;
+﻿using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Services;
@@ -8,8 +8,8 @@ namespace RecyclerService.Endpoints;
 public sealed class RecyclerTelemetryEndpoint : Endpoint<RecyclerTelemetryEndpoint.Request, RecyclerTelemetryEndpoint.Response>
 {
     private readonly RecyclerDbContext _db;
-    private readonly IRecyclerTelemetryStore _telemetryStore;
     private readonly ILogger<RecyclerTelemetryEndpoint> _logger;
+    private readonly IRecyclerTelemetryStore _telemetryStore;
 
     public RecyclerTelemetryEndpoint(RecyclerDbContext db, IRecyclerTelemetryStore telemetryStore, ILogger<RecyclerTelemetryEndpoint> logger)
     {

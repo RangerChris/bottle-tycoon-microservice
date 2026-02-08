@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;

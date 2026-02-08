@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.Metrics;
+﻿using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;
@@ -7,9 +7,9 @@ namespace RecyclerService.Services;
 
 public class RecyclerService : IRecyclerService
 {
+    private readonly Counter<long> _bottlesProcessed;
     private readonly RecyclerDbContext _db;
     private readonly ILogger<RecyclerService> _logger;
-    private readonly Counter<long> _bottlesProcessed;
 
     public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter? meter = null)
     {
@@ -18,8 +18,8 @@ public class RecyclerService : IRecyclerService
         meter ??= new Meter("RecyclerService", "1.0");
         _bottlesProcessed = meter.CreateCounter<long>(
             "bottles_processed",
-            unit: "bottles",
-            description: "Number of bottles processed by type");
+            "bottles",
+            "Number of bottles processed by type");
     }
 
     public async Task<Recycler?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -115,6 +115,7 @@ public class RecyclerService : IRecyclerService
                 _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
             }
         }
+
         return Task.CompletedTask;
     }
 }
