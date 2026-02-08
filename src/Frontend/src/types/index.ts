@@ -10,6 +10,7 @@ export type Visitor = {
 
 export type Recycler = {
   id: number | string;
+  name?: string;
   level: number;
   capacity: number;
   currentBottles: BottleCounts;

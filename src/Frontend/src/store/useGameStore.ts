@@ -143,13 +143,14 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             draft.credits -= cost
             draft.recyclers.push({
                 id: newRecycler.id,
+                name: newRecycler.name,
                 level: 0,
                 capacity: newRecycler.capacity,
                 currentBottles: { glass: 0, metal: 0, plastic: 0 },
                 visitors: []
             })
             draft.buyingRecycler = false
-            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased Recycler #${newRecycler.id.toString().substring(0, 8)}` })
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased ${newRecycler.name}` })
         })
 
         get().scheduleNextArrival(newRecycler.id, 1, 8)
@@ -180,7 +181,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             body: JSON.stringify({
                 playerId: state.playerId,
                 id: crypto.randomUUID(),
-                model: 'Standard Truck',
+                model: `Truck ${state.trucks.length + 1}`,
                 isActive: true
             })
         })
@@ -208,7 +209,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 cargo: null
             })
             draft.buyingTruck = false
-            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased Truck #${newTruck.id.toString().substring(0, 8)}` })
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased ${newTruck.model}` })
         })
 
         await get().reportTruckTelemetry()
@@ -294,8 +295,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             if (recycler) {
                 recycler.level = updatedRecycler.capacityLevel
                 recycler.capacity = updatedRecycler.capacity
+                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `${recycler.name} upgraded to Level ${updatedRecycler.capacityLevel}` })
             }
-            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Recycler #${recyclerId} upgraded to Level ${updatedRecycler.capacityLevel}` })
         })
     } catch (error) {
         set((draft: any) => {
@@ -339,8 +340,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 truck.level = updatedTruck.level
                 truck.capacity = calculateCapacity(45, truck.level)
                 truck.model = updatedTruck.model
+                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `${truck.model} upgraded to Level ${updatedTruck.level}` })
             }
-            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${truckId} upgraded to Level ${updatedTruck.level}` })
         })
     } catch (error) {
         set((draft: any) => {
@@ -605,6 +606,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       set((draft: any) => {
         draft.recyclers = recyclers.map((r: any) => ({
           id: r.id,
+          name: r.name,
           level: r.capacityLevel ?? 0,
           capacity: r.capacity ?? 100,
           currentBottles: { glass: 0, metal: 0, plastic: 0 },

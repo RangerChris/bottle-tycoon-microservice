@@ -28,11 +28,10 @@ public class TestcontainersFixture : IAsyncLifetime
     {
         var databaseName = $"gamestate_{Guid.NewGuid().ToString("N")}";
         // Configure a wait strategy so StartAsync doesn't return until the container port is available
-        Postgres = new PostgreSqlBuilder()
+        Postgres = new PostgreSqlBuilder("postgres:16-alpine")
             .WithDatabase(databaseName)
             .WithUsername("postgres")
             .WithPassword("password")
-            .WithImage("postgres:16-alpine")
             .WithPortBinding(5432, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(5432))
             .WithAutoRemove(true)

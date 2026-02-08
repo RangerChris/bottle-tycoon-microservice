@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿using Microsoft.EntityFrameworkCore;
 using TruckService.Data;
 using TruckService.Models;
 
@@ -29,7 +29,12 @@ public class TruckService : ITruckService
             t.Id = Guid.NewGuid();
         }
 
-        t.Model = string.IsNullOrEmpty(t.Model) ? "Standard Truck" : t.Model;
+        if (string.IsNullOrEmpty(t.Model))
+        {
+            var existingCount = await _db.Trucks.CountAsync();
+            t.Model = $"Truck {existingCount + 1}";
+        }
+
         t.IsActive = true;
         t.Level = 0;
 
