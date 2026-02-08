@@ -16,7 +16,7 @@ public class RecyclerService : IRecyclerService
         _db = db;
         _logger = logger;
         meter ??= new Meter("RecyclerService", "1.0");
-        _bottlesProcessed = meter.CreateCounter<long>("bottles_processed", unit: "bottles", description: "Number of bottles processed by type");
+        _bottlesProcessed = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
     }
 
     [ActivatorUtilitiesConstructor]

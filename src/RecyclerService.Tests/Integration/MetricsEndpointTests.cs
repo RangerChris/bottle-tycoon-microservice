@@ -40,6 +40,14 @@ public class MetricsEndpointTests : IClassFixture<TestcontainersFixture>
         metricsRes.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await metricsRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
+        for (var attempt = 0; attempt < 10 && !body.Contains("bottle_type=\"glass\"", StringComparison.OrdinalIgnoreCase); attempt++)
+        {
+            await Task.Delay(200, TestContext.Current.CancellationToken);
+            metricsRes = await client.GetAsync("/metrics", TestContext.Current.CancellationToken);
+            metricsRes.StatusCode.ShouldBe(HttpStatusCode.OK);
+            body = await metricsRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        }
+
         body.ShouldContain("bottles_processed_bottles_total");
         body.ShouldContain("bottle_type=\"glass\"");
         body.ShouldContain("bottle_type=\"metal\"");
