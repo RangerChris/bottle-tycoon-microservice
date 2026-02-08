@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TruckService.Data;
 using TruckService.Models;
 
@@ -10,14 +10,16 @@ public class TruckManager : ITruckManager
     private readonly ILoadProvider _loadProvider;
     private readonly ILogger<TruckManager> _logger;
     private readonly ITruckRepository _repo;
+    private readonly ITruckTelemetryStore _telemetryStore;
 
 
-    public TruckManager(ITruckRepository repo, TruckDbContext db, ILoadProvider loadProvider, ILogger<TruckManager> logger)
+    public TruckManager(ITruckRepository repo, TruckDbContext db, ILoadProvider loadProvider, ILogger<TruckManager> logger, ITruckTelemetryStore telemetryStore)
     {
         _repo = repo;
         _db = db;
         _loadProvider = loadProvider;
         _logger = logger;
+        _telemetryStore = telemetryStore;
     }
 
     public async Task<TruckStatusDto> GetStatusAsync(Guid truckId, CancellationToken ct = default)
@@ -28,15 +30,21 @@ public class TruckManager : ITruckManager
             throw new KeyNotFoundException($"Truck {truckId} not found");
         }
 
-        // default values for now
+        var loadByType = truck.GetCurrentLoadByType();
+        var capacityUnits = CalculateMaxCapacityUnits(100, truck.CapacityLevel);
+        var currentLoad = loadByType.Values.Sum();
+        var status = truck.IsActive ? "idle" : "inactive";
+
+        _telemetryStore.Set(truck.Id, currentLoad, (int)Math.Floor(capacityUnits), status);
+
         return new TruckStatusDto
         {
             Id = truck.Id,
-            State = "Idle",
+            State = status,
             Location = "Depot",
-            CurrentLoadByType = truck.GetCurrentLoadByType(),
-            MaxCapacityUnits = CalculateMaxCapacityUnits(100, 0),
-            CapacityLevel = 0,
+            CurrentLoadByType = loadByType,
+            MaxCapacityUnits = capacityUnits,
+            CapacityLevel = truck.CapacityLevel,
             TotalEarnings = await GetEarningsAsync(truckId, ct)
         };
     }
@@ -92,6 +100,9 @@ public class TruckManager : ITruckManager
         if (truckEnt != null)
         {
             truckEnt.SetCurrentLoadByType(new Dictionary<string, int> { { "glass", glass }, { "metal", metal }, { "plastic", plastic } });
+            var capacityUnits = CalculateMaxCapacityUnits(100, truckEnt.CapacityLevel);
+            var currentLoad = glass + metal + plastic;
+            _telemetryStore.Set(truckEnt.Id, currentLoad, (int)Math.Floor(capacityUnits), "loading");
         }
 
         await _db.SaveChangesAsync(ct);
@@ -103,16 +114,27 @@ public class TruckManager : ITruckManager
     public async Task<IEnumerable<TruckStatusDto>> GetFleetSummaryAsync(CancellationToken ct = default)
     {
         var trucks = await _db.Trucks.ToListAsync(ct);
-        return trucks.Select(t => new TruckStatusDto
+        var summaries = trucks.Select(t =>
         {
-            Id = t.Id,
-            State = t.IsActive ? "Idle" : "Inactive",
-            Location = "Depot",
-            CurrentLoadByType = t.GetCurrentLoadByType(),
-            MaxCapacityUnits = CalculateMaxCapacityUnits(100, 0),
-            CapacityLevel = 0,
-            TotalEarnings = 0m
+            var loadByType = t.GetCurrentLoadByType();
+            var capacityUnits = CalculateMaxCapacityUnits(100, t.CapacityLevel);
+            var currentLoad = loadByType.Values.Sum();
+            var status = t.IsActive ? "idle" : "inactive";
+            _telemetryStore.Set(t.Id, currentLoad, (int)Math.Floor(capacityUnits), status);
+
+            return new TruckStatusDto
+            {
+                Id = t.Id,
+                State = status,
+                Location = "Depot",
+                CurrentLoadByType = loadByType,
+                MaxCapacityUnits = capacityUnits,
+                CapacityLevel = t.CapacityLevel,
+                TotalEarnings = 0m
+            };
         });
+
+        return summaries;
     }
 
     public async Task<IEnumerable<object>> GetHistoryAsync(Guid truckId, CancellationToken ct = default)

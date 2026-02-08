@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Metrics;
+using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -32,18 +32,19 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var meter = new Meter("RecyclerService.Tests");
         var svc = new Services.RecyclerService(db, logger, meter);
 
-        // Clean up any existing data
         await db.Recyclers.ExecuteDeleteAsync(Xunit.TestContext.Current.CancellationToken);
 
         var recycler = await svc.CreateRecyclerAsync();
         recycler.ShouldNotBeNull();
         recycler.Id.ShouldNotBe(Guid.Empty);
-        recycler.Capacity.ShouldBe(100); // default
+        recycler.Capacity.ShouldBe(100);
         recycler.CreatedAt.ShouldNotBe(default);
+        recycler.Name.ShouldBe("Recycler 1");
 
         var fetched = await svc.GetByIdAsync(recycler.Id, TestContext.Current.CancellationToken);
         fetched.ShouldNotBeNull();
         fetched.Id.ShouldBe(recycler.Id);
+        fetched.Name.ShouldBe("Recycler 1");
     }
 
     [Fact]

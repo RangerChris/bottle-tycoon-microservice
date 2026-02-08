@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Metrics;
+﻿﻿using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;
@@ -95,7 +95,11 @@ public class RecyclerService : IRecyclerService
 
         r.CreatedAt = DateTimeOffset.UtcNow;
         r.Capacity = r.Capacity == 0 ? 100 : r.Capacity;
-        r.Name = string.IsNullOrEmpty(r.Name) ? $"Recycler-{r.Id}" : r.Name;
+        if (string.IsNullOrEmpty(r.Name))
+        {
+            var existingCount = await _db.Recyclers.CountAsync();
+            r.Name = $"Recycler {existingCount + 1}";
+        }
 
         _db.Recyclers.Add(r);
         await _db.SaveChangesAsync();

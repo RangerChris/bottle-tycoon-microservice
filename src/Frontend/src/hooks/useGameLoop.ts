@@ -68,6 +68,7 @@ export default function useGameLoop() {
     telemetryIntervalRef.current = window.setInterval(() => {
       const s = (useGameStore as any).getState()
       s.reportRecyclerTelemetry()
+      s.reportTruckTelemetry()
     }, 10000)
 
     return () => {

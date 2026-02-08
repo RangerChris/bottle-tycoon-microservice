@@ -115,9 +115,7 @@
   "refresh": "auto",
   "schemaVersion": 42,
   "tags": [
-    "bottle-tycoon",
-    "recycler",
-    "metrics"
+    "recycler"
   ],
   "templating": {
     "list": []

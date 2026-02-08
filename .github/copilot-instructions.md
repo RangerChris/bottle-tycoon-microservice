@@ -121,6 +121,7 @@ Pre-configured dashboards for:
 - Business metrics (credits, deliveries, earnings)
 - Infrastructure health (database)
 - Recycler metrics (current bottles, bottles processed by type)
+- Truck metrics (current load, capacity, deliveries)
 
 Access Grafana: http://localhost:3001 (admin/admin)
 

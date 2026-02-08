@@ -214,8 +214,7 @@
   "refresh": "auto",
   "schemaVersion": 42,
   "tags": [
-    "bottle-tycoon",
-    "monitoring"
+    "health"
   ],
   "templating": {
     "list": []

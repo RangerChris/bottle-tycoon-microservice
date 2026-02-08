@@ -7,11 +7,13 @@ public class RouteWorker : IRouteWorker
 {
     private readonly TruckDbContext _db;
     private readonly ILogger<RouteWorker> _logger;
+    private readonly TruckMetrics _metrics;
 
-    public RouteWorker(TruckDbContext db, ILogger<RouteWorker> logger)
+    public RouteWorker(TruckDbContext db, ILogger<RouteWorker> logger, TruckMetrics metrics)
     {
         _db = db;
         _logger = logger;
+        _metrics = metrics;
     }
 
     // Advances queued deliveries through the simple state machine synchronously for tests
@@ -41,6 +43,7 @@ public class RouteWorker : IRouteWorker
         delivery.State = "Completed";
         delivery.CompletedAt = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync(ct);
+        _metrics.RecordDeliveryCompleted();
 
         // Update truck earnings and current load
         var truck = await _db.Trucks.FindAsync(new object[] { delivery.TruckId }, ct);

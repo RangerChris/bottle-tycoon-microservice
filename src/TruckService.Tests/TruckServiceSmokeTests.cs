@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Shouldly;
 using TruckService.Tests.TestFixtures;
 using Xunit;

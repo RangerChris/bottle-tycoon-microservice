@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics.Metrics;
+using System.Net;
 using System.Text.Json.Serialization;
 using DotNet.Testcontainers.Builders;
 using FastEndpoints;
@@ -96,6 +97,10 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddScoped<ITruckManager, TruckManager>();
         builder.Services.AddScoped<IRouteWorker, RouteWorker>();
         builder.Services.AddScoped<ITruckService, Services.TruckService>();
+
+        builder.Services.AddSingleton<Meter>(sp => new Meter("TruckService", "1.0"));
+        builder.Services.AddSingleton<ITruckTelemetryStore, TruckTelemetryStore>();
+        builder.Services.AddSingleton<TruckMetrics>();
 
         // JSON options (same shape as app)
         builder.Services.Configure<JsonOptions>(options =>
