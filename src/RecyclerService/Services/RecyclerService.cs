@@ -11,14 +11,19 @@ public class RecyclerService : IRecyclerService
     private readonly RecyclerDbContext _db;
     private readonly ILogger<RecyclerService> _logger;
 
-    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter meter)
+    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter? meter)
     {
         _db = db;
         _logger = logger;
-        _bottlesProcessed = meter.CreateCounter<long>(
-            "bottles_processed",
-            "bottles",
-            "Number of bottles processed by type");
+        meter ??= new Meter("RecyclerService", "1.0");
+        _bottlesProcessed = meter.CreateCounter<long>("bottles_processed", unit: "bottles", description: "Number of bottles processed by type");
+    }
+
+    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Counter<long> bottlesProcessed)
+    {
+        _db = db;
+        _logger = logger;
+        _bottlesProcessed = bottlesProcessed;
     }
 
     public async Task<Recycler?> GetByIdAsync(Guid id, CancellationToken ct = default)
