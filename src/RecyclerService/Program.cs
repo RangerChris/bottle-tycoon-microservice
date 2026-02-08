@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
@@ -80,6 +80,8 @@ builder.Services.AddOpenTelemetry()
 var meterName = "RecyclerService";
 var meter = new Meter(meterName, "1.0");
 builder.Services.AddSingleton(meter);
+builder.Services.AddSingleton<IRecyclerTelemetryStore, RecyclerTelemetryStore>();
+builder.Services.AddSingleton<RecyclerMetrics>();
 
 // Health Checks
 var healthChecks = builder.Services.AddHealthChecks();
@@ -107,6 +109,8 @@ builder.Services.AddHttpClient("GameService", client => { client.BaseAddress = n
 try
 {
     var app = builder.Build();
+
+    app.Services.GetRequiredService<RecyclerMetrics>();
 
     using (var scope = app.Services.CreateScope())
     {

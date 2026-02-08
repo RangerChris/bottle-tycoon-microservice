@@ -72,6 +72,15 @@ Observability
 - Metrics: Prometheus — http://localhost:9090; each service exposes `/metrics` when instrumented
 - Logs: Loki — http://localhost:3100; Grafana configured to visualize logs and metrics at http://localhost:3001
 
+Grafana Dashboards (http://localhost:3001, admin/admin):
+- **API health Overview** — Service health checks across all microservices
+- **Database** — PostgreSQL metrics (availability, size, operations, connections)
+- **Metrics Dashboard** — Grafana and Loki monitoring metrics
+- **Recycler Bottles Metrics** — Bottles processed by type and customer arrival rates
+- **Recyclers** — Current bottles by recycler (may require Grafana restart after first run)
+
+> **Note**: If dashboards don't appear after starting Docker Compose, restart Grafana: `docker restart bottle-tycoon-grafana`
+
 Testing
 - Unit tests: `dotnet test` in each test project (xUnit v3)
 - Integration tests: use the `docker-compose` integration setup in `docker-compose.yml` (the project is structured to allow integration tests to run against real Postgres containers)

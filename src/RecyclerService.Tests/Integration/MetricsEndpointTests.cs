@@ -1,4 +1,4 @@
-﻿﻿using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using RecyclerService.Tests.TestFixtures;
 using Shouldly;
@@ -44,11 +44,44 @@ public class MetricsEndpointTests : IClassFixture<TestcontainersFixture>
         body.ShouldContain("bottle_type=\"plastic\"");
     }
 
+    [Fact]
+    public async Task Metrics_ExposeRecyclerCurrentBottles()
+    {
+        var client = _fixture.Client;
+
+        var recyclerId = Guid.NewGuid();
+        var createRequest = new CreateRequest(recyclerId, "Metrics Test", 100, null);
+        var createRes = await client.PostAsJsonAsync("/recyclers", createRequest, TestContext.Current.CancellationToken);
+        createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
+
+        var telemetry = new TelemetryRequest
+        {
+            BottleCounts = new Dictionary<string, int> { { "glass", 4 }, { "metal", 3 }, { "plastic", 2 } }
+        };
+
+        var telemetryRes = await client.PostAsJsonAsync($"/recyclers/{recyclerId}/telemetry", telemetry, TestContext.Current.CancellationToken);
+        telemetryRes.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+
+        var metricsRes = await client.GetAsync("/metrics", TestContext.Current.CancellationToken);
+        metricsRes.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await metricsRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+
+        body.ShouldContain("recycler_current_bottles");
+        body.ShouldContain($"recycler_id=\"{recyclerId}\"");
+    }
+
     private sealed record CreateRequest(Guid Id, string Name, int Capacity, string? Location);
 
     private sealed record CustomerRequest
     {
         public Dictionary<string, int>? BottleCounts { get; init; }
         public string? CustomerType { get; init; }
+    }
+
+    private sealed record TelemetryRequest
+    {
+        public Dictionary<string, int>? BottleCounts { get; init; }
     }
 }

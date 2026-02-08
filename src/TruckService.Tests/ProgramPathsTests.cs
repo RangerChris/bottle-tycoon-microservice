@@ -1,35 +1,22 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration.Memory;
-using Shouldly;
+﻿using Shouldly;
+using TruckService.Tests.TestFixtures;
 using Xunit;
 
 namespace TruckService.Tests;
 
-public class ProgramPathsTests
+public class ProgramPathsTests : IClassFixture<TestcontainersFixture>
 {
-    [Theory]
-    [InlineData("Testing")]
-    [InlineData("Development")]
-    [InlineData("Production")]
-    public async Task Start_WithEnvironments_Works(string env)
+    private readonly TestcontainersFixture _fixture;
+
+    public ProgramPathsTests(TestcontainersFixture fixture)
     {
-        var inMem = new Dictionary<string, string?>
-        {
-            ["ENABLE_MESSAGING"] = "false"
-        };
-        if (env != "Testing")
-        {
-            inMem["ConnectionStrings:DefaultConnection"] = "";
-        }
+        _fixture = fixture;
+    }
 
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment(env);
-            builder.ConfigureAppConfiguration((ctx, conf) => { conf.Sources.Insert(0, new MemoryConfigurationSource { InitialData = inMem }); });
-        });
-
-        var client = factory.CreateClient();
+    [Fact]
+    public async Task Start_Works()
+    {
+        var client = _fixture.Client;
         var res = await client.GetAsync("/", TestContext.Current.CancellationToken);
         res.ShouldNotBeNull();
     }

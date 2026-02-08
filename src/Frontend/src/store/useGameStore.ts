@@ -58,6 +58,7 @@ export type GameState = {
   depositTick: () => void
   createVisitorForRecycler: (recyclerId: number | string) => void
   scheduleNextArrival: (recyclerId: number | string, minSec?: number, maxSec?: number) => void
+  reportRecyclerTelemetry: () => Promise<void>
   // internal helpers for init
   init: () => Promise<void>
   fetchPlayer: () => Promise<void>
@@ -128,7 +129,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
 
         if (!response.ok) {
-            throw new Error('Failed to buy recycler')
+            set((draft: any) => {
+                draft.buyingRecycler = false
+                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to purchase recycler.' })
+            })
+            return
         }
 
         const newRecycler = await response.json()
@@ -180,7 +185,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
 
         if (!response.ok) {
-            throw new Error('Failed to buy truck')
+            set((draft: any) => {
+                draft.buyingTruck = false
+                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to purchase truck.' })
+            })
+            return
         }
 
         const newTruck = await response.json()
@@ -225,7 +234,10 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to deliver bottles')
+        set((draft: any) => {
+          draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to deliver bottles to recycler' })
+        })
+        return
       }
     } catch (error) {
       set((draft: any) => {
@@ -265,7 +277,10 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
 
         if (!response.ok) {
-            throw new Error('Failed to upgrade recycler')
+            set((draft: any) => {
+                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to upgrade recycler.' })
+            })
+            return
         }
 
         const updatedRecycler = await response.json()
@@ -306,7 +321,10 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
 
         if (!response.ok) {
-            throw new Error('Failed to upgrade truck')
+            set((draft: any) => {
+                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to upgrade truck.' })
+            })
+            return
         }
 
         const updatedTruck = await response.json()
@@ -507,7 +525,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
       })
     } catch (error) {
-      console.error('Failed to notify backend of visitor arrival:', error)
+      get().addLog('Failed to notify backend of visitor arrival.', 'error')
     }
 
     set((draft: any) => {
@@ -523,154 +541,100 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     })
   },
 
-  scheduleNextArrival: (recyclerId: number | string, minSec: number = 5, maxSec: number = 15) => {
-    const state = get()
-    const recycler = state.recyclers.find((r) => r.id == recyclerId)
-    if (!recycler) {
-      return
-    }
-
-    const existingTimer = scheduledArrivalTimers.get(recyclerId)
-    if (existingTimer) {
-      clearTimeout(existingTimer)
+  scheduleNextArrival: (recyclerId: number | string, minSec: number = 5, maxSec: number = 20) => {
+    const existing = scheduledArrivalTimers.get(recyclerId)
+    if (existing) {
+      clearTimeout(existing)
       scheduledArrivalTimers.delete(recyclerId)
     }
 
-    const mult = timeMultipliers[state.timeLevel] || 1
-    const randomDelay = Math.max(1000, Math.floor(Math.random() * (maxSec - minSec + 1) + minSec) * 1000 / mult) // Minimum 1 second
+    const clampedMin = Math.max(1, minSec)
+    const clampedMax = Math.max(clampedMin, maxSec)
+    const delayMs = (Math.floor(Math.random() * (clampedMax - clampedMin + 1)) + clampedMin) * 1000
 
-    set((draft) => {
-      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor scheduled to arrive at Recycler #${recyclerId} in ${randomDelay / 1000} seconds` })
-      if (draft.logs.length > 50) draft.logs.pop()
-    })
     const timer = setTimeout(() => {
-      get().createVisitorForRecycler(recyclerId)
       scheduledArrivalTimers.delete(recyclerId)
-    }, randomDelay)
+      get().createVisitorForRecycler(recyclerId)
+      get().scheduleNextArrival(recyclerId, minSec, maxSec)
+    }, delayMs)
 
     scheduledArrivalTimers.set(recyclerId, timer)
   },
 
-  init: async () => {
-    set((draft: any) => {
-      draft.totalEarnings = 0
-      draft.logs = []
-      draft.chartPoints = []
-      draft.lastTick = null
-      draft.timeLevel = 2
-      draft.buyingRecycler = false
-      draft.buyingTruck = false
-      draft.playerId = null
-    })
-
-    await get().fetchPlayer()
-
-    // Initialize services
-    await get().initializeServices()
-
-    // Fetch recyclers and trucks
-    await get().fetchRecyclers()
-    await get().fetchTrucks()
-
-    // Schedule initial visitor arrivals for all recyclers
-    const state = get()
-    for (const recycler of state.recyclers) {
-      get().scheduleNextArrival(recycler.id)
-    }
-  },
-
   fetchPlayer: async () => {
-    const state = get()
-    if (state.playerId) return
-
+    const { gameServiceBase } = getApiBaseUrls()
     try {
-      const { gameServiceBase } = getApiBaseUrls()
-
-      // Initialize to create default player
-      await fetch(`${gameServiceBase.replace(/\/$/, '')}/initialize`, {
-        method: 'POST'
-      })
-
-      // Get all players
-      const playersResponse = await fetch(`${gameServiceBase.replace(/\/$/, '')}/player`)
-      if (!playersResponse.ok) {
-        throw new Error('Failed to get players')
+      const response = await fetch(`${gameServiceBase.replace(/\/$/, '')}/player`)
+      if (!response.ok) {
+        get().addLog('Failed to fetch player.', 'error')
+        return
       }
-      const players = await playersResponse.json()
-      if (players.length === 0) {
-        throw new Error('No players found')
+
+      const players = await response.json()
+      const player = Array.isArray(players) ? players[0] : null
+
+      if (!player) {
+        get().addLog('Player not found.', 'error')
+        return
       }
-      const player = players[0]
 
       set((draft: any) => {
         draft.playerId = player.id
-        draft.credits = player.credits
+        draft.credits = player.credits ?? draft.credits
       })
     } catch (error) {
-      set((draft: any) => {
-        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to initialize player data.' })
-      })
-    }
-  },
-
-  initializeServices: async () => {
-    try {
-      const { recyclerBase, truckBase } = getApiBaseUrls()
-
-      // Initialize RecyclerService
-      await fetch(`${recyclerBase.replace(/\/$/, '')}/initialize`, {
-        method: 'POST'
-      })
-
-      // Initialize TruckService
-      await fetch(`${truckBase.replace(/\/$/, '')}/initialize`, {
-        method: 'POST'
-      })
-    } catch (error) {
-      get().addLog('Failed to initialize services.', 'error')
+      get().addLog('Failed to fetch player.', 'error')
     }
   },
 
   fetchRecyclers: async () => {
+    const { recyclerBase } = getApiBaseUrls()
     try {
-      const { recyclerBase } = getApiBaseUrls()
-
       const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers`)
       if (!response.ok) {
-        throw new Error('Failed to fetch recyclers')
+        get().addLog('Failed to fetch recyclers.', 'error')
+        return
       }
+
       const recyclers = await response.json()
+      if (!Array.isArray(recyclers)) return
 
       set((draft: any) => {
         draft.recyclers = recyclers.map((r: any) => ({
           id: r.id,
-          level: r.capacityLevel,
-          capacity: r.capacity,
+          level: r.capacityLevel ?? 0,
+          capacity: r.capacity ?? 100,
           currentBottles: { glass: 0, metal: 0, plastic: 0 },
           visitors: []
         }))
       })
+
+      for (const recycler of recyclers) {
+        get().scheduleNextArrival(recycler.id)
+      }
     } catch (error) {
       get().addLog('Failed to fetch recyclers.', 'error')
     }
   },
 
   fetchTrucks: async () => {
+    const { truckBase } = getApiBaseUrls()
     try {
-      const { truckBase } = getApiBaseUrls()
-
       const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck`)
       if (!response.ok) {
-        throw new Error('Failed to fetch trucks')
+        get().addLog('Failed to fetch trucks.', 'error')
+        return
       }
+
       const trucks = await response.json()
+      if (!Array.isArray(trucks)) return
 
       set((draft: any) => {
         draft.trucks = trucks.map((t: any) => ({
           id: t.id,
           model: t.model,
-          level: t.level,
-          capacity: calculateCapacity(45, t.level),
+          level: t.level ?? 0,
+          capacity: calculateCapacity(45, t.level ?? 0),
           currentLoad: 0,
           status: 'idle',
           targetRecyclerId: null,
@@ -680,6 +644,63 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     } catch (error) {
       get().addLog('Failed to fetch trucks.', 'error')
     }
+  },
+
+  initializeServices: async () => {
+    const { gameServiceBase } = getApiBaseUrls()
+    try {
+      const response = await fetch(`${gameServiceBase.replace(/\/$/, '')}/initialize`, { method: 'POST' })
+      if (!response.ok) {
+        get().addLog('Failed to initialize services.', 'error')
+      }
+    } catch (error) {
+      get().addLog('Failed to initialize services.', 'error')
+    }
+  },
+
+  init: async () => {
+    await get().initializeServices()
+    await get().fetchPlayer()
+    await get().fetchRecyclers()
+    await get().fetchTrucks()
+
+    if (arrivalsWatchdog === null) {
+      arrivalsWatchdog = window.setInterval(() => {
+        const state = get()
+        for (const recycler of state.recyclers) {
+          if (!scheduledArrivalTimers.has(recycler.id)) {
+            get().scheduleNextArrival(recycler.id)
+          }
+        }
+      }, 10000)
+    }
+  },
+
+  reportRecyclerTelemetry: async () => {
+    const state = get()
+    const { recyclerBase } = getApiBaseUrls()
+    const baseUrl = recyclerBase.replace(/\/$/, '')
+
+    const requests = state.recyclers
+      .filter(r => typeof r.id === 'string')
+      .map(r => {
+        const bottles = r.currentBottles || { glass: 0, metal: 0, plastic: 0 }
+        return fetch(`${baseUrl}/recyclers/${r.id}/telemetry`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bottleCounts: {
+              glass: bottles.glass,
+              metal: bottles.metal,
+              plastic: bottles.plastic
+            }
+          })
+        })
+      })
+
+    if (requests.length === 0) return
+
+    await Promise.allSettled(requests)
   }
 })))
 
