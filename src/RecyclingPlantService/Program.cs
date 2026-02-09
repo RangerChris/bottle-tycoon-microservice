@@ -1,6 +1,8 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -58,17 +60,29 @@ else
         options.UseInMemoryDatabase("RecyclingPlantService_Db"));
 }
 
+// OpenTelemetry SDK configuration
+Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator(new TextMapPropagator[]
+{
+    new TraceContextPropagator()
+}));
+
+var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? builder.Configuration["OTEL_SERVICE_NAME"] ?? "RecyclingPlantService";
+Log.Information("Configuring OpenTelemetry with service name: {ServiceName}", serviceName);
 
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
-        .AddService(builder.Configuration["OTEL_SERVICE_NAME"] ?? "RecyclingPlantService")
-        .AddEnvironmentVariableDetector())
+        .AddService(serviceName: serviceName, serviceVersion: "1.0.0"))
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddEntityFrameworkCoreInstrumentation()
-        .AddJaegerExporter())
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri("http://jaeger:4318/v1/traces");
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+            Log.Information("OTLP exporter configured with endpoint: {Endpoint}", options.Endpoint);
+        }))
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
         .AddPrometheusExporter());
