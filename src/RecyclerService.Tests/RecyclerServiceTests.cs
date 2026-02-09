@@ -30,7 +30,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
-        var svc = new Services.RecyclerService(db, logger, meter);
+        var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
+        var svc = new Services.RecyclerService(db, logger, counter);
 
         await db.Recyclers.ExecuteDeleteAsync(Xunit.TestContext.Current.CancellationToken);
 
@@ -59,7 +60,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
-        var svc = new Services.RecyclerService(db, logger, meter);
+        var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
+        var svc = new Services.RecyclerService(db, logger, counter);
 
         // Clean up any existing data
         await db.Recyclers.ExecuteDeleteAsync(Xunit.TestContext.Current.CancellationToken);

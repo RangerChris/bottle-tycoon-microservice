@@ -37,7 +37,7 @@ export default function TruckCard({ truck }: { truck: Truck }) {
       </div>
 
       <div className="mt-4 flex gap-2">
-        <button className="btn btn-sm btn-warning flex-1" onClick={() => upgradeTruck(truck.id)} disabled={truck.level >= 3}>⬆️ Upgrade ({300 * (truck.level + 1)})</button>
+        <button className="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white flex-1" onClick={() => upgradeTruck(truck.id)} disabled={truck.level >= 3}>⬆️ Upgrade ({300 * (truck.level + 1)})</button>
       </div>
     </div>
   )
