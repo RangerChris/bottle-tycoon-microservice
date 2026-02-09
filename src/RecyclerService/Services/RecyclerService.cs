@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Metrics;
+﻿﻿using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;
@@ -11,15 +11,6 @@ public class RecyclerService : IRecyclerService
     private readonly RecyclerDbContext _db;
     private readonly ILogger<RecyclerService> _logger;
 
-    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Meter? meter)
-    {
-        _db = db;
-        _logger = logger;
-        meter ??= new Meter("RecyclerService", "1.0");
-        _bottlesProcessed = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-    }
-
-    [ActivatorUtilitiesConstructor]
     public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Counter<long> bottlesProcessed)
     {
         _db = db;

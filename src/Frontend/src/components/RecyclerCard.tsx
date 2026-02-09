@@ -37,8 +37,8 @@ export default function RecyclerCard({ recycler }: { recycler: Recycler }) {
       </div>
 
       <div className="mt-4 flex gap-2">
-        <button className="btn btn-sm btn-success flex-1" onClick={() => deliverBottlesRandom(recycler.id)}>📦 Add bottles</button>
-        <button className="btn btn-sm btn-warning" onClick={() => upgradeRecycler(recycler.id)} disabled={recycler.level >= 3}>⬆️ Upgrade ({200 * (recycler.level + 1)})</button>
+        <button className="btn btn-sm bg-green-600 hover:bg-green-700 text-white flex-1" onClick={() => deliverBottlesRandom(recycler.id)}>📦 Add bottles</button>
+        <button className="btn bg-amber-600 hover:bg-amber-700 text-white min-w-40" onClick={() => upgradeRecycler(recycler.id)} disabled={recycler.level >= 3}>⬆️ Upgrade ({200 * (recycler.level + 1)})</button>
       </div>
     </div>
   )

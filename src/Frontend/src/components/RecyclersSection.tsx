@@ -1,4 +1,4 @@
-﻿import React from 'react'
+﻿﻿import React from 'react'
 import useGameStore, { GameState } from '../store/useGameStore'
 import RecyclerCard from './RecyclerCard'
 
@@ -16,7 +16,7 @@ export default function RecyclersSection() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-400">Total</span>
             <span className="font-bold text-gray-100">{total}</span>
-            <button className="btn btn-secondary btn-sm ml-4 shadow-md no-outline-btn" onClick={buyRecycler} disabled={buyingRecycler}>+ Buy Recycler (500)</button>
+            <button className="btn btn-secondary px-6 ml-4 shadow-md no-outline-btn" onClick={buyRecycler} disabled={buyingRecycler}>+ Buy Recycler (500)</button>
           </div>
         </div>
 
