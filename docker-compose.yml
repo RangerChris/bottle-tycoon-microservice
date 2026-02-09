@@ -129,7 +129,7 @@
 
   # Observability Services
   jaeger:
-    image: jaegertracing/all-in-one:1.52
+    image: jaegertracing/all-in-one:latest
     container_name: bottle-tycoon-jaeger
     ports:
       - "16686:16686"
@@ -160,7 +160,7 @@
       - bottle-tycoon
 
   loki:
-    image: grafana/loki:2.9.0
+    image: grafana/loki:latest
     container_name: bottle-tycoon-loki
     ports:
       - "3100:3100"

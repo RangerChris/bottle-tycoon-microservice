@@ -2,6 +2,8 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using HeadquartersService.Services;
+using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -27,14 +29,26 @@ builder.Services.AddFastEndpoints()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator(new TextMapPropagator[]
+{
+    new TraceContextPropagator()
+}));
+
+var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? builder.Configuration["OTEL_SERVICE_NAME"] ?? "HeadquartersService";
+Log.Information("Configuring OpenTelemetry with service name: {ServiceName}", serviceName);
+
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
-        .AddService(builder.Configuration["OTEL_SERVICE_NAME"] ?? "HeadquartersService")
-        .AddEnvironmentVariableDetector())
+        .AddService(serviceName: serviceName, serviceVersion: "1.0.0"))
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
-        .AddJaegerExporter())
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri("http://jaeger:4318/v1/traces");
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+            Log.Information("OTLP exporter configured with endpoint: {Endpoint}", options.Endpoint);
+        }))
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
         .AddPrometheusExporter());
