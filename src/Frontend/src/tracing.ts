@@ -3,6 +3,8 @@ import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 
 export function initTracing() {
   const exporter = new OTLPTraceExporter({
@@ -10,6 +12,9 @@ export function initTracing() {
   });
 
   const provider = new WebTracerProvider({
+    resource: resourceFromAttributes({
+      [ATTR_SERVICE_NAME]: 'Frontend',
+    }),
     spanProcessors: [new SimpleSpanProcessor(exporter)],
   });
 

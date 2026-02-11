@@ -1,4 +1,4 @@
-﻿﻿# Use the official .NET 10 SDK image to build the application
+﻿# Use the official .NET 10 SDK image to build the application
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -23,8 +23,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Set environment variables for standalone container startup
-ENV ASPNETCORE_ENVIRONMENT=Testing
 
 # Expose the port the app runs on
 EXPOSE 80

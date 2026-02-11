@@ -1,0 +1,57 @@
+﻿service:
+  extensions: [jaeger_storage, jaeger_query, healthcheckv2]
+  pipelines:
+    traces:
+      receivers: [otlp, jaeger, zipkin]
+      processors: [batch]
+      exporters: [jaeger_storage_exporter]
+
+extensions:
+  jaeger_query:
+    storage:
+      traces: memory_store
+    ui:
+      config_file: /etc/jaeger/jaeger-ui-config.json
+
+  jaeger_storage:
+    backends:
+      memory_store:
+        memory:
+          max_traces: 100000
+
+  healthcheckv2:
+    http:
+      endpoint: "0.0.0.0:13133"
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+        cors:
+          allowed_origins:
+            - "http://localhost:3000"
+            - "http://*"
+          allowed_headers:
+            - "*"
+
+  jaeger:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:14250"
+      thrift_http:
+        endpoint: "0.0.0.0:14268"
+
+  zipkin:
+    endpoint: "0.0.0.0:9411"
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+
+exporters:
+  jaeger_storage_exporter:
+    trace_storage: memory_store
