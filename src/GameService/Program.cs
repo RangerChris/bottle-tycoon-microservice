@@ -64,6 +64,8 @@ Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator(new TextMapPropag
 var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? builder.Configuration["OTEL_SERVICE_NAME"] ?? "GameService";
 Log.Information("Configuring OpenTelemetry with service name: {ServiceName}", serviceName);
 
+var meterName = "GameService";
+
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
@@ -80,6 +82,7 @@ builder.Services.AddOpenTelemetry()
         }))
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
+        .AddMeter(meterName)
         .AddPrometheusExporter());
 
 // Health Checks
@@ -92,6 +95,14 @@ if (!string.IsNullOrEmpty(dbCs))
 
 // Business Services
 builder.Services.AddScoped<IPlayerService, PlayerService>();
+
+// Telemetry Services
+builder.Services.AddSingleton<IGameTelemetryStore, GameTelemetryStore>();
+builder.Services.AddSingleton(sp =>
+{
+    var telemetryStore = sp.GetRequiredService<IGameTelemetryStore>();
+    return new GameMetrics(telemetryStore);
+});
 
 // Add HttpClient for inter-service communication
 builder.Services.AddHttpClient("GameService", client =>
@@ -123,6 +134,10 @@ try
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<GameDbContext>();
         dbContext.Database.EnsureCreated();
+
+        // Initialize GameMetrics to ensure ObservableGauge is created
+        var gameMetrics = app.Services.GetRequiredService<GameMetrics>();
+        Log.Information("GameMetrics initialized for telemetry tracking");
     }
 
     app.UseSwagger();

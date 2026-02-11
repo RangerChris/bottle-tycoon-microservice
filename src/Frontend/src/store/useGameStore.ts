@@ -38,8 +38,11 @@ function getApiBaseUrls() {
   const truckBase = base.includes('5001') || base.includes('gameservice')
     ? (isDocker ? 'http://truckservice' : base.replace('5001', '5003'))
     : 'http://truckservice'
+  const recyclingPlantBase = base.includes('5001') || base.includes('gameservice')
+    ? (isDocker ? 'http://recyclingplantservice' : base.replace('5001', '5005'))
+    : 'http://recyclingplantservice'
 
-  return { gameServiceBase, recyclerBase, truckBase }
+  return { gameServiceBase, recyclerBase, truckBase, recyclingPlantBase }
 }
 
 
@@ -70,6 +73,7 @@ export type GameState = {
   scheduleNextArrival: (recyclerId: number | string, minSec?: number, maxSec?: number) => void
   reportRecyclerTelemetry: () => Promise<void>
   reportTruckTelemetry: () => Promise<void>
+  reportGameTelemetry: () => Promise<void>
   // internal helpers for init
   init: () => Promise<void>
   fetchPlayer: () => Promise<void>
@@ -420,15 +424,36 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (!truck || !truck.cargo) return
 
     const totalBottles = truck.cargo.glass + truck.cargo.metal + truck.cargo.plastic
-    const earnings = (truck.cargo.glass * 4) + (truck.cargo.metal * 2.5) + (truck.cargo.plastic * 1.75)
 
     try {
-        const env = (import.meta as any).env || {}
-        const envBase = env?.VITE_API_BASE_URL
-        const base = envBase || 'http://localhost:5001'
+        const { recyclingPlantBase, gameServiceBase } = getApiBaseUrls()
 
-        // Credit earnings
-        await fetch(`${base.replace(/\/$/, '')}/player/${state.playerId}/deposit`, {
+        // Process delivery at recycling plant
+        const plantResponse = await fetch(`${recyclingPlantBase.replace(/\/$/, '')}/deliveries`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                truckId: truck.id,
+                playerId: state.playerId,
+                loadByType: {
+                    glass: truck.cargo.glass,
+                    metal: truck.cargo.metal,
+                    plastic: truck.cargo.plastic
+                },
+                operatingCost: 0
+            })
+        })
+
+        if (!plantResponse.ok) {
+            get().addLog('Failed to process delivery at recycling plant.', 'error')
+            return
+        }
+
+        const plantData = await plantResponse.json()
+        const earnings = plantData.netEarnings
+
+        // Credit earnings to player
+        await fetch(`${gameServiceBase.replace(/\/$/, '')}/player/${state.playerId}/deposit`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -437,26 +462,32 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 Reason: 'Earnings from recycling'
             })
         })
+
+        set((draft: any) => {
+          const updatedTruck = draft.trucks.find((t: any) => t.id == truckId)
+          if (updatedTruck) {
+            updatedTruck.status = 'idle'
+            updatedTruck.targetRecyclerId = null
+            updatedTruck.currentLoad = 0
+            updatedTruck.cargo = null
+
+            draft.credits += earnings
+            draft.totalEarnings += earnings
+            draft.chartPoints.push({ time: Date.now(), bottles: truck.cargo })
+
+            const truckName = getTruckDisplayName(updatedTruck)
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `${truckName} delivered ${totalBottles} bottles to the recycling plant and earned ${earnings} credits.` })
+          }
+        })
+
+        // Report telemetry immediately after delivery
+        // Use setTimeout to ensure state has been updated
+        setTimeout(() => {
+          get().reportGameTelemetry()
+        }, 0)
     } catch (error) {
-        get().addLog('Failed to credit earnings.', 'error')
+        get().addLog('Failed to process delivery.', 'error')
     }
-
-    set((draft: any) => {
-      const updatedTruck = draft.trucks.find((t: any) => t.id == truckId)
-      if (updatedTruck) {
-        updatedTruck.status = 'idle'
-        updatedTruck.targetRecyclerId = null
-        updatedTruck.currentLoad = 0
-        updatedTruck.cargo = null
-
-        draft.credits += earnings
-        draft.totalEarnings += earnings
-        draft.chartPoints.push({ time: Date.now(), bottles: truck.cargo })
-
-        const truckName = getTruckDisplayName(updatedTruck)
-        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `${truckName} delivered ${totalBottles} bottles and earned ${earnings} credits.` })
-      }
-    })
   },
 
   depositTick: () => {
@@ -565,7 +596,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     })
   },
 
-  scheduleNextArrival: (recyclerId: number | string, minSec: number = 5, maxSec: number = 20) => {
+  scheduleNextArrival: (recyclerId: number | string, minSec: number = 2, maxSec: number = 8) => {
     const existing = scheduledArrivalTimers.get(recyclerId)
     if (existing) {
       clearTimeout(existing)
@@ -756,6 +787,40 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (requests.length === 0) return
 
     await Promise.allSettled(requests)
+  },
+
+  reportGameTelemetry: async () => {
+    const state = get()
+    if (!state.playerId) {
+      console.log('[Telemetry] No playerId, skipping game telemetry')
+      return
+    }
+
+    const { gameServiceBase } = getApiBaseUrls()
+    const baseUrl = gameServiceBase.replace(/\/$/, '')
+
+    console.log('[Telemetry] Reporting game telemetry', {
+      playerId: state.playerId,
+      totalEarnings: state.totalEarnings,
+      endpoint: `${baseUrl}/player/${state.playerId}/telemetry`
+    })
+
+    try {
+      const response = await fetch(`${baseUrl}/player/${state.playerId}/telemetry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          totalEarnings: state.totalEarnings
+        })
+      })
+
+      console.log('[Telemetry] Game telemetry response', {
+        status: response.status,
+        ok: response.ok
+      })
+    } catch (error) {
+      console.error('[Telemetry] Game telemetry error', error)
+    }
   }
 })))
 

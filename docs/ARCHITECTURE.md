@@ -1,4 +1,4 @@
-﻿# Bottle Tycoon — Simplified Architecture
+﻿﻿# Bottle Tycoon — Simplified Architecture
 
 ## Overview
 
@@ -36,8 +36,12 @@ Goals:
 - Headquarters Service
   - Orchestrates dispatch decisions by querying service APIs and calling endpoints directly.
 
-- Recycling Plant Service
-  - Calculates credits from delivered bottles and exposes endpoints to receive deliveries.
+- Recycling Plant Service (owner of delivery history and earnings calculations)
+  - Processes truck deliveries via `POST /deliveries` endpoint.
+  - Calculates gross and net earnings from bottle deliveries.
+  - Stores delivery history and player earnings statistics.
+  - Exposes Prometheus metrics for total deliveries processed (`deliveries_processed_total`).
+  - Tracks bottles received by type and earnings distributed.
 
 - Shared / Cross-cutting
   - Each service has its own Postgres schema/DB (database-per-service).
@@ -93,7 +97,30 @@ flowchart LR
 
 ## Key Flows (summary)
 
-See project-description.md
+See project-description.md for detailed game mechanics.
+
+### Truck Delivery Flow
+
+1. **Frontend initiates delivery**: When a truck reaches the recycling plant, the frontend calls RecyclingPlantService
+   ```
+   POST /deliveries
+   Body: { truckId, playerId, loadByType: { glass, metal, plastic }, operatingCost }
+   ```
+
+2. **RecyclingPlantService processes delivery**:
+   - Validates truck ID, player ID, and load contents
+   - Calculates earnings: glass (4 credits), metal (2.5 credits), plastic (1.75 credits)
+   - Computes net earnings (gross - operating cost)
+   - Stores delivery record in database with timestamp
+   - Updates player earnings statistics (total, average, count)
+   - **Increments metrics**: `deliveries_processed_total`, `bottles_received_total` (by type)
+   - Returns: `{ success, deliveryId, grossEarnings, netEarnings }`
+
+3. **Frontend credits player**: Calls GameService `POST /player/{id}/deposit` with net earnings
+
+4. **Metrics exported**: Prometheus scrapes `/metrics` endpoint, Grafana displays in dashboards
+
+This flow ensures RecyclingPlantService is the authoritative source for delivery processing and tracking.
 
 ## Deployment
 
