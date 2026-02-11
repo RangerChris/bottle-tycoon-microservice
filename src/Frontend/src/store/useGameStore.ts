@@ -7,6 +7,16 @@ function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2,9)}`
 }
 
+// helper to get friendly recycler display name
+function getRecyclerDisplayName(recycler: Recycler): string {
+  return recycler.name || `Recycler ${recycler.id}`
+}
+
+// helper to get friendly truck display name
+function getTruckDisplayName(truck: Truck): string {
+  return truck.model || `Truck ${truck.id}`
+}
+
 // helper to get correct API base URLs based on environment
 function getApiBaseUrls() {
   const env = (import.meta as any).env || {}
@@ -256,7 +266,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       r.currentBottles.glass += picked.glass
       r.currentBottles.metal += picked.metal
       r.currentBottles.plastic += picked.plastic
-      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Delivered ${total} bottles to Recycler #${recyclerId}` })
+      const recyclerName = getRecyclerDisplayName(r)
+      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Delivered ${total} bottles to ${recyclerName}` })
     })
     setTimeout(() => get().attemptSmartDispatch(), 50)
   },
@@ -382,13 +393,15 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
               updatedTruck.currentLoad = updatedTruck.cargo.glass + updatedTruck.cargo.metal + updatedTruck.cargo.plastic
 
-              draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Truck #${truck.id} dispatched to Recycler #${suitableRecycler.id}` })
+              const truckName = getTruckDisplayName(updatedTruck)
+              const recyclerName = getRecyclerDisplayName(updatedRecycler)
+              draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `${truckName} dispatched to ${recyclerName}` })
 
               // Check if this recycler had a waiting visitor and space is now available
               const currentLoad = updatedRecycler.currentBottles.glass + updatedRecycler.currentBottles.metal + updatedRecycler.currentBottles.plastic
               if (updatedRecycler.visitors.length > 0 && updatedRecycler.visitors[0].waiting && currentLoad < updatedRecycler.capacity) {
                 updatedRecycler.visitors[0].waiting = false
-                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor resumed depositing at Recycler #${suitableRecycler.id}` })
+                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor resumed depositing at ${recyclerName}` })
               }
             }
           })
@@ -440,7 +453,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         draft.totalEarnings += earnings
         draft.chartPoints.push({ time: Date.now(), bottles: truck.cargo })
 
-        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Truck #${truckId} delivered ${totalBottles} bottles and earned ${earnings} credits.` })
+        const truckName = getTruckDisplayName(updatedTruck)
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `${truckName} delivered ${totalBottles} bottles and earned ${earnings} credits.` })
       }
     })
   },
@@ -479,11 +493,12 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
             // If visitor is done depositing, remove them and schedule next arrival
             if (recycler.visitors[0].remaining === 0) {
+              const recyclerName = getRecyclerDisplayName(recycler)
               draft.logs.unshift({
                 id: uid(),
                 time: new Date().toLocaleTimeString(),
                 type: 'success',
-                message: `Visitor finished depositing bottles at Recycler #${recycler.id}`
+                message: `Visitor finished depositing bottles at ${recyclerName}`
               })
               recycler.visitors.shift()
               // Schedule next visitor arrival
@@ -493,11 +508,12 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             // Recycler is full, mark visitor as waiting
             if (!recycler.visitors[0].waiting) {
               recycler.visitors[0].waiting = true
+              const recyclerName = getRecyclerDisplayName(recycler)
               draft.logs.unshift({
                 id: uid(),
                 time: new Date().toLocaleTimeString(),
                 type: 'warning',
-                message: `Visitor waiting at full Recycler #${recycler.id}`
+                message: `Visitor waiting at full ${recyclerName}`
               })
             }
           }
@@ -540,8 +556,12 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         bottles: { glass, metal, plastic },
         waiting: false
       }
-      draft.recyclers.find((r: any) => r.id == recyclerId)!.visitors.push(visitor)
-      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor arrived at Recycler #${recyclerId} with ${totalBottles} bottles` })
+      const recycler = draft.recyclers.find((r: any) => r.id == recyclerId)
+      if (recycler) {
+        recycler.visitors.push(visitor)
+        const recyclerName = getRecyclerDisplayName(recycler)
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor arrived at ${recyclerName} with ${totalBottles} bottles` })
+      }
     })
   },
 
@@ -691,6 +711,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       .filter(r => typeof r.id === 'string')
       .map(r => {
         const bottles = r.currentBottles || { glass: 0, metal: 0, plastic: 0 }
+        const visitorCount = r.visitors?.length || 0
         return fetch(`${baseUrl}/recyclers/${r.id}/telemetry`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -699,7 +720,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
               glass: bottles.glass,
               metal: bottles.metal,
               plastic: bottles.plastic
-            }
+            },
+            visitorCount: visitorCount
           })
         })
       })

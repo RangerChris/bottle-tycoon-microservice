@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.Metrics;
+﻿using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Models;

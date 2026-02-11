@@ -103,7 +103,7 @@
             "uid": "prometheus"
           },
           "expr": "recycler_current_bottles{job=\"recyclerservice\"}",
-          "legendFormat": "{{ recycler_id }}",
+          "legendFormat": "{{ recycler_name }}",
           "refId": "A"
         }
       ],

@@ -1,8 +1,9 @@
-﻿﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -72,7 +73,7 @@ Log.Information("Configuring OpenTelemetry with service name: {ServiceName}", se
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
-        .AddService(serviceName: serviceName, serviceVersion: "1.0.0"))
+        .AddService(serviceName, serviceVersion: "1.0.0"))
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
@@ -80,7 +81,7 @@ builder.Services.AddOpenTelemetry()
         .AddOtlpExporter(options =>
         {
             options.Endpoint = new Uri("http://jaeger:4318/v1/traces");
-            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+            options.Protocol = OtlpExportProtocol.HttpProtobuf;
             Log.Information("OTLP exporter configured with endpoint: {Endpoint}", options.Endpoint);
         }))
     .WithMetrics(metrics => metrics

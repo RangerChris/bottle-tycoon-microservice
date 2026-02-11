@@ -102,12 +102,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (bottle_type) (rate(bottles_processed_bottles_total{job=\"recyclerservice\"}[5m]))",
-          "legendFormat": "{{ bottle_type }}",
+          "expr": "recycler_current_visitors{job=\"recyclerservice\"}",
+          "legendFormat": "{{ recycler_name }}",
           "refId": "A"
         }
       ],
-      "title": "Customers Arriving Rate by Type (5m avg)",
+      "title": "Current Visitors at Recyclers",
       "type": "timeseries"
     },
     {

@@ -25,6 +25,6 @@ public class InitializeEndpoint : EndpointWithoutRequest
         await _recyclerService.ResetAsync();
         _telemetryStore.RemoveAll();
         var recycler = await _recyclerService.CreateRecyclerAsync();
-        _telemetryStore.Set(recycler.Id, 0);
+        _telemetryStore.Set(recycler.Id, recycler.Name, 0, 0);
     }
 }

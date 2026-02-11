@@ -103,7 +103,7 @@
             "uid": "prometheus"
           },
           "expr": "truck_current_load_bottles{job=\"truckservice\"}",
-          "legendFormat": "{{ truck_id }} ({{ status }})",
+          "legendFormat": "{{ truck_name }}",
           "refId": "A"
         }
       ],
@@ -192,7 +192,7 @@
             "uid": "prometheus"
           },
           "expr": "truck_capacity_bottles{job=\"truckservice\"}",
-          "legendFormat": "{{ truck_id }}",
+          "legendFormat": "{{ truck_name }}",
           "refId": "A"
         }
       ],

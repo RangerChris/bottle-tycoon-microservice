@@ -35,7 +35,7 @@ public class TruckManager : ITruckManager
         var currentLoad = loadByType.Values.Sum();
         var status = truck.IsActive ? "idle" : "inactive";
 
-        _telemetryStore.Set(truck.Id, currentLoad, (int)Math.Floor(capacityUnits), status);
+        _telemetryStore.Set(truck.Id, truck.Model, currentLoad, (int)Math.Floor(capacityUnits), status);
 
         return new TruckStatusDto
         {
@@ -102,7 +102,7 @@ public class TruckManager : ITruckManager
             truckEnt.SetCurrentLoadByType(new Dictionary<string, int> { { "glass", glass }, { "metal", metal }, { "plastic", plastic } });
             var capacityUnits = CalculateMaxCapacityUnits(100, truckEnt.CapacityLevel);
             var currentLoad = glass + metal + plastic;
-            _telemetryStore.Set(truckEnt.Id, currentLoad, (int)Math.Floor(capacityUnits), "loading");
+            _telemetryStore.Set(truckEnt.Id, truckEnt.Model, currentLoad, (int)Math.Floor(capacityUnits), "loading");
         }
 
         await _db.SaveChangesAsync(ct);
@@ -120,7 +120,7 @@ public class TruckManager : ITruckManager
             var capacityUnits = CalculateMaxCapacityUnits(100, t.CapacityLevel);
             var currentLoad = loadByType.Values.Sum();
             var status = t.IsActive ? "idle" : "inactive";
-            _telemetryStore.Set(t.Id, currentLoad, (int)Math.Floor(capacityUnits), status);
+            _telemetryStore.Set(t.Id, t.Model, currentLoad, (int)Math.Floor(capacityUnits), status);
 
             return new TruckStatusDto
             {

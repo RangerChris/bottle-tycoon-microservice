@@ -28,8 +28,8 @@ public sealed class TruckTelemetryEndpoint : Endpoint<TruckTelemetryEndpoint.Req
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
         var truckId = Route<Guid>("id");
-        var exists = await _db.Trucks.AnyAsync(t => t.Id == truckId, ct);
-        if (!exists)
+        var truck = await _db.Trucks.FirstOrDefaultAsync(t => t.Id == truckId, ct);
+        if (truck == null)
         {
             await Send.NotFoundAsync(ct);
             return;
@@ -39,7 +39,7 @@ public sealed class TruckTelemetryEndpoint : Endpoint<TruckTelemetryEndpoint.Req
         var currentLoad = req.CurrentLoad ?? 0;
         var status = req.Status ?? "idle";
 
-        _telemetryStore.Set(truckId, currentLoad, capacity, status);
+        _telemetryStore.Set(truckId, truck.Model, currentLoad, capacity, status);
         _logger.LogInformation("Telemetry updated for truck {TruckId}: load={CurrentLoad}, capacity={Capacity}, status={Status}",
             truckId, currentLoad, capacity, status);
 
