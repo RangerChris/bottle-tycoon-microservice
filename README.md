@@ -75,6 +75,7 @@ Observability
 Grafana Dashboards (http://localhost:3001, admin/admin):
 - **API health Overview** — Service health checks across all microservices
 - **Database** — PostgreSQL metrics (availability, size, operations, connections)
+- **Earnings** — Player total earnings tracking with gauge, timeseries, and rate visualizations
 - **Metrics Dashboard** — Grafana and Loki monitoring metrics
 - **Recycler Bottles Metrics** — Bottles processed by type and customer arrival rates
 - **Recyclers** — Current bottles by recycler (may require Grafana restart after first run)

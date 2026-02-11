@@ -1,4 +1,4 @@
-﻿## 🎮 Game Mechanics
+﻿﻿## 🎮 Game Mechanics
 
 ### Goal
 Manage a bottle recycling network. Start with 1 recycler and 1 truck, grow your network by earning credits and upgrading equipment.
@@ -16,7 +16,7 @@ Manage a bottle recycling network. Start with 1 recycler and 1 truck, grow your 
 | Plastic | 1.75 credits |
 
 ### Game Flow
-1. **Customers arrive** at recyclers automatically at random intervals (5-20 seconds)
+1. **Customers arrive** at recyclers automatically at random intervals (2-8 seconds)
    - Each customer brings 5-25 bottles (random mix of glass, metal, plastic)
    - Customers deposit one bottle per second (affected by time speed)
    - **If recycler is full**, customer must wait until space becomes available

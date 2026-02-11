@@ -1,0 +1,43 @@
+{
+  "theme": "dark",
+  "menu": [
+    {
+      "label": "About Jaeger",
+      "url": "https://www.jaegertracing.io/",
+      "newWindow": true
+    },
+    {
+      "label": "Bottle Tycoon Docs",
+      "url": "https://github.com/bottle-tycoon-microservice",
+      "newWindow": true
+    },
+    {
+      "label": "View in Grafana",
+      "url": "http://localhost:3001/explore?left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22datasource%22:%22Jaeger%22%7D%5D",
+      "newWindow": true
+    }
+  ],
+  "linkPatterns": [
+    {
+      "type": "logs",
+      "key": "service",
+      "url": "http://localhost:3001/explore?left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22expr%22:%22%7Bservice_name%3D%5C%22#{service}%5C%22%7D%22%7D%5D",
+      "text": "View Logs in Grafana"
+    },
+    {
+      "type": "metrics",
+      "key": "service",
+      "url": "http://localhost:9090/graph?g0.expr=rate(http_requests_total%7Bservice%3D%22#{service}%22%7D%5B5m%5D)&g0.tab=0",
+      "text": "View Metrics in Prometheus"
+    }
+  ],
+  "dependencies": {
+    "dagMaxNumServices": 50,
+    "menuEnabled": true
+  },
+  "archiveEnabled": false,
+  "tracking": {
+    "gaID": null,
+    "trackErrors": false
+  }
+}

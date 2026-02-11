@@ -87,6 +87,14 @@ public class TestcontainersFixture : IAsyncLifetime
         // Business services
         builder.Services.AddScoped<IPlayerService, PlayerService>();
 
+        // Telemetry Services
+        builder.Services.AddSingleton<IGameTelemetryStore, GameTelemetryStore>();
+        builder.Services.AddSingleton(sp =>
+        {
+            var telemetryStore = sp.GetRequiredService<IGameTelemetryStore>();
+            return new GameMetrics(telemetryStore);
+        });
+
         // Add HttpClient for inter-service communication (mocked for tests)
         builder.Services.AddHttpClient("GameService", client =>
             {

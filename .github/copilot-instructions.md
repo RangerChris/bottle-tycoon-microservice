@@ -22,6 +22,7 @@ The purpose of these guidelines is to provide a comprehensive framework for usin
 - **Terminal:** When using Copilot in the terminal, assume that it is running in a PowerShell environment on a Windows 11 PC. You can not use && to chain commands. Multiline commands should be separated by semicolons (;).
 - **Error Handling:** Implement robust error handling and logging mechanisms to ensure that issues can be diagnosed and resolved efficiently.
 - **Performance:** Write efficient code that optimizes resource usage and minimizes latency.
+- **BOM:** Never use BOM (Byte Order Mark) in any files, as it can cause issues with certain tools and platforms.
 
 ## Architecture Patterns
 - **Microservices:** Follow microservices architecture where services are independently deployable and scalable, promoting loose coupling.
@@ -120,10 +121,23 @@ Pre-configured dashboards for:
 - Per-service performance
 - Business metrics (credits, deliveries, earnings)
 - Infrastructure health (database)
-- Recycler metrics (current bottles, bottles processed by type)
-- Truck metrics (current load, capacity, deliveries)
+- Recycler metrics (current bottles, current visitors at each recycler, bottles processed by type)
+- Truck metrics (current load, capacity, total deliveries from RecyclingPlantService)
+- **Earnings** - Track total player earnings over time with gauge, timeseries, and rate visualizations
 
 Access Grafana: http://localhost:3001 (admin/admin)
+
+### Metrics Best Practices
+- Use human-readable names in metric labels (e.g., "Truck 1", "Recycler 1" instead of GUIDs)
+- Register custom meters with OpenTelemetry using `.AddMeter("ServiceName")`
+- Business metrics should be owned by the appropriate service:
+  - Deliveries tracked by RecyclingPlantService
+  - Total earnings tracked by GameService
+  - Recycler state tracked by RecyclerService
+  - Truck state tracked by TruckService
+- Use ObservableGauge for current state metrics (e.g., bottle counts, visitor counts, total earnings)
+- Use Counter for accumulating metrics (e.g., total deliveries processed)
+- Frontend reports telemetry every 10 seconds via dedicated telemetry endpoints
 
 
 ## Project Structure

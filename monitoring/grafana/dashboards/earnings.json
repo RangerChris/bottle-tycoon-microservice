@@ -29,50 +29,31 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "orange",
+                "value": 5000
+              },
+              {
+                "color": "red",
+                "value": 10000
               }
             ]
-          }
+          },
+          "unit": "credits"
         },
         "overrides": []
       },
@@ -84,16 +65,16 @@
       },
       "id": 1,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
       },
       "pluginVersion": "12.2.1",
       "targets": [
@@ -102,13 +83,13 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "truck_current_load_bottles{job=\"truckservice\"}",
-          "legendFormat": "{{ truck_name }}",
+          "expr": "player_total_earnings_credits{job=\"gameservice\"}",
+          "legendFormat": "Total Earnings",
           "refId": "A"
         }
       ],
-      "title": "Truck Current Load",
-      "type": "timeseries"
+      "title": "Total Earnings (Gauge)",
+      "type": "gauge"
     },
     {
       "datasource": {
@@ -124,7 +105,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "Credits",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -138,7 +119,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "smooth",
-            "lineWidth": 1,
+            "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -153,6 +134,7 @@
               "mode": "off"
             }
           },
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -161,7 +143,8 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "credits"
         },
         "overrides": []
       },
@@ -174,8 +157,12 @@
       "id": 2,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
+          "calcs": [
+            "last",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         },
@@ -191,13 +178,75 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "truck_capacity_bottles{job=\"truckservice\"}",
-          "legendFormat": "{{ truck_name }}",
+          "expr": "player_total_earnings_credits{job=\"gameservice\"}",
+          "legendFormat": "Player Earnings",
           "refId": "A"
         }
       ],
-      "title": "Truck Capacity",
+      "title": "Total Earnings Over Time",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "credits"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "player_total_earnings_credits{job=\"gameservice\"}",
+          "legendFormat": "Current Total",
+          "refId": "A"
+        }
+      ],
+      "title": "Current Total Earnings",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -213,7 +262,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "Credits/sec",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -242,6 +291,7 @@
               "mode": "off"
             }
           },
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -250,17 +300,18 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "cps"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
+        "h": 4,
+        "w": 12,
+        "x": 12,
         "y": 8
       },
-      "id": 3,
+      "id": 4,
       "options": {
         "legend": {
           "calcs": [],
@@ -280,20 +331,21 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "deliveries_processed_total{job=\"recyclingplantservice\"}",
-          "legendFormat": "Total Deliveries",
+          "expr": "rate(player_total_earnings_credits{job=\"gameservice\"}[1m])",
+          "legendFormat": "Earnings Rate",
           "refId": "A"
         }
       ],
-      "title": "Total Deliveries Completed",
+      "title": "Earnings Rate (1m avg)",
       "type": "timeseries"
     }
   ],
   "preload": false,
-  "refresh": "auto",
+  "refresh": "5s",
   "schemaVersion": 42,
   "tags": [
-    "truck"
+    "earnings",
+    "game"
   ],
   "templating": {
     "list": []
@@ -304,7 +356,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Trucks",
-  "uid": "trucks-001",
+  "title": "Earnings",
+  "uid": "earnings-001",
   "version": 1
 }

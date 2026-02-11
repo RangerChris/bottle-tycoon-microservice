@@ -6,6 +6,7 @@ const timeMultipliers: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 4, 5: 5 }
 
 export default function useGameLoop() {
   const timeLevel = useGameStore(state => state.timeLevel)
+  const playerId = useGameStore(state => state.playerId)
 
   const depositIntervalRef = useRef<number | null>(null)
   const dispatchIntervalRef = useRef<number | null>(null)
@@ -65,16 +66,19 @@ export default function useGameLoop() {
       }, 2000)
     }
 
-    telemetryIntervalRef.current = window.setInterval(() => {
-      const s = (useGameStore as any).getState()
-      s.reportRecyclerTelemetry()
-      s.reportTruckTelemetry()
-    }, 10000)
+    if (playerId) {
+      telemetryIntervalRef.current = window.setInterval(() => {
+        const s = (useGameStore as any).getState()
+        s.reportRecyclerTelemetry()
+        s.reportTruckTelemetry()
+        s.reportGameTelemetry()
+      }, 10000)
+    }
 
     return () => {
       if (depositIntervalRef.current) { window.clearInterval(depositIntervalRef.current); depositIntervalRef.current = null }
       if (dispatchIntervalRef.current) { window.clearInterval(dispatchIntervalRef.current); dispatchIntervalRef.current = null }
       if (telemetryIntervalRef.current) { window.clearInterval(telemetryIntervalRef.current); telemetryIntervalRef.current = null }
     }
-  }, [timeLevel])
+  }, [timeLevel, playerId])
 }
