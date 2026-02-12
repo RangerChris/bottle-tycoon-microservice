@@ -89,15 +89,19 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddHealthChecks();
         builder.Services.AddHttpClient();
 
+        // Create meter first before OpenTelemetry configuration
+        var meter = new Meter("RecyclerService", "1.0");
+        builder.Services.AddSingleton(meter);
+
+        // register the bottles_processed counter on the meter
+        var bottlesProcessedCounter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
+        builder.Services.AddSingleton(bottlesProcessedCounter);
+
         builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics => metrics
                 .AddMeter("RecyclerService")
                 .AddPrometheusExporter());
 
-        builder.Services.AddSingleton<Meter>(sp => new Meter("RecyclerService", "1.0"));
-
-        // register the bottles_processed counter on the shared meter for tests
-        builder.Services.AddSingleton<Counter<long>>(sp => sp.GetRequiredService<Meter>().CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type"));
 
         builder.Services.AddSingleton<IRecyclerTelemetryStore, RecyclerTelemetryStore>();
         builder.Services.AddSingleton<RecyclerMetrics>();
