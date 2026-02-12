@@ -5,8 +5,8 @@ namespace GameService.Endpoints;
 
 public sealed class GameTelemetryEndpoint : Endpoint<GameTelemetryEndpoint.Request, GameTelemetryEndpoint.Response>
 {
-    private readonly IGameTelemetryStore _telemetryStore;
     private readonly ILogger<GameTelemetryEndpoint> _logger;
+    private readonly IGameTelemetryStore _telemetryStore;
 
     public GameTelemetryEndpoint(IGameTelemetryStore telemetryStore, ILogger<GameTelemetryEndpoint> logger)
     {
