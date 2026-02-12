@@ -719,7 +719,9 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     await get().fetchPlayer()
     await get().fetchRecyclers()
     await get().fetchTrucks()
+    await get().reportRecyclerTelemetry()
     await get().reportTruckTelemetry()
+    await get().reportGameTelemetry()
 
     if (arrivalsWatchdog === null) {
       arrivalsWatchdog = window.setInterval(() => {
