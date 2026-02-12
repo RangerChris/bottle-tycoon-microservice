@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
@@ -69,6 +69,15 @@ Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator(new TextMapPropag
 var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? builder.Configuration["OTEL_SERVICE_NAME"] ?? "RecyclerService";
 Log.Information("Configuring OpenTelemetry with service name: {ServiceName}", serviceName);
 
+// Create meter before OpenTelemetry configuration
+var meterName = "RecyclerService";
+var meter = new Meter(meterName, "1.0");
+builder.Services.AddSingleton(meter);
+
+// create and register the bottles_processed counter
+var bottlesProcessedCounter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
+builder.Services.AddSingleton<Counter<long>>(bottlesProcessedCounter);
+
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
@@ -90,14 +99,6 @@ builder.Services.AddOpenTelemetry()
         .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
         .AddPrometheusExporter());
 
-// Metrics initialization - create meter and register it
-var meterName = "RecyclerService";
-var meter = new Meter(meterName, "1.0");
-builder.Services.AddSingleton(meter);
-
-// create and register the bottles_processed counter on the shared meter so DI can inject it
-var bottlesProcessedCounter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-builder.Services.AddSingleton<Counter<long>>(bottlesProcessedCounter);
 
 builder.Services.AddSingleton<IRecyclerTelemetryStore, RecyclerTelemetryStore>();
 builder.Services.AddSingleton<RecyclerMetrics>();
