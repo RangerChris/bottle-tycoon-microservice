@@ -5,8 +5,8 @@ namespace RecyclingPlantService.Endpoints;
 
 public sealed class ProcessDeliveryEndpoint : Endpoint<ProcessDeliveryEndpoint.Request, ProcessDeliveryEndpoint.Response>
 {
-    private readonly IRecyclingPlantService _plantService;
     private readonly ILogger<ProcessDeliveryEndpoint> _logger;
+    private readonly IRecyclingPlantService _plantService;
 
     public ProcessDeliveryEndpoint(IRecyclingPlantService plantService, ILogger<ProcessDeliveryEndpoint> logger)
     {
