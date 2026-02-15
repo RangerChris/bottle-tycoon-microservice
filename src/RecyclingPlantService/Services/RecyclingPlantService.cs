@@ -7,8 +7,8 @@ namespace RecyclingPlantService.Services;
 public class RecyclingPlantService : IRecyclingPlantService
 {
     private static readonly Meter Meter = new("RecyclingPlantService");
-    private static readonly Counter<long> DeliveriesProcessed = Meter.CreateCounter<long>("deliveries_processed", "Number of deliveries processed");
-    private static readonly Counter<long> BottlesReceived = Meter.CreateCounter<long>("bottles_received", description: "Number of bottles received by type", unit: "bottles");
+    private static readonly Counter<long> DeliveriesProcessed = Meter.CreateCounter<long>("deliveries_processed", unit: "deliveries", description: "Number of deliveries processed");
+    private static readonly Counter<long> BottlesReceived = Meter.CreateCounter<long>("bottles_received", unit: "bottles", description: "Number of bottles received by type");
     private static readonly Histogram<double> EarningsDistributed = Meter.CreateHistogram<double>("earnings_distributed", "credits", "Earnings distributed");
     private static readonly Histogram<double> OperatingCosts = Meter.CreateHistogram<double>("operating_costs", "credits", "Operating costs incurred");
 

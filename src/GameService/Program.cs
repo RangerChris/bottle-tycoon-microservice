@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FastEndpoints;
 using GameService.Data;
@@ -121,9 +121,9 @@ builder.Services.Configure<JsonOptions>(options =>
     options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
-var configuredUrls = builder.Configuration["ASPNETCORE_URLS"];
 var enableHttpsRedirection = builder.Configuration.GetValue("EnableHttpsRedirection", true);
-var httpsUrlConfigured = configuredUrls?.IndexOf("https", StringComparison.OrdinalIgnoreCase) >= 0;
+var aspnetcoreUrls = builder.Configuration["ASPNETCORE_URLS"] ?? "http://+:80";
+var httpsUrlConfigured = aspnetcoreUrls.IndexOf("https", StringComparison.OrdinalIgnoreCase) >= 0;
 var useHttpsRedirection = enableHttpsRedirection && httpsUrlConfigured;
 
 try
@@ -168,7 +168,7 @@ try
 
     app.Lifetime.ApplicationStarted.Register(() =>
     {
-        var announcedUrls = app.Urls.Count > 0 ? string.Join(", ", app.Urls) : configuredUrls ?? "http://+:80";
+        var announcedUrls = app.Urls.Count > 0 ? string.Join(", ", app.Urls) : "http://+:80";
         Log.Information("GameService ready at {Urls}", announcedUrls);
     });
 

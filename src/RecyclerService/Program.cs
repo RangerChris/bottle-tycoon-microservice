@@ -78,6 +78,7 @@ builder.Services.AddSingleton(meter);
 var bottlesProcessedCounter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
 builder.Services.AddSingleton<Counter<long>>(bottlesProcessedCounter);
 
+
 // OpenTelemetry
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
@@ -147,9 +148,9 @@ try
         c.RoutePrefix = string.Empty;
     });
 
-    var configuredUrls = builder.Configuration["ASPNETCORE_URLS"];
     var enableHttpsRedirection = builder.Configuration.GetValue("EnableHttpsRedirection", true);
-    var httpsUrlConfigured = configuredUrls?.IndexOf("https", StringComparison.OrdinalIgnoreCase) >= 0;
+    var aspnetcoreUrls = builder.Configuration["ASPNETCORE_URLS"] ?? "http://+:80";
+    var httpsUrlConfigured = aspnetcoreUrls.IndexOf("https", StringComparison.OrdinalIgnoreCase) >= 0;
     var useHttpsRedirection = enableHttpsRedirection && httpsUrlConfigured;
 
     if (useHttpsRedirection)

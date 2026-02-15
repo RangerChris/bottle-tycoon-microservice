@@ -280,7 +280,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "deliveries_processed_total{job=\"recyclingplantservice\"}",
+          "expr": "deliveries_processed_deliveries_total{job=\"recyclingplantservice\"}",
           "legendFormat": "Total Deliveries",
           "refId": "A"
         }

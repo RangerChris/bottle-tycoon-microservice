@@ -38,6 +38,7 @@ Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator(new TextMapPropag
 var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? builder.Configuration["OTEL_SERVICE_NAME"] ?? "HeadquartersService";
 Log.Information("Configuring OpenTelemetry with service name: {ServiceName}", serviceName);
 
+
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
         .AddService(serviceName, serviceVersion: "1.0.0"))
