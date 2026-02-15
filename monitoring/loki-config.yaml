@@ -2,6 +2,15 @@ auth_enabled: false
 server:
   http_listen_port: 3100
   log_level: info
+ingester:
+  chunk_idle_period: 3m
+  max_chunk_age: 1h
+  chunk_retain_period: 1m
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
 common:
   path_prefix: /loki
   replication_factor: 1
@@ -41,4 +50,4 @@ ruler:
   ring:
     kvstore:
       store: inmemory
-  alertmanager_url: http://localhost:9093
+  alertmanager_url: http://alertmanager:9093
