@@ -389,6 +389,7 @@
               "options": {
                 "from": 0.81,
                 "result": {
+                  "color": "green",
                   "index": 1,
                   "text": "Running"
                 },
