@@ -1,0 +1,4 @@
+﻿apiVersion: 1
+
+defaults:
+  tracing: jaeger

@@ -180,12 +180,14 @@
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_EXPLORE_DEFAULT_TRACING: jaeger
     ports:
       - "3001:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
     depends_on:
       - prometheus
       - loki
