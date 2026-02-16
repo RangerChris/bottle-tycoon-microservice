@@ -10,7 +10,8 @@ export default function useGameLoop() {
 
   const depositIntervalRef = useRef<number | null>(null)
   const dispatchIntervalRef = useRef<number | null>(null)
-  const telemetryIntervalRef = useRef<number | null>(null)
+  const truckTelemetryIntervalRef = useRef<number | null>(null)
+  const generalTelemetryIntervalRef = useRef<number | null>(null)
 
   useEffect(() => {
     // expose store for quick debugging in browser console
@@ -27,9 +28,13 @@ export default function useGameLoop() {
       window.clearInterval(dispatchIntervalRef.current)
       dispatchIntervalRef.current = null
     }
-    if (telemetryIntervalRef.current) {
-      window.clearInterval(telemetryIntervalRef.current)
-      telemetryIntervalRef.current = null
+    if (truckTelemetryIntervalRef.current) {
+      window.clearInterval(truckTelemetryIntervalRef.current)
+      truckTelemetryIntervalRef.current = null
+    }
+    if (generalTelemetryIntervalRef.current) {
+      window.clearInterval(generalTelemetryIntervalRef.current)
+      generalTelemetryIntervalRef.current = null
     }
 
     const mult = timeMultipliers[timeLevel] ?? 1
@@ -67,10 +72,14 @@ export default function useGameLoop() {
     }
 
     if (playerId) {
-      telemetryIntervalRef.current = window.setInterval(() => {
+      truckTelemetryIntervalRef.current = window.setInterval(() => {
+        const s = (useGameStore as any).getState()
+        s.reportTruckTelemetry()
+      }, 2000)
+
+      generalTelemetryIntervalRef.current = window.setInterval(() => {
         const s = (useGameStore as any).getState()
         s.reportRecyclerTelemetry()
-        s.reportTruckTelemetry()
         s.reportGameTelemetry()
       }, 10000)
     }
@@ -78,7 +87,8 @@ export default function useGameLoop() {
     return () => {
       if (depositIntervalRef.current) { window.clearInterval(depositIntervalRef.current); depositIntervalRef.current = null }
       if (dispatchIntervalRef.current) { window.clearInterval(dispatchIntervalRef.current); dispatchIntervalRef.current = null }
-      if (telemetryIntervalRef.current) { window.clearInterval(telemetryIntervalRef.current); telemetryIntervalRef.current = null }
+      if (truckTelemetryIntervalRef.current) { window.clearInterval(truckTelemetryIntervalRef.current); truckTelemetryIntervalRef.current = null }
+      if (generalTelemetryIntervalRef.current) { window.clearInterval(generalTelemetryIntervalRef.current); generalTelemetryIntervalRef.current = null }
     }
   }, [timeLevel, playerId])
 }

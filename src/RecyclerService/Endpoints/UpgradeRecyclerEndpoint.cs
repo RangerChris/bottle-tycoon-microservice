@@ -24,7 +24,7 @@ public class UpgradeRecyclerEndpoint : Endpoint<UpgradeRecyclerEndpoint.Request,
 
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
-        var recycler = await _db.Recyclers.FindAsync(new object[] { req.RecyclerId }, ct);
+        var recycler = await _db.Recyclers.FindAsync([req.RecyclerId], ct);
         if (recycler == null)
         {
             await Send.NotFoundAsync(ct);

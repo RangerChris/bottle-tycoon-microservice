@@ -23,7 +23,7 @@ public class UpgradeTruckEndpoint : Endpoint<UpgradeTruckRequest, TruckDto>
 
     public override async Task HandleAsync(UpgradeTruckRequest req, CancellationToken ct)
     {
-        var truck = await _db.Trucks.FindAsync(new object[] { req.TruckId }, ct);
+        var truck = await _db.Trucks.FindAsync([req.TruckId], ct);
         if (truck == null)
         {
             await Send.NotFoundAsync(ct);
