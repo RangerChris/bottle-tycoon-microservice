@@ -56,10 +56,9 @@ builder.Services.AddDbContext<GameDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("GameStateConnection")));
 
 // OpenTelemetry SDK configuration
-Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator(new TextMapPropagator[]
-{
+Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator([
     new TraceContextPropagator()
-}));
+]));
 
 var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? builder.Configuration["OTEL_SERVICE_NAME"] ?? "GameService";
 Log.Information("Configuring OpenTelemetry with service name: {ServiceName}", serviceName);

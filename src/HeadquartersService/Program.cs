@@ -30,10 +30,9 @@ builder.Services.AddFastEndpoints()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator(new TextMapPropagator[]
-{
+Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator([
     new TraceContextPropagator()
-}));
+]));
 
 var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? builder.Configuration["OTEL_SERVICE_NAME"] ?? "HeadquartersService";
 Log.Information("Configuring OpenTelemetry with service name: {ServiceName}", serviceName);

@@ -24,7 +24,7 @@ public class TruckManager : ITruckManager
 
     public async Task<TruckStatusDto> GetStatusAsync(Guid truckId, CancellationToken ct = default)
     {
-        var truck = await _db.Trucks.FindAsync(new object[] { truckId }, ct);
+        var truck = await _db.Trucks.FindAsync([truckId], ct);
         if (truck == null)
         {
             throw new KeyNotFoundException($"Truck {truckId} not found");
@@ -96,7 +96,7 @@ public class TruckManager : ITruckManager
 
         _db.Deliveries.Add(delivery);
         // persist truck current load by type
-        var truckEnt = await _db.Trucks.FindAsync(new object[] { truckId }, ct);
+        var truckEnt = await _db.Trucks.FindAsync([truckId], ct);
         if (truckEnt != null)
         {
             truckEnt.SetCurrentLoadByType(new Dictionary<string, int> { { "glass", glass }, { "metal", metal }, { "plastic", plastic } });

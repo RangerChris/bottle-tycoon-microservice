@@ -15,7 +15,7 @@ public class EfTruckRepository : ITruckRepository
 
     public async Task<TruckDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var ent = await _db.Trucks.FindAsync(new object[] { id }, ct);
+        var ent = await _db.Trucks.FindAsync([id], ct);
         if (ent is null)
         {
             return null;
@@ -40,7 +40,7 @@ public class EfTruckRepository : ITruckRepository
 
     public async Task<bool> UpdateAsync(TruckDto truck, CancellationToken ct = default)
     {
-        var ent = await _db.Trucks.FindAsync(new object[] { truck.Id }, ct);
+        var ent = await _db.Trucks.FindAsync([truck.Id], ct);
         if (ent is null)
         {
             return false;
@@ -54,7 +54,7 @@ public class EfTruckRepository : ITruckRepository
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var ent = await _db.Trucks.FindAsync(new object[] { id }, ct);
+        var ent = await _db.Trucks.FindAsync([id], ct);
         if (ent is null)
         {
             return false;

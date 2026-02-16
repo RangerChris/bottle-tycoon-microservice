@@ -107,10 +107,7 @@ builder.Services.AddSingleton<ITruckTelemetryStore, TruckTelemetryStore>();
 builder.Services.AddSingleton<TruckMetrics>();
 
 // OpenTelemetry SDK configuration
-Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator(new TextMapPropagator[]
-{
-    new TraceContextPropagator()
-}));
+Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator([new TraceContextPropagator(), new BaggagePropagator()]));
 
 var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? builder.Configuration["OTEL_SERVICE_NAME"] ?? "TruckService";
 Log.Information("Configuring OpenTelemetry with service name: {ServiceName}", serviceName);
@@ -146,22 +143,17 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.EnsureCreated();
 }
 
-var swaggerEnabled = true; // same for all environments
-
 var enableHttpsRedirection = builder.Configuration.GetValue("EnableHttpsRedirection", true);
 var aspnetcoreUrls = builder.Configuration["ASPNETCORE_URLS"] ?? "http://+:80";
 var httpsUrlConfigured = aspnetcoreUrls.IndexOf("https", StringComparison.OrdinalIgnoreCase) >= 0;
 var useHttpsRedirection = enableHttpsRedirection && httpsUrlConfigured;
 
-if (swaggerEnabled)
-{
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
         c.RoutePrefix = string.Empty;
     });
-}
 
 if (useHttpsRedirection)
 {
@@ -187,7 +179,7 @@ app.Lifetime.ApplicationStarted.Register(() =>
     Log.Information("TruckService ready at {Urls}", announcedUrls);
 });
 
-app.MapGet("/", () => swaggerEnabled ? Results.Content("", "text/html") : Results.Text("TruckService OK"));
+app.MapGet("/", () => Results.Text("TruckService OK"));
 
 Log.Information("Starting TruckService host");
 app.Run();

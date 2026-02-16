@@ -46,7 +46,7 @@ public class RouteWorker : IRouteWorker
         _metrics.RecordDeliveryCompleted();
 
         // Update truck earnings and current load
-        var truck = await _db.Trucks.FindAsync(new object[] { delivery.TruckId }, ct);
+        var truck = await _db.Trucks.FindAsync([delivery.TruckId], ct);
         if (truck != null)
         {
             truck.TotalEarnings += delivery.NetProfit;

@@ -4,7 +4,7 @@ namespace HeadquartersService.Services;
 
 public class DispatchQueue : IDispatchQueue
 {
-    private readonly List<DispatchRequest> _inner = new();
+    private readonly List<DispatchRequest> _inner = [];
     private readonly ReaderWriterLockSlim _lock = new();
 
     public void Enqueue(DispatchRequest req)

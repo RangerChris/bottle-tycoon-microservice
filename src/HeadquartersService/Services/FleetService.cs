@@ -4,7 +4,7 @@ namespace HeadquartersService.Services;
 
 public class FleetService : IFleetService
 {
-    private readonly List<Truck> _trucks = new();
+    private readonly List<Truck> _trucks = [];
 
     public void AddTruck(Truck t)
     {
