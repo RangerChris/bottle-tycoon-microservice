@@ -1,4 +1,4 @@
-﻿service:
+service:
   extensions: [jaeger_storage, jaeger_query, healthcheckv2]
   pipelines:
     traces:

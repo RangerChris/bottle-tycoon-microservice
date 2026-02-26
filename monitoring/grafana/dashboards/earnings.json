@@ -344,8 +344,7 @@
   "refresh": "5s",
   "schemaVersion": 42,
   "tags": [
-    "earnings",
-    "game"
+    "earnings"
   ],
   "templating": {
     "list": []
