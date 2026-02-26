@@ -1,4 +1,4 @@
-﻿services:
+services:
   gameservicepostgres:
     image: postgres:16-alpine
     container_name: bottle-tycoon-gameservice-postgres
@@ -203,10 +203,10 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__GameStateConnection: Host=gameservicepostgres;Database=GameServiceOwner;Username=postgres;Password=password
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_SERVICE_NAME: GameService
-      OTEL_TRACES_EXPORTER: jaeger
-      OTEL_TRACES_SAMPLER: always_on
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5001:80"
     healthcheck:
@@ -231,8 +231,10 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__RecyclerConnection: Host=recyclerpostgres;Database=RecyclerServiceOwner;Username=postgres;Password=password
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_SERVICE_NAME: RecyclerService
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5002:80"
     healthcheck:
@@ -258,8 +260,10 @@
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__DefaultConnection: Host=truckpostgres;Database=TruckServiceOwner;Username=postgres;Password=password
       RecyclerService__Url: http://recyclerservice:80
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://bottle-tycoon-jaeger:14268/api/traces
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_SERVICE_NAME: TruckService
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5003:80"
     healthcheck:
@@ -284,8 +288,10 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__DefaultConnection: Host=gameservicepostgres;Database=GameServiceOwner;Username=postgres;Password=password
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_SERVICE_NAME: HeadquartersService
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5004:80"
     healthcheck:
@@ -310,8 +316,10 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:80
       ConnectionStrings__RecyclingPlantConnection: Host=recyclingplantpostgres;Database=RecyclingPlantServiceOwner;Username=postgres;Password=password
-      OTEL_EXPORTER_JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_SERVICE_NAME: RecyclingPlantService
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5005:80"
     healthcheck:

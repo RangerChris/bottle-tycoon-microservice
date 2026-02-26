@@ -5,7 +5,6 @@ using FastEndpoints.Swagger;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
-using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -120,18 +119,15 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddEntityFrameworkCoreInstrumentation()
-        .AddOtlpExporter(options =>
-        {
-            options.Endpoint = new Uri("http://jaeger:4318/v1/traces");
-            options.Protocol = OtlpExportProtocol.HttpProtobuf;
-            Log.Information("OTLP exporter configured with endpoint: {Endpoint}", options.Endpoint);
-        }))
+        .AddOtlpExporter())
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
         .AddMeter(truckMeterName)
         .AddMeter("Microsoft.AspNetCore.Hosting")
         .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
         .AddPrometheusExporter());
+
+Log.Information("OpenTelemetry tracing configured. OTLP endpoint will be read from OTEL_EXPORTER_OTLP_ENDPOINT environment variable");
 
 var app = builder.Build();
 
