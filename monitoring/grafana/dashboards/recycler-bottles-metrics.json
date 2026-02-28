@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "recycler_current_visitors{job=\"recyclerservice\"}",
+          "expr": "recycler_current_visitors{job=\"recyclerservice\"} and on(recycler_id) (timestamp(recycler_current_visitors{job=\"recyclerservice\"}) - time() < 60)",
           "legendFormat": "{{ recycler_name }}",
           "refId": "A"
         }

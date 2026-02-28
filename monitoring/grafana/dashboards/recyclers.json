@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "recycler_current_bottles{job=\"recyclerservice\"}",
+          "expr": "recycler_current_bottles{job=\"recyclerservice\"} and on(recycler_id) (timestamp(recycler_current_bottles{job=\"recyclerservice\"}) - time() < 60)",
           "legendFormat": "{{ recycler_name }}",
           "refId": "A"
         }
@@ -191,7 +191,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "recycler_queue_depth_customers{job=\"recyclerservice\"}",
+          "expr": "recycler_queue_depth_customers{job=\"recyclerservice\"} and on(recycler_id) (timestamp(recycler_queue_depth_customers{job=\"recyclerservice\"}) - time() < 300)",
           "legendFormat": "{{ recycler_name }}",
           "refId": "A"
         }

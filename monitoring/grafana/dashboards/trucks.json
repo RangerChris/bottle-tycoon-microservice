@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "truck_current_load_bottles{job=\"truckservice\"}",
+          "expr": "truck_current_load_bottles{job=\"truckservice\"} and on(truck_id) (timestamp(truck_current_load_bottles{job=\"truckservice\"}) - time() < 60)",
           "legendFormat": "{{ truck_name }}",
           "refId": "A"
         }
@@ -191,7 +191,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "truck_capacity_bottles{job=\"truckservice\"}",
+          "expr": "truck_capacity_bottles{job=\"truckservice\"} and on(truck_id) (timestamp(truck_capacity_bottles{job=\"truckservice\"}) - time() < 60)",
           "legendFormat": "{{ truck_name }}",
           "refId": "A"
         }
