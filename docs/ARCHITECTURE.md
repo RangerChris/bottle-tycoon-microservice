@@ -1,4 +1,4 @@
-﻿﻿# Bottle Tycoon — Simplified Architecture
+﻿# Bottle Tycoon — Simplified Architecture
 
 ## Overview
 

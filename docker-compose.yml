@@ -196,6 +196,7 @@ services:
 
   # Application Services
   gameservice:
+    image: bottle-tycoon-gameservice:latest
     build:
       context: .
       dockerfile: src/GameService/Dockerfile
@@ -224,6 +225,7 @@ services:
       - bottle-tycoon
 
   recyclerservice:
+    image: bottle-tycoon-recyclerservice:latest
     build:
       context: .
       dockerfile: src/RecyclerService/Dockerfile
@@ -252,6 +254,7 @@ services:
       - bottle-tycoon
 
   truckservice:
+    image: bottle-tycoon-truckservice:latest
     build:
       context: .
       dockerfile: src/TruckService/Dockerfile
@@ -281,6 +284,7 @@ services:
       - bottle-tycoon
 
   headquartersservice:
+    image: bottle-tycoon-headquartersservice:latest
     build:
       context: .
       dockerfile: src/HeadquartersService/Dockerfile
@@ -309,6 +313,7 @@ services:
       - bottle-tycoon
 
   recyclingplantservice:
+    image: bottle-tycoon-recyclingplantservice:latest
     build:
       context: .
       dockerfile: src/RecyclingPlantService/Dockerfile
@@ -337,6 +342,7 @@ services:
       - bottle-tycoon
 
   frontend:
+    image: bottle-tycoon-frontend:latest
     build:
       context: ./src/Frontend
       dockerfile: Dockerfile
