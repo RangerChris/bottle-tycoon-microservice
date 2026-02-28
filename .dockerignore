@@ -29,6 +29,10 @@ docs/
 # Environment files
 .env*
 
+# Configuration files with sensitive data
+appsettings.json
+appsettings.*.json
+
 # Node.js (if any frontend)
 node_modules/
 npm-debug.log*

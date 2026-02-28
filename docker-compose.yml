@@ -210,6 +210,8 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5001:80"
+    volumes:
+      - ./src/GameService/appsettings.json:/app/appsettings.json:ro
     healthcheck:
       test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
       interval: 10s
@@ -239,6 +241,8 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5002:80"
+    volumes:
+      - ./src/RecyclerService/appsettings.json:/app/appsettings.json:ro
     healthcheck:
       test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
       interval: 10s
@@ -269,6 +273,8 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5003:80"
+    volumes:
+      - ./src/TruckService/appsettings.json:/app/appsettings.json:ro
     healthcheck:
       test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
       interval: 10s
@@ -298,6 +304,8 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5004:80"
+    volumes:
+      - ./src/HeadquartersService/appsettings.json:/app/appsettings.json:ro
     healthcheck:
       test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
       interval: 10s
@@ -327,6 +335,8 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
       - "5005:80"
+    volumes:
+      - ./src/RecyclingPlantService/appsettings.json:/app/appsettings.json:ro
     healthcheck:
       test: ["CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost/health || exit 1; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost/health >/dev/null || exit 1; else exit 1; fi"]
       interval: 10s

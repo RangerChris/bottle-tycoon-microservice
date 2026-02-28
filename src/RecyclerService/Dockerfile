@@ -12,6 +12,7 @@ RUN dotnet build "RecyclerService.csproj" -c Release -o /app/build
 # Publish the application
 FROM build AS publish
 RUN dotnet publish "RecyclerService.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN rm -f /app/publish/appsettings.json /app/publish/appsettings.*.json
 
 # Get Kerberos libraries from Alpine
 FROM alpine:3.22 AS krb5-libs
