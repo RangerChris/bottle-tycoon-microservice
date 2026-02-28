@@ -46,6 +46,7 @@ public sealed class ProcessDeliveryEndpoint : Endpoint<ProcessDeliveryEndpoint.R
 
         var deliveryId = await _plantService.ProcessDeliveryAsync(
             req.TruckId,
+            req.TruckName,
             req.PlayerId,
             req.LoadByType,
             req.OperatingCost,
@@ -70,6 +71,7 @@ public sealed class ProcessDeliveryEndpoint : Endpoint<ProcessDeliveryEndpoint.R
     public sealed record Request
     {
         public Guid TruckId { get; init; }
+        public string TruckName { get; init; } = string.Empty;
         public Guid PlayerId { get; init; }
         public Dictionary<string, int> LoadByType { get; init; } = new();
         public decimal OperatingCost { get; init; }

@@ -1,13 +1,19 @@
-﻿import React from 'react'
+import React from 'react'
 import { Truck } from '../types'
 import useGameStore, { GameState } from '../store/useGameStore'
 
 export default function TruckCard({ truck }: { truck: Truck }) {
   const upgradeTruck = useGameStore((s: GameState) => s.upgradeTruck)
+  const recyclers = useGameStore((s: GameState) => s.recyclers)
 
   const capacity = Math.floor(truck.capacity * Math.pow(1.25, truck.level))
   const loadBottles = truck.cargo ? (truck.cargo.glass + truck.cargo.metal + truck.cargo.plastic) : truck.currentLoad
   const percentage = Math.min((loadBottles / capacity) * 100, 100)
+
+  const targetRecycler = truck.targetRecyclerId
+    ? recyclers.find(r => r.id === truck.targetRecyclerId)
+    : null
+  const targetName = targetRecycler?.name || `Recycler ${truck.targetRecyclerId}`
 
   let statusText = 'Idle'
   let statusClass = 'badge badge-outline'
@@ -15,6 +21,7 @@ export default function TruckCard({ truck }: { truck: Truck }) {
   else if (truck.status === 'loading') { statusText = 'Loading'; statusClass = 'badge badge-warning' }
   else if (truck.status === 'to_plant') { statusText = 'To Plant'; statusClass = 'badge badge-info' }
   else if (truck.status === 'delivering') { statusText = 'Delivering'; statusClass = 'badge badge-success' }
+  else if (truck.status === 'en route') { statusText = 'En Route'; statusClass = 'badge badge-info' }
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
@@ -28,6 +35,13 @@ export default function TruckCard({ truck }: { truck: Truck }) {
           <div className="text-xs text-gray-300 mt-1">{loadBottles} / {capacity} bottles</div>
         </div>
       </div>
+
+      {truck.targetRecyclerId && (
+        <div className="mt-2 text-sm text-blue-400 flex items-center gap-1">
+          <span>🎯</span>
+          <span>→ {targetName}</span>
+        </div>
+      )}
 
       <div className="mt-3">
         <div className="capacity-bar">

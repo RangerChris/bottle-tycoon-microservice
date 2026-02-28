@@ -43,7 +43,7 @@ public class RecyclingPlantService : IRecyclingPlantService
         return (gross, net);
     }
 
-    public async Task<Guid> ProcessDeliveryAsync(Guid truckId, Guid playerId, IDictionary<string, int> loadByType, decimal operatingCost, DateTimeOffset deliveredAt)
+    public async Task<Guid> ProcessDeliveryAsync(Guid truckId, string truckName, Guid playerId, IDictionary<string, int> loadByType, decimal operatingCost, DateTimeOffset deliveredAt)
     {
         var (gross, net) = CalculateEarnings(loadByType, operatingCost);
 
@@ -75,14 +75,18 @@ public class RecyclingPlantService : IRecyclingPlantService
         playerEarnings.AverageEarnings = playerEarnings.TotalEarnings / playerEarnings.DeliveryCount;
         playerEarnings.LastUpdated = DateTimeOffset.UtcNow;
 
-        DeliveriesProcessed.Add(1, new KeyValuePair<string, object?>("truck_id", truckId.ToString()), new KeyValuePair<string, object?>("player_id", playerId.ToString()));
+        await _dbContext.SaveChangesAsync();
+
+        DeliveriesProcessed.Add(1,
+            new KeyValuePair<string, object?>("truck_id", truckId.ToString()),
+            new KeyValuePair<string, object?>("truck_name", truckName),
+            new KeyValuePair<string, object?>("player_id", playerId.ToString()));
         BottlesReceived.Add(delivery.GlassCount, new KeyValuePair<string, object?>("type", "glass"));
         BottlesReceived.Add(delivery.MetalCount, new KeyValuePair<string, object?>("type", "metal"));
         BottlesReceived.Add(delivery.PlasticCount, new KeyValuePair<string, object?>("type", "plastic"));
         EarningsDistributed.Record((double)gross, new KeyValuePair<string, object?>("truck_id", truckId.ToString()), new KeyValuePair<string, object?>("player_id", playerId.ToString()));
         OperatingCosts.Record((double)operatingCost, new KeyValuePair<string, object?>("truck_id", truckId.ToString()), new KeyValuePair<string, object?>("player_id", playerId.ToString()));
 
-        await _dbContext.SaveChangesAsync();
 
         return delivery.Id;
     }

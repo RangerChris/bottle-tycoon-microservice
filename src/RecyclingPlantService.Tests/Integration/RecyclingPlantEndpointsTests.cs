@@ -305,12 +305,13 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         var recyclingPlantDbContext = serviceScope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
 
         var truckId = Guid.NewGuid();
+        var truckName = "Truck 1";
         var playerId = Guid.NewGuid();
         var loadByType = new Dictionary<string, int> { ["glass"] = 1, ["metal"] = 2 };
         var operatingCost = 1.5m;
         var deliveredAt = DateTimeOffset.UtcNow;
 
-        var deliveryId = await service.ProcessDeliveryAsync(truckId, playerId, loadByType, operatingCost, deliveredAt);
+        var deliveryId = await service.ProcessDeliveryAsync(truckId, truckName, playerId, loadByType, operatingCost, deliveredAt);
 
         deliveryId.ShouldNotBe(Guid.Empty);
 

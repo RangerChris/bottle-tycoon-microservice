@@ -32,6 +32,7 @@ public class RecyclingPlantServiceTests : IDisposable
     {
         // Arrange
         var truckId = Guid.NewGuid();
+        var truckName = "Truck 1";
         var playerId = Guid.NewGuid();
         var loadByType = new Dictionary<string, int>
         {
@@ -48,7 +49,7 @@ public class RecyclingPlantServiceTests : IDisposable
         await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _service.ProcessDeliveryAsync(truckId, playerId, loadByType, operatingCost, deliveredAt);
+        var result = await _service.ProcessDeliveryAsync(truckId, truckName, playerId, loadByType, operatingCost, deliveredAt);
 
         // Assert
         result.ShouldNotBe(Guid.Empty);
@@ -78,13 +79,14 @@ public class RecyclingPlantServiceTests : IDisposable
     {
         // Arrange
         var truckId = Guid.NewGuid();
+        var truckName = "Truck 1";
         var playerId = Guid.NewGuid();
         var loadByType = new Dictionary<string, int> { ["glass"] = 1 };
         var operatingCost = 1.0m;
         var deliveredAt = DateTimeOffset.UtcNow;
 
         // Act
-        var result = await _service.ProcessDeliveryAsync(truckId, playerId, loadByType, operatingCost, deliveredAt);
+        var result = await _service.ProcessDeliveryAsync(truckId, truckName, playerId, loadByType, operatingCost, deliveredAt);
 
         // Assert
         result.ShouldNotBe(Guid.Empty);

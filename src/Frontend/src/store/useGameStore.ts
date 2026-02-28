@@ -103,7 +103,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   credits: 0,
   totalEarnings: 0,
   recyclers: [
-    { id: 1, level: 0, capacity: 100, currentBottles: { glass: 0, metal: 0, plastic: 0 }, visitors: [] }
+    { id: 1, level: 0, capacity: 100, currentBottles: { glass: 0, metal: 0, plastic: 0 }, visitors: [], targetedByTruckId: null }
   ],
   trucks: [
     { id: 1, level: 0, capacity: 45, currentLoad: 0, status: 'idle', targetRecyclerId: null, cargo: null }
@@ -164,7 +164,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 level: 0,
                 capacity: newRecycler.capacity,
                 currentBottles: { glass: 0, metal: 0, plastic: 0 },
-                visitors: []
+                visitors: [],
+                targetedByTruckId: null
             })
             draft.buyingRecycler = false
             draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased ${newRecycler.name}` })
@@ -371,53 +372,80 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   attemptSmartDispatch: () => {
     const state = get()
     const mult = timeMultipliers[state.timeLevel] || 1
-    for (const truck of state.trucks) {
-      if (truck.status === 'idle') {
-        const suitableRecycler = state.recyclers.find((recycler) => {
-          const currentLoad = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
-          return currentLoad >= recycler.capacity * 0.8
-        })
-        if (suitableRecycler) {
-          set((draft: any) => {
-            const updatedTruck = draft.trucks.find((t: any) => t.id == truck.id)
-            const updatedRecycler = draft.recyclers.find((r: any) => r.id == suitableRecycler.id)
-            if (updatedTruck && updatedRecycler) {
-              updatedTruck.status = 'en route'
-              updatedTruck.targetRecyclerId = updatedRecycler.id
-              updatedTruck.cargo = { glass: 0, metal: 0, plastic: 0 }
 
-              const glassToLoad = Math.min(updatedTruck.capacity - updatedTruck.currentLoad, updatedRecycler.currentBottles.glass)
-              updatedTruck.cargo.glass += glassToLoad
-              updatedRecycler.currentBottles.glass -= glassToLoad
+    const availableRecyclers = state.recyclers
+      .filter((recycler) => {
+        const totalBottles = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
+        const actualCapacity = calculateCapacity(100, recycler.level)
+        const fillPercentage = (totalBottles / actualCapacity) * 100
+        return fillPercentage >= 80 && !recycler.targetedByTruckId
+      })
+      .map((recycler) => {
+        const totalBottles = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
+        const actualCapacity = calculateCapacity(100, recycler.level)
+        const fillPercentage = (totalBottles / actualCapacity) * 100
+        return { recycler, totalBottles, fillPercentage }
+      })
+      .sort((a, b) => b.fillPercentage - a.fillPercentage)
 
-              const metalToLoad = Math.min(updatedTruck.capacity - updatedTruck.currentLoad, updatedRecycler.currentBottles.metal)
-              updatedTruck.cargo.metal += metalToLoad
-              updatedRecycler.currentBottles.metal -= metalToLoad
+    const idleTrucks = state.trucks
+      .filter((truck) => truck.status === 'idle')
+      .map((truck) => {
+        const actualCapacity = calculateCapacity(45, truck.level)
+        return { truck, actualCapacity }
+      })
+      .sort((a, b) => b.actualCapacity - a.actualCapacity)
 
-              const plasticToLoad = Math.min(updatedTruck.capacity - updatedTruck.currentLoad, updatedRecycler.currentBottles.plastic)
-              updatedTruck.cargo.plastic += plasticToLoad
-              updatedRecycler.currentBottles.plastic -= plasticToLoad
+    const matches = Math.min(availableRecyclers.length, idleTrucks.length)
 
-              updatedTruck.currentLoad = updatedTruck.cargo.glass + updatedTruck.cargo.metal + updatedTruck.cargo.plastic
+    for (let i = 0; i < matches; i++) {
+      const { recycler } = availableRecyclers[i]
+      const { truck, actualCapacity } = idleTrucks[i]
 
-              const truckName = getTruckDisplayName(updatedTruck)
-              const recyclerName = getRecyclerDisplayName(updatedRecycler)
-              draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `${truckName} dispatched to ${recyclerName}` })
+      set((draft: any) => {
+        const updatedTruck = draft.trucks.find((t: any) => t.id == truck.id)
+        const updatedRecycler = draft.recyclers.find((r: any) => r.id == recycler.id)
 
-              // Check if this recycler had a waiting visitor and space is now available
-              const currentLoad = updatedRecycler.currentBottles.glass + updatedRecycler.currentBottles.metal + updatedRecycler.currentBottles.plastic
-              if (updatedRecycler.visitors.length > 0 && updatedRecycler.visitors[0].waiting && currentLoad < updatedRecycler.capacity) {
-                updatedRecycler.visitors[0].waiting = false
-                draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor resumed depositing at ${recyclerName}` })
-              }
-            }
-          })
+        if (updatedTruck && updatedRecycler) {
+          updatedTruck.status = 'en route'
+          updatedTruck.targetRecyclerId = updatedRecycler.id
+          updatedTruck.capacity = actualCapacity
+          updatedTruck.cargo = { glass: 0, metal: 0, plastic: 0 }
+          updatedRecycler.targetedByTruckId = updatedTruck.id
 
-          // Schedule arrival at plant after 10 seconds, adjusted for time multiplier
-          const deliveryTime = Math.max(1000, 10000 / mult) // Minimum 1 second
-          setTimeout(() => get().deliverToPlant(truck.id), deliveryTime)
+          let remainingCapacity = actualCapacity
+
+          const glassToLoad = Math.min(remainingCapacity, updatedRecycler.currentBottles.glass)
+          updatedTruck.cargo.glass = glassToLoad
+          updatedRecycler.currentBottles.glass -= glassToLoad
+          remainingCapacity -= glassToLoad
+
+          const metalToLoad = Math.min(remainingCapacity, updatedRecycler.currentBottles.metal)
+          updatedTruck.cargo.metal = metalToLoad
+          updatedRecycler.currentBottles.metal -= metalToLoad
+          remainingCapacity -= metalToLoad
+
+          const plasticToLoad = Math.min(remainingCapacity, updatedRecycler.currentBottles.plastic)
+          updatedTruck.cargo.plastic = plasticToLoad
+          updatedRecycler.currentBottles.plastic -= plasticToLoad
+
+          updatedTruck.currentLoad = updatedTruck.cargo.glass + updatedTruck.cargo.metal + updatedTruck.cargo.plastic
+
+          const truckName = getTruckDisplayName(updatedTruck)
+          const recyclerName = getRecyclerDisplayName(updatedRecycler)
+          draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `${truckName} dispatched to ${recyclerName}` })
+
+          const currentLoad = updatedRecycler.currentBottles.glass + updatedRecycler.currentBottles.metal + updatedRecycler.currentBottles.plastic
+          const recyclerCapacity = calculateCapacity(100, updatedRecycler.level)
+          if (updatedRecycler.visitors.length > 0 && updatedRecycler.visitors[0].waiting && currentLoad < recyclerCapacity) {
+            updatedRecycler.visitors[0].waiting = false
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor resumed depositing at ${recyclerName}` })
+          }
         }
-      }
+      })
+
+      const deliveryTime = Math.max(1000, 10000 / mult)
+      setTimeout(() => get().deliverToPlant(truck.id), deliveryTime)
     }
   },
 
@@ -437,6 +465,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 truckId: truck.id,
+                truckName: truck.model || `Truck ${truck.id}`,
                 playerId: state.playerId,
                 loadByType: {
                     glass: truck.cargo.glass,
@@ -469,10 +498,19 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         set((draft: any) => {
           const updatedTruck = draft.trucks.find((t: any) => t.id == truckId)
           if (updatedTruck) {
+            const targetRecyclerId = updatedTruck.targetRecyclerId
+
             updatedTruck.status = 'idle'
             updatedTruck.targetRecyclerId = null
             updatedTruck.currentLoad = 0
             updatedTruck.cargo = null
+
+            if (targetRecyclerId) {
+              const targetRecycler = draft.recyclers.find((r: any) => r.id == targetRecyclerId)
+              if (targetRecycler) {
+                targetRecycler.targetedByTruckId = null
+              }
+            }
 
             draft.credits += earnings
             draft.totalEarnings += earnings
@@ -693,7 +731,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
           level: r.capacityLevel ?? 0,
           capacity: r.capacity ?? 100,
           currentBottles: { glass: 0, metal: 0, plastic: 0 },
-          visitors: []
+          visitors: [],
+          targetedByTruckId: null
         }))
       })
 

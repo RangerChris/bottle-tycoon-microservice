@@ -1,4 +1,4 @@
-﻿﻿## 🎮 Game Mechanics
+﻿## 🎮 Game Mechanics
 
 ### Goal
 Manage a bottle recycling network. Start with 1 recycler and 1 truck, grow your network by earning credits and upgrading equipment.
@@ -21,14 +21,19 @@ Manage a bottle recycling network. Start with 1 recycler and 1 truck, grow your 
    - Customers deposit one bottle per second (affected by time speed)
    - **If recycler is full**, customer must wait until space becomes available
    - Waiting customers resume depositing once trucks pick up bottles
-2. **Auto-dispatch system** monitors all recyclers and dispatches idle trucks when a recycler reaches **80% capacity**
+2. **Smart auto-dispatch system** monitors all recyclers and coordinates truck dispatch:
+   - Identifies all recyclers at **≥80% capacity** (based on current upgrade level)
+   - Finds all idle trucks and calculates their actual capacity (base × 1.25^level)
+   - Matches trucks to recyclers optimally: biggest trucks to fullest recyclers
+   - Prevents multiple trucks from targeting the same recycler
+   - Loads bottles correctly respecting truck capacity limits
 3. **Truck pickup** removes bottles from recycler inventory and loads cargo
 4. **Truck lifecycle with traffic simulation:**
    - Dispatched to recycler (2.5-4.5 seconds with traffic variance)
    - Arrives and loads bottles (1-2 seconds, picks up available bottles up to capacity)
    - Travels to recycling plant (3-6 seconds with traffic variance)
    - Delivers and earns credits (1.5-2.5 seconds unloading)
-   - Returns to idle state
+   - Returns to idle state, ready for next dispatch
    - **Each trip varies** due to simulated traffic conditions (±30% time variance)
 5. **Credits earned** from delivered bottles are added to player's account
 6. **Purchase upgrades** for recyclers and trucks to increase capacity and efficiency
@@ -84,7 +89,10 @@ The frontend displays:
 
 ### Game Mechanics Features
 - **Customer queuing**: Customers wait when recyclers reach capacity and resume when space is available
-- **Auto-dispatch at 80%**: Trucks dispatch automatically when recycler reaches 80% full
+- **Smart dispatch coordination**: Multiple trucks coordinate to service different recyclers simultaneously
+- **Capacity-aware matching**: System matches truck capacity to recycler bottle counts for optimal pickup
+- **Upgrade-aware thresholds**: 80% dispatch threshold adjusts automatically based on upgrade levels
+- **No double-dispatch**: Recyclers are marked when targeted, preventing multiple trucks from servicing the same location
 - **Traffic simulation**: Truck travel times vary ±30% each trip to simulate real-world traffic conditions
 - **Real-time feedback**: Activity log shows all important events including waiting customers and traffic delays
 - **Strategic depth**: Players must balance recycler capacity, truck count, and upgrade timing to maximize efficiency

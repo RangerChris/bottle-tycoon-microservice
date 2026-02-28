@@ -1,4 +1,4 @@
-﻿export type BottleCounts = { glass: number; metal: number; plastic: number };
+export type BottleCounts = { glass: number; metal: number; plastic: number };
 
 export type Visitor = {
   id: number;
@@ -15,9 +15,10 @@ export type Recycler = {
   capacity: number;
   currentBottles: BottleCounts;
   visitors: Visitor[];
+  targetedByTruckId?: string | number | null;
 };
 
-export type TruckStatus = 'idle' | 'to_recycler' | 'loading' | 'to_plant' | 'delivering' | 'picking';
+export type TruckStatus = 'idle' | 'en route' | 'to_recycler' | 'loading' | 'to_plant' | 'delivering' | 'picking';
 
 export type Truck = {
   id: number | string;

@@ -1,4 +1,4 @@
-﻿﻿# Bottle Tycoon — Simplified Architecture
+﻿# Bottle Tycoon — Simplified Architecture
 
 ## Overview
 
@@ -100,6 +100,48 @@ flowchart LR
 
 See project-description.md for detailed game mechanics.
 
+### Smart Dispatch Flow
+
+The frontend implements an intelligent dispatch coordination system that manages multiple trucks and recyclers efficiently:
+
+1. **Identify Ready Recyclers**:
+   - Calculate actual capacity: `capacity = baseCapacity × 1.25^level`
+   - Calculate fill percentage: `(totalBottles / actualCapacity) × 100`
+   - Filter recyclers at ≥80% capacity that are not already targeted by a truck
+   - Sort by fill percentage (DESC) - fullest recyclers prioritized
+
+2. **Find Available Trucks**:
+   - Filter trucks with status = 'idle'
+   - Calculate actual capacity: `capacity = baseCapacity × 1.25^level`
+   - Sort by capacity (DESC) - biggest trucks prioritized
+
+3. **Optimal Matching**:
+   - Match trucks to recyclers 1-to-1 (biggest truck → fullest recycler)
+   - Mark recycler as targeted: `recycler.targetedByTruckId = truck.id`
+   - Prevents multiple trucks from targeting the same recycler
+
+4. **Correct Bottle Loading**:
+   - Track `remainingCapacity` and decrement after each bottle type
+   - Load glass: `min(remainingCapacity, availableGlass)`
+   - Update remaining capacity: `remainingCapacity -= glassLoaded`
+   - Load metal: `min(remainingCapacity, availableMetal)`
+   - Update remaining capacity: `remainingCapacity -= metalLoaded`
+   - Load plastic: `min(remainingCapacity, availablePlastic)`
+   - Ensures truck never exceeds its actual capacity
+
+5. **Dispatch Coordination**:
+   - Update truck status to 'en route'
+   - Remove loaded bottles from recycler inventory
+   - Check if waiting customers can resume depositing
+   - Schedule delivery to plant based on time multiplier
+
+6. **Cleanup on Delivery**:
+   - Clear `recycler.targetedByTruckId` when truck completes delivery
+   - Reset truck to 'idle' status
+   - Truck becomes available for next dispatch cycle
+
+This approach ensures efficient multi-truck coordination, prevents capacity overload, and adapts to upgrade levels dynamically.
+
 ### Truck Delivery Flow
 
 1. **Frontend initiates delivery**: When a truck reaches the recycling plant, the frontend calls RecyclingPlantService
@@ -114,7 +156,8 @@ See project-description.md for detailed game mechanics.
    - Computes net earnings (gross - operating cost)
    - Stores delivery record in database with timestamp
    - Updates player earnings statistics (total, average, count)
-   - **Increments metrics**: `deliveries_processed_total`, `bottles_received_total` (by type)
+   - Commits transaction to database
+   - **Records metrics after successful commit**: `deliveries_processed_total` (by truck_name), `bottles_received_total` (by type)
    - Returns: `{ success, deliveryId, grossEarnings, netEarnings }`
 
 3. **Frontend credits player**: Calls GameService `POST /player/{id}/deposit` with net earnings
