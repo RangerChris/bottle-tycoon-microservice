@@ -42,11 +42,12 @@ public sealed class RecyclerTelemetryEndpoint : Endpoint<RecyclerTelemetryEndpoi
         }
 
         var visitorCount = req.VisitorCount ?? 0;
+        var queueDepth = req.QueueDepth ?? 0;
 
-        _telemetryStore.Set(recyclerId, recycler.Name, total, visitorCount);
-        _logger.LogInformation("Telemetry updated for recycler {RecyclerId} with {TotalBottles} bottles and {VisitorCount} visitors", recyclerId, total, visitorCount);
+        _telemetryStore.Set(recyclerId, recycler.Name, total, visitorCount, queueDepth);
+        _logger.LogInformation("Telemetry updated for recycler {RecyclerId} with {TotalBottles} bottles, {VisitorCount} visitors, and {QueueDepth} in queue", recyclerId, total, visitorCount, queueDepth);
 
-        await Send.OkAsync(new Response { RecyclerId = recyclerId, CurrentBottles = total, CurrentVisitors = visitorCount }, ct);
+        await Send.OkAsync(new Response { RecyclerId = recyclerId, CurrentBottles = total, CurrentVisitors = visitorCount, QueueDepth = queueDepth }, ct);
     }
 
     public sealed record Request
@@ -54,6 +55,7 @@ public sealed class RecyclerTelemetryEndpoint : Endpoint<RecyclerTelemetryEndpoi
         public int? TotalBottles { get; init; }
         public Dictionary<string, int>? BottleCounts { get; init; }
         public int? VisitorCount { get; init; }
+        public int? QueueDepth { get; init; }
     }
 
     public new sealed record Response
@@ -61,5 +63,6 @@ public sealed class RecyclerTelemetryEndpoint : Endpoint<RecyclerTelemetryEndpoi
         public Guid RecyclerId { get; init; }
         public int CurrentBottles { get; init; }
         public int CurrentVisitors { get; init; }
+        public int QueueDepth { get; init; }
     }
 }

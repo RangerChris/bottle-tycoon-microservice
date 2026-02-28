@@ -2,7 +2,9 @@ using System.Diagnostics.Metrics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Moq;
 using RecyclerService.Data;
+using RecyclerService.Services;
 using RecyclerService.Tests.TestFixtures;
 using Shouldly;
 using Xunit;
@@ -31,7 +33,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
         var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-        var svc = new Services.RecyclerService(db, logger, counter);
+        var queueServiceMock = new Mock<ICustomerQueueService>();
+        var svc = new Services.RecyclerService(db, logger, counter, queueServiceMock.Object);
 
         await db.Recyclers.ExecuteDeleteAsync(Xunit.TestContext.Current.CancellationToken);
 
@@ -61,7 +64,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
         var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-        var svc = new Services.RecyclerService(db, logger, counter);
+        var queueServiceMock = new Mock<ICustomerQueueService>();
+        var svc = new Services.RecyclerService(db, logger, counter, queueServiceMock.Object);
 
         // Clean up any existing data
         await db.Recyclers.ExecuteDeleteAsync(Xunit.TestContext.Current.CancellationToken);
@@ -91,7 +95,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
         var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-        var svc = new Services.RecyclerService(db, logger, counter);
+        var queueServiceMock = new Mock<ICustomerQueueService>();
+        var svc = new Services.RecyclerService(db, logger, counter, queueServiceMock.Object);
 
         var bottlesByType = new Dictionary<string, int>
         {
@@ -118,7 +123,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
         var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-        var svc = new Services.RecyclerService(db, logger, counter);
+        var queueServiceMock = new Mock<ICustomerQueueService>();
+        var svc = new Services.RecyclerService(db, logger, counter, queueServiceMock.Object);
 
         var bottlesByType = new Dictionary<string, int>();
 
@@ -140,7 +146,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
         var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-        var svc = new Services.RecyclerService(db, logger, counter);
+        var queueServiceMock = new Mock<ICustomerQueueService>();
+        var svc = new Services.RecyclerService(db, logger, counter, queueServiceMock.Object);
 
         var bottlesByType = new Dictionary<string, int>
         {
@@ -167,7 +174,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
         var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-        var svc = new Services.RecyclerService(db, logger, counter);
+        var queueServiceMock = new Mock<ICustomerQueueService>();
+        var svc = new Services.RecyclerService(db, logger, counter, queueServiceMock.Object);
 
         var bottlesByType = new Dictionary<string, int>
         {
@@ -193,7 +201,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
         var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-        var svc = new Services.RecyclerService(db, logger, counter);
+        var queueServiceMock = new Mock<ICustomerQueueService>();
+        var svc = new Services.RecyclerService(db, logger, counter, queueServiceMock.Object);
 
         var bottlesByType = new Dictionary<string, int>
         {
@@ -219,7 +228,8 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
         var counter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-        var svc = new Services.RecyclerService(db, logger, counter);
+        var queueServiceMock = new Mock<ICustomerQueueService>();
+        var svc = new Services.RecyclerService(db, logger, counter, queueServiceMock.Object);
 
         var bottlesByType = new Dictionary<string, int>
         {

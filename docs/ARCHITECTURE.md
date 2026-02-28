@@ -1,4 +1,4 @@
-﻿# Bottle Tycoon — Simplified Architecture
+﻿﻿# Bottle Tycoon — Simplified Architecture
 
 ## Overview
 
@@ -28,7 +28,8 @@ Goals:
 
 - Recycler Service (owner of recycler state)
   - Maintains current bottle inventory per recycler.
-  - Manages visitor arrival simulation and local queuing.
+  - Manages visitor queue and tracks customer lifecycle.
+
 
 - Truck Service (owner of truck fleet state)
   - Manages truck status, current load, level and capacities.

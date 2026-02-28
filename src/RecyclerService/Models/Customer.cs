@@ -3,6 +3,13 @@ using System.Text.Json;
 
 namespace RecyclerService.Models;
 
+public enum CustomerStatus
+{
+    Waiting = 0,
+    Processing = 1,
+    Done = 2
+}
+
 public class Customer
 {
     [Key] public Guid Id { get; set; }
@@ -11,6 +18,9 @@ public class Customer
     public string? CustomerType { get; set; }
     public string BottleCountsJson { get; set; } = "{}";
     public DateTimeOffset ArrivedAt { get; set; }
+    public CustomerStatus Status { get; set; } = CustomerStatus.Waiting;
+    public DateTimeOffset? ServiceStartedAt { get; set; }
+    public DateTimeOffset? ProcessedAt { get; set; }
 
     public Recycler? Recycler { get; set; }
 

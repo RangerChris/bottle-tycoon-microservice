@@ -10,12 +10,14 @@ public class RecyclerService : IRecyclerService
     private readonly Counter<long> _bottlesProcessed;
     private readonly RecyclerDbContext _db;
     private readonly ILogger<RecyclerService> _logger;
+    private readonly ICustomerQueueService _queueService;
 
-    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Counter<long> bottlesProcessed)
+    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Counter<long> bottlesProcessed, ICustomerQueueService queueService)
     {
         _db = db;
         _logger = logger;
         _bottlesProcessed = bottlesProcessed;
+        _queueService = queueService;
     }
 
     public async Task<Recycler?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -101,5 +103,20 @@ public class RecyclerService : IRecyclerService
         }
 
         return Task.CompletedTask;
+    }
+
+    public async Task<Customer?> GetNextCustomerAsync(Guid recyclerId, CancellationToken ct = default)
+    {
+        return await _queueService.GetNextWaitingCustomerAsync(recyclerId, ct);
+    }
+
+    public async Task MarkCustomerDoneAsync(Guid customerId, CancellationToken ct = default)
+    {
+        await _queueService.MarkAsDoneAsync(customerId, ct);
+    }
+
+    public async Task<int> GetQueueDepthAsync(Guid recyclerId, CancellationToken ct = default)
+    {
+        return await _queueService.GetQueueDepthAsync(recyclerId, ct);
     }
 }

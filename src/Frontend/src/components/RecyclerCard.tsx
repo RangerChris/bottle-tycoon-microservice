@@ -36,6 +36,10 @@ export default function RecyclerCard({ recycler }: { recycler: Recycler }) {
         <div>🔵 Plastic: {recycler.currentBottles.plastic}</div>
       </div>
 
+      <div className="mt-3 text-sm text-gray-300">
+        <div>👥 Queue: {recycler.visitors?.length || 0}</div>
+      </div>
+
       <div className="mt-4 flex gap-2">
         <button className="btn btn-sm bg-green-600 hover:bg-green-700 text-white flex-1" onClick={() => deliverBottlesRandom(recycler.id)}>📦 Add bottles</button>
         <button className="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white min-w-40" onClick={() => upgradeRecycler(recycler.id)} disabled={recycler.level >= 3}>⬆️ Upgrade ({200 * (recycler.level + 1)})</button>

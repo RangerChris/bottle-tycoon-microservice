@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
@@ -99,6 +99,9 @@ Log.Information("OpenTelemetry tracing configured. OTLP endpoint will be read fr
 builder.Services.AddSingleton<IRecyclerTelemetryStore, RecyclerTelemetryStore>();
 builder.Services.AddSingleton<RecyclerMetrics>();
 
+builder.Services.AddScoped<ICustomerQueueService, CustomerQueueService>();
+builder.Services.AddScoped<IRecyclerService, RecyclerService.Services.RecyclerService>();
+
 // Health Checks
 var healthChecks = builder.Services.AddHealthChecks();
 if (!string.IsNullOrEmpty(recyclerConn))
@@ -106,7 +109,6 @@ if (!string.IsNullOrEmpty(recyclerConn))
     healthChecks.AddNpgSql(recyclerConn);
 }
 
-builder.Services.AddScoped<IRecyclerService, RecyclerService.Services.RecyclerService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",

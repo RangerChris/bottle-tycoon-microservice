@@ -115,12 +115,14 @@ public class TestcontainersFixture : IAsyncLifetime
 
         builder.Services.AddDbContext<RecyclerDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("RecyclerConnection")));
 
+        builder.Services.AddScoped<ICustomerQueueService, CustomerQueueService>();
         builder.Services.AddScoped<IRecyclerService>(sp =>
         {
             var db = sp.GetRequiredService<RecyclerDbContext>();
             var logger = sp.GetRequiredService<ILogger<Services.RecyclerService>>();
             var counter = sp.GetRequiredService<Counter<long>>();
-            return new Services.RecyclerService(db, logger, counter);
+            var queueService = sp.GetRequiredService<ICustomerQueueService>();
+            return new Services.RecyclerService(db, logger, counter, queueService);
         });
 
         // JSON options (same shape as app)

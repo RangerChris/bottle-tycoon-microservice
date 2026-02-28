@@ -96,6 +96,9 @@ const scheduledArrivalTimers = new Map<number | string, any>()
 // Watchdog interval id to ensure scheduling is active
 let arrivalsWatchdog: number | null = null
 
+// Telemetry reporting interval
+let telemetryReportingInterval: number | null = null
+
 const useGameStore = create(immer<GameState>((set, get) => ({
   credits: 0,
   totalEarnings: 0,
@@ -603,9 +606,38 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       scheduledArrivalTimers.delete(recyclerId)
     }
 
-    const clampedMin = Math.max(1, minSec)
-    const clampedMax = Math.max(clampedMin, maxSec)
-    const delayMs = (Math.floor(Math.random() * (clampedMax - clampedMin + 1)) + clampedMin) * 1000
+    const state = get()
+    const mult = timeMultipliers[state.timeLevel] || 1
+
+    // If game is paused, don't schedule arrivals
+    if (mult === 0) {
+      // Still keep track that we attempted to schedule, so we reschedule when unpaused
+      const timer = setTimeout(() => {
+        get().scheduleNextArrival(recyclerId, minSec, maxSec)
+      }, 5000) // Check every 5 seconds if still paused
+      scheduledArrivalTimers.set(recyclerId, timer)
+      return
+    }
+
+    // Get current recycler queue depth
+    const recycler = state.recyclers.find(r => r.id === recyclerId)
+    const queueDepth = recycler?.visitors?.length || 0
+
+    // If queue is too long (> 4), customers go elsewhere - increase delay significantly
+    let adjustedMinSec = minSec
+    let adjustedMaxSec = maxSec
+    if (queueDepth > 4) {
+      // Multiply delay by 2-3x based on how long the queue is
+      const delayMultiplier = Math.min(3, 1 + (queueDepth - 4) * 0.5)
+      adjustedMinSec = Math.ceil(minSec * delayMultiplier)
+      adjustedMaxSec = Math.ceil(maxSec * delayMultiplier)
+    }
+
+    const clampedMin = Math.max(1, adjustedMinSec)
+    const clampedMax = Math.max(clampedMin, adjustedMaxSec)
+    // Calculate delay in seconds, then divide by time multiplier to speed up arrivals
+    const delaySeconds = Math.floor(Math.random() * (clampedMax - clampedMin + 1)) + clampedMin
+    const delayMs = Math.max(100, (delaySeconds * 1000) / mult)
 
     const timer = setTimeout(() => {
       scheduledArrivalTimers.delete(recyclerId)
@@ -733,6 +765,14 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         }
       }, 10000)
     }
+
+    if (telemetryReportingInterval === null) {
+      telemetryReportingInterval = window.setInterval(() => {
+        get().reportRecyclerTelemetry()
+        get().reportTruckTelemetry()
+        get().reportGameTelemetry()
+      }, 5000)
+    }
   },
 
   reportRecyclerTelemetry: async () => {
@@ -740,24 +780,25 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     const { recyclerBase } = getApiBaseUrls()
     const baseUrl = recyclerBase.replace(/\/$/, '')
 
-    const requests = state.recyclers
-      .filter(r => typeof r.id === 'string')
-      .map(r => {
-        const bottles = r.currentBottles || { glass: 0, metal: 0, plastic: 0 }
-        const visitorCount = r.visitors?.length || 0
-        return fetch(`${baseUrl}/recyclers/${r.id}/telemetry`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            bottleCounts: {
-              glass: bottles.glass,
-              metal: bottles.metal,
-              plastic: bottles.plastic
-            },
-            visitorCount: visitorCount
-          })
+    const requests = state.recyclers.map(r => {
+      const bottles = r.currentBottles || { glass: 0, metal: 0, plastic: 0 }
+      const visitorCount = r.visitors?.length || 0
+      // Queue depth = total visitors in queue (all of them are waiting for space or being served)
+      const queueDepth = visitorCount
+      return fetch(`${baseUrl}/recyclers/${r.id}/telemetry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bottleCounts: {
+            glass: bottles.glass,
+            metal: bottles.metal,
+            plastic: bottles.plastic
+          },
+          visitorCount: visitorCount,
+          queueDepth: queueDepth
         })
       })
+    })
 
     if (requests.length === 0) return
 
@@ -794,34 +835,22 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   reportGameTelemetry: async () => {
     const state = get()
     if (!state.playerId) {
-      console.log('[Telemetry] No playerId, skipping game telemetry')
       return
     }
 
     const { gameServiceBase } = getApiBaseUrls()
     const baseUrl = gameServiceBase.replace(/\/$/, '')
 
-    console.log('[Telemetry] Reporting game telemetry', {
-      playerId: state.playerId,
-      totalEarnings: state.totalEarnings,
-      endpoint: `${baseUrl}/player/${state.playerId}/telemetry`
-    })
-
     try {
-      const response = await fetch(`${baseUrl}/player/${state.playerId}/telemetry`, {
+      await fetch(`${baseUrl}/player/${state.playerId}/telemetry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           totalEarnings: state.totalEarnings
         })
       })
-
-      console.log('[Telemetry] Game telemetry response', {
-        status: response.status,
-        ok: response.ok
-      })
     } catch (error) {
-      console.error('[Telemetry] Game telemetry error', error)
+      get().addLog('Failed to report game telemetry.', 'error')
     }
   }
 })))
