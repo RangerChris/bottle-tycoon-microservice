@@ -6,19 +6,12 @@ using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class MetricsEndpointTests : IClassFixture<TestcontainersFixture>
+public class MetricsEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public MetricsEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task Metrics_ExposeBottlesProcessedByType()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var recyclerId = Guid.NewGuid();
         var createRequest = new CreateRequest(recyclerId, "Metrics Test", 100, null);
@@ -57,7 +50,7 @@ public class MetricsEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task Metrics_ExposeRecyclerCurrentBottles()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var recyclerId = Guid.NewGuid();
         var createRequest = new CreateRequest(recyclerId, "Metrics Test", 100, null);

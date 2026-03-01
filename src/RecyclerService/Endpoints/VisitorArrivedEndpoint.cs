@@ -5,15 +5,8 @@ using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
-public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, VisitorArrivedEndpoint.VisitorResponse>
+public class VisitorArrivedEndpoint(IRecyclerService service) : Endpoint<VisitorArrivedEndpoint.Request, VisitorArrivedEndpoint.VisitorResponse>
 {
-    private readonly IRecyclerService _service;
-
-    public VisitorArrivedEndpoint(IRecyclerService service)
-    {
-        _service = service;
-    }
-
     public override void Configure()
     {
         Verbs("POST");
@@ -30,7 +23,7 @@ public class VisitorArrivedEndpoint : Endpoint<VisitorArrivedEndpoint.Request, V
         customer.CustomerType = req.VisitorType;
         try
         {
-            var recycler = await _service.CustomerArrivedAsync(recyclerId, customer, ct);
+            var recycler = await service.CustomerArrivedAsync(recyclerId, customer, ct);
             await Send.ResultAsync(TypedResults.Ok(new VisitorResponse { RecyclerId = recycler.Id, CurrentLoad = recycler.CurrentLoad, Capacity = recycler.Capacity }));
         }
         catch (KeyNotFoundException)

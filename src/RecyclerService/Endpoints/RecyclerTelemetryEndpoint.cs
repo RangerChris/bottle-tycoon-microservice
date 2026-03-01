@@ -5,19 +5,8 @@ using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
-public sealed class RecyclerTelemetryEndpoint : Endpoint<RecyclerTelemetryEndpoint.Request, RecyclerTelemetryEndpoint.Response>
+public sealed class RecyclerTelemetryEndpoint(RecyclerDbContext db, IRecyclerTelemetryStore telemetryStore, ILogger<RecyclerTelemetryEndpoint> logger) : Endpoint<RecyclerTelemetryEndpoint.Request, RecyclerTelemetryEndpoint.Response>
 {
-    private readonly RecyclerDbContext _db;
-    private readonly ILogger<RecyclerTelemetryEndpoint> _logger;
-    private readonly IRecyclerTelemetryStore _telemetryStore;
-
-    public RecyclerTelemetryEndpoint(RecyclerDbContext db, IRecyclerTelemetryStore telemetryStore, ILogger<RecyclerTelemetryEndpoint> logger)
-    {
-        _db = db;
-        _telemetryStore = telemetryStore;
-        _logger = logger;
-    }
-
     public override void Configure()
     {
         Post("/recyclers/{id:guid}/telemetry");
@@ -28,10 +17,10 @@ public sealed class RecyclerTelemetryEndpoint : Endpoint<RecyclerTelemetryEndpoi
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
         var recyclerId = Route<Guid>("id");
-        var recycler = await _db.Recyclers.FirstOrDefaultAsync(r => r.Id == recyclerId, ct);
+        var recycler = await db.Recyclers.FirstOrDefaultAsync(r => r.Id == recyclerId, ct);
         if (recycler == null)
         {
-            _logger.LogWarning("Telemetry update attempted for non-existent recycler {RecyclerId}", recyclerId);
+            logger.LogWarning("Telemetry update attempted for non-existent recycler {RecyclerId}", recyclerId);
             await Send.NotFoundAsync(ct);
             return;
         }
@@ -45,8 +34,8 @@ public sealed class RecyclerTelemetryEndpoint : Endpoint<RecyclerTelemetryEndpoi
         var visitorCount = req.VisitorCount ?? 0;
         var queueDepth = req.QueueDepth ?? 0;
 
-        _telemetryStore.Set(recyclerId, recycler.Name, total, visitorCount, queueDepth);
-        _logger.LogInformation("Telemetry updated for recycler {RecyclerId} ({RecyclerName}) with {TotalBottles} bottles, {VisitorCount} visitors, and {QueueDepth} in queue", recyclerId, recycler.Name, total, visitorCount, queueDepth);
+        telemetryStore.Set(recyclerId, recycler.Name, total, visitorCount, queueDepth);
+        logger.LogInformation("Telemetry updated for recycler {RecyclerId} ({RecyclerName}) with {TotalBottles} bottles, {VisitorCount} visitors, and {QueueDepth} in queue", recyclerId, recycler.Name, total, visitorCount, queueDepth);
 
         await Send.OkAsync(new Response { RecyclerId = recyclerId, CurrentBottles = total, CurrentVisitors = visitorCount, QueueDepth = queueDepth }, ct);
     }

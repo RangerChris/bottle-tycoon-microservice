@@ -5,29 +5,17 @@ using RecyclerService.Models;
 
 namespace RecyclerService.Services;
 
-public class RecyclerService : IRecyclerService
+public class RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Counter<long> bottlesProcessed, ICustomerQueueService queueService)
+    : IRecyclerService
 {
-    private readonly Counter<long> _bottlesProcessed;
-    private readonly RecyclerDbContext _db;
-    private readonly ILogger<RecyclerService> _logger;
-    private readonly ICustomerQueueService _queueService;
-
-    public RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logger, Counter<long> bottlesProcessed, ICustomerQueueService queueService)
-    {
-        _db = db;
-        _logger = logger;
-        _bottlesProcessed = bottlesProcessed;
-        _queueService = queueService;
-    }
-
     public async Task<Recycler?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await _db.Recyclers.Include(r => r.Customers).FirstOrDefaultAsync(r => r.Id == id, ct);
+        return await db.Recyclers.Include(r => r.Customers).FirstOrDefaultAsync(r => r.Id == id, ct);
     }
 
     public async Task<List<Recycler>> GetAllAsync(CancellationToken ct = default)
     {
-        return await _db.Recyclers.Include(r => r.Customers).ToListAsync(ct);
+        return await db.Recyclers.Include(r => r.Customers).ToListAsync(ct);
     }
 
     public async Task<Recycler> CustomerArrivedAsync(Guid recyclerId, Customer customer, CancellationToken ct = default)
@@ -46,7 +34,7 @@ public class RecyclerService : IRecyclerService
         var customerCounts = customer.GetBottleCounts();
         var recyclerInventory = recycler.GetBottleInventory();
 
-        _logger.LogInformation("Customer {CustomerId} arrived at Recycler {RecyclerId} with Glass={Glass}, Metal={Metal}, Plastic={Plastic}",
+        logger.LogInformation("Customer {CustomerId} arrived at Recycler {RecyclerId} with Glass={Glass}, Metal={Metal}, Plastic={Plastic}",
             customer.Id, recyclerId, customerCounts.GetValueOrDefault("glass"), customerCounts.GetValueOrDefault("metal"), customerCounts.GetValueOrDefault("plastic"));
 
         foreach (var kv in customerCounts)
@@ -55,15 +43,15 @@ public class RecyclerService : IRecyclerService
 
             if (kv.Value > 0 && !string.IsNullOrWhiteSpace(kv.Key))
             {
-                _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
+                bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
             }
         }
 
         recycler.SetBottleInventory(recyclerInventory);
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Customer {CustomerId} arrived at Recycler {RecyclerId}, new load {CurrentLoad}/{Capacity}", customer.Id, recyclerId, recycler.CurrentLoad, recycler.Capacity);
+        logger.LogInformation("Customer {CustomerId} arrived at Recycler {RecyclerId}, new load {CurrentLoad}/{Capacity}", customer.Id, recyclerId, recycler.CurrentLoad, recycler.Capacity);
 
 
         return recycler;
@@ -71,9 +59,9 @@ public class RecyclerService : IRecyclerService
 
     public async Task ResetAsync()
     {
-        _db.Customers.RemoveRange(_db.Customers);
-        _db.Recyclers.RemoveRange(_db.Recyclers);
-        await _db.SaveChangesAsync();
+        db.Customers.RemoveRange(db.Customers);
+        db.Recyclers.RemoveRange(db.Recyclers);
+        await db.SaveChangesAsync();
     }
 
     public async Task<Recycler> CreateRecyclerAsync(Recycler? recycler = null)
@@ -88,22 +76,22 @@ public class RecyclerService : IRecyclerService
         r.Capacity = r.Capacity == 0 ? 100 : r.Capacity;
         if (string.IsNullOrEmpty(r.Name))
         {
-            var existingCount = await _db.Recyclers.CountAsync();
+            var existingCount = await db.Recyclers.CountAsync();
             r.Name = $"Recycler {existingCount + 1}";
         }
 
-        _db.Recyclers.Add(r);
-        await _db.SaveChangesAsync();
+        db.Recyclers.Add(r);
+        await db.SaveChangesAsync();
         return r;
     }
 
-    public Task RecordBottlesProcessedAsync(Dictionary<string, int> bottlesByType, CancellationToken ct = default)
+    public Task RecordBottlesProcessedAsync(Dictionary<string, int> bottlesByType)
     {
         foreach (var kv in bottlesByType)
         {
             if (kv.Value > 0 && !string.IsNullOrWhiteSpace(kv.Key))
             {
-                _bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
+                bottlesProcessed.Add(kv.Value, new KeyValuePair<string, object?>("bottle_type", kv.Key));
             }
         }
 
@@ -112,16 +100,16 @@ public class RecyclerService : IRecyclerService
 
     public async Task<Customer?> GetNextCustomerAsync(Guid recyclerId, CancellationToken ct = default)
     {
-        return await _queueService.GetNextWaitingCustomerAsync(recyclerId, ct);
+        return await queueService.GetNextWaitingCustomerAsync(recyclerId, ct);
     }
 
     public async Task MarkCustomerDoneAsync(Guid customerId, CancellationToken ct = default)
     {
-        await _queueService.MarkAsDoneAsync(customerId, ct);
+        await queueService.MarkAsDoneAsync(customerId, ct);
     }
 
     public async Task<int> GetQueueDepthAsync(Guid recyclerId, CancellationToken ct = default)
     {
-        return await _queueService.GetQueueDepthAsync(recyclerId, ct);
+        return await queueService.GetQueueDepthAsync(recyclerId, ct);
     }
 }

@@ -3,17 +3,8 @@ using RecyclerService.Data;
 
 namespace RecyclerService.Endpoints;
 
-public class UpgradeRecyclerEndpoint : Endpoint<UpgradeRecyclerEndpoint.Request, UpgradeRecyclerEndpoint.Response>
+public class UpgradeRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory) : Endpoint<UpgradeRecyclerEndpoint.Request, UpgradeRecyclerEndpoint.Response>
 {
-    private readonly RecyclerDbContext _db;
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public UpgradeRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory)
-    {
-        _db = db;
-        _httpClientFactory = httpClientFactory;
-    }
-
     public override void Configure()
     {
         Verbs("POST");
@@ -24,7 +15,7 @@ public class UpgradeRecyclerEndpoint : Endpoint<UpgradeRecyclerEndpoint.Request,
 
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
-        var recycler = await _db.Recyclers.FindAsync([req.RecyclerId], ct);
+        var recycler = await db.Recyclers.FindAsync([req.RecyclerId], ct);
         if (recycler == null)
         {
             await Send.NotFoundAsync(ct);
@@ -50,7 +41,7 @@ public class UpgradeRecyclerEndpoint : Endpoint<UpgradeRecyclerEndpoint.Request,
         recycler.CapacityLevel++;
         recycler.Capacity = (int)(100 * Math.Pow(1.25, recycler.CapacityLevel));
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
 
         await Send.OkAsync(new Response
         {
@@ -67,7 +58,7 @@ public class UpgradeRecyclerEndpoint : Endpoint<UpgradeRecyclerEndpoint.Request,
     {
         try
         {
-            using var client = _httpClientFactory.CreateClient("GameService");
+            using var client = httpClientFactory.CreateClient("GameService");
             var response = await client.PostAsJsonAsync($"/player/{playerId}/deduct", new
             {
                 PlayerId = playerId,
@@ -91,11 +82,11 @@ public class UpgradeRecyclerEndpoint : Endpoint<UpgradeRecyclerEndpoint.Request,
 
     public new record Response
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = default!;
-        public int Capacity { get; set; }
-        public int CapacityLevel { get; set; }
-        public int CurrentLoad { get; set; }
-        public string? Location { get; set; }
+        public Guid Id { get; init; }
+        public string Name { get; init; } = string.Empty;
+        public int Capacity { get; init; }
+        public int CapacityLevel { get; init; }
+        public int CurrentLoad { get; init; }
+        public string? Location { get; init; }
     }
 }

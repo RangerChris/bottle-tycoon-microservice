@@ -4,12 +4,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace GameService.Data;
 
-public class GameDbContext : DbContext
+public class GameDbContext(DbContextOptions<GameDbContext> options) : DbContext(options)
 {
-    public GameDbContext(DbContextOptions<GameDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<Player> Players { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

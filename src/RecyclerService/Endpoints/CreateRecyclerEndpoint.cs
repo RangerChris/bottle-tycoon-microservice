@@ -1,23 +1,12 @@
-﻿﻿using FastEndpoints;
+﻿using FastEndpoints;
 using RecyclerService.Data;
 using RecyclerService.Models;
 using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
-public class CreateRecyclerEndpoint : Endpoint<CreateRecyclerEndpoint.Request, CreateRecyclerEndpoint.Response>
+public class CreateRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory, IRecyclerTelemetryStore telemetryStore) : Endpoint<CreateRecyclerEndpoint.Request, CreateRecyclerEndpoint.Response>
 {
-    private readonly RecyclerDbContext _db;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IRecyclerTelemetryStore _telemetryStore;
-
-    public CreateRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory, IRecyclerTelemetryStore telemetryStore)
-    {
-        _db = db;
-        _httpClientFactory = httpClientFactory;
-        _telemetryStore = telemetryStore;
-    }
-
     public override void Configure()
     {
         Verbs("POST");
@@ -46,10 +35,10 @@ public class CreateRecyclerEndpoint : Endpoint<CreateRecyclerEndpoint.Request, C
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        _db.Recyclers.Add(entity);
-        await _db.SaveChangesAsync(ct);
+        db.Recyclers.Add(entity);
+        await db.SaveChangesAsync(ct);
 
-        _telemetryStore.Set(entity.Id, entity.Name, 0, 0, 0);
+        telemetryStore.Set(entity.Id, entity.Name, 0, 0, 0);
 
         await Send.ResultAsync(TypedResults.Created($"/recyclers/{entity.Id}", new Response
         {
@@ -65,7 +54,7 @@ public class CreateRecyclerEndpoint : Endpoint<CreateRecyclerEndpoint.Request, C
     {
         try
         {
-            using var client = _httpClientFactory.CreateClient("GameService");
+            using var client = httpClientFactory.CreateClient("GameService");
             var response = await client.PostAsJsonAsync($"/player/{playerId}/deduct", new
             {
                 PlayerId = playerId,

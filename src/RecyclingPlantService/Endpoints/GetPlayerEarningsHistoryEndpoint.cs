@@ -4,15 +4,8 @@ using RecyclingPlantService.Services;
 
 namespace RecyclingPlantService.Endpoints;
 
-public class GetPlayerEarningsHistoryEndpoint : Endpoint<GetPlayerEarningsHistoryRequest, IEnumerable<PlantDelivery>>
+public class GetPlayerEarningsHistoryEndpoint(IRecyclingPlantService service) : Endpoint<GetPlayerEarningsHistoryRequest, IEnumerable<PlantDelivery>>
 {
-    private readonly IRecyclingPlantService _service;
-
-    public GetPlayerEarningsHistoryEndpoint(IRecyclingPlantService service)
-    {
-        _service = service;
-    }
-
     public override void Configure()
     {
         Get("/api/v1/recycling-plant/players/{PlayerId}/earnings/history");
@@ -22,8 +15,8 @@ public class GetPlayerEarningsHistoryEndpoint : Endpoint<GetPlayerEarningsHistor
     public override async Task HandleAsync(GetPlayerEarningsHistoryRequest req, CancellationToken ct)
     {
         var playerId = Route<Guid>("PlayerId");
-        var deliveries = await _service.GetPlayerDeliveriesAsync(playerId, req.Page, req.PageSize);
-        await Send.OkAsync(deliveries);
+        var deliveries = await service.GetPlayerDeliveriesAsync(playerId, req.Page, req.PageSize);
+        await Send.OkAsync(deliveries, ct);
     }
 }
 

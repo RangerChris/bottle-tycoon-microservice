@@ -4,11 +4,11 @@ using RecyclingPlantService.Data;
 
 namespace RecyclingPlantService.Services;
 
-public class RecyclingPlantService : IRecyclingPlantService
+public class RecyclingPlantService(RecyclingPlantDbContext dbContext, ILogger<RecyclingPlantService> logger) : IRecyclingPlantService
 {
     private static readonly Meter Meter = new("RecyclingPlantService");
-    private static readonly Counter<long> DeliveriesProcessed = Meter.CreateCounter<long>("deliveries_processed", unit: "deliveries", description: "Number of deliveries processed");
-    private static readonly Counter<long> BottlesReceived = Meter.CreateCounter<long>("bottles_received", unit: "bottles", description: "Number of bottles received by type");
+    private static readonly Counter<long> DeliveriesProcessed = Meter.CreateCounter<long>("deliveries_processed", "deliveries", "Number of deliveries processed");
+    private static readonly Counter<long> BottlesReceived = Meter.CreateCounter<long>("bottles_received", "bottles", "Number of bottles received by type");
     private static readonly Histogram<double> EarningsDistributed = Meter.CreateHistogram<double>("earnings_distributed", "credits", "Earnings distributed");
     private static readonly Histogram<double> OperatingCosts = Meter.CreateHistogram<double>("operating_costs", "credits", "Operating costs incurred");
 
@@ -19,14 +19,7 @@ public class RecyclingPlantService : IRecyclingPlantService
         { "plastic", 1.75m }
     };
 
-    private readonly RecyclingPlantDbContext _dbContext;
-    private readonly ILogger<RecyclingPlantService> _logger;
-
-    public RecyclingPlantService(RecyclingPlantDbContext dbContext, ILogger<RecyclingPlantService> logger)
-    {
-        _dbContext = dbContext;
-        _logger = logger;
-    }
+    private readonly ILogger<RecyclingPlantService> _logger = logger;
 
     public (decimal GrossEarnings, decimal NetEarnings) CalculateEarnings(IDictionary<string, int> loadByType, decimal operatingCost)
     {
@@ -61,13 +54,13 @@ public class RecyclingPlantService : IRecyclingPlantService
             DeliveredAt = deliveredAt
         };
 
-        _dbContext.PlantDeliveries.Add(delivery);
+        dbContext.PlantDeliveries.Add(delivery);
 
-        var playerEarnings = await _dbContext.PlayerEarnings.FindAsync(playerId);
+        var playerEarnings = await dbContext.PlayerEarnings.FindAsync(playerId);
         if (playerEarnings == null)
         {
             playerEarnings = new PlayerEarnings { PlayerId = playerId };
-            _dbContext.PlayerEarnings.Add(playerEarnings);
+            dbContext.PlayerEarnings.Add(playerEarnings);
         }
 
         playerEarnings.TotalEarnings += net;
@@ -75,7 +68,7 @@ public class RecyclingPlantService : IRecyclingPlantService
         playerEarnings.AverageEarnings = playerEarnings.TotalEarnings / playerEarnings.DeliveryCount;
         playerEarnings.LastUpdated = DateTimeOffset.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         DeliveriesProcessed.Add(1,
             new KeyValuePair<string, object?>("truck_id", truckId.ToString()),
@@ -93,12 +86,12 @@ public class RecyclingPlantService : IRecyclingPlantService
 
     public async Task<PlayerEarnings> GetPlayerEarningsAsync(Guid playerId)
     {
-        return await _dbContext.PlayerEarnings.FindAsync(playerId) ?? new PlayerEarnings { PlayerId = playerId };
+        return await dbContext.PlayerEarnings.FindAsync(playerId) ?? new PlayerEarnings { PlayerId = playerId };
     }
 
     public async Task<IEnumerable<PlantDelivery>> GetDeliveriesAsync(int page = 1, int pageSize = 50)
     {
-        return await _dbContext.PlantDeliveries
+        return await dbContext.PlantDeliveries
             .OrderByDescending(d => d.DeliveredAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -107,7 +100,7 @@ public class RecyclingPlantService : IRecyclingPlantService
 
     public async Task<IEnumerable<PlayerEarnings>> GetTopEarnersAsync(int count = 10)
     {
-        return await _dbContext.PlayerEarnings
+        return await dbContext.PlayerEarnings
             .OrderByDescending(pe => pe.TotalEarnings)
             .Take(count)
             .ToListAsync();
@@ -115,7 +108,7 @@ public class RecyclingPlantService : IRecyclingPlantService
 
     public async Task<IEnumerable<PlantDelivery>> GetPlayerDeliveriesAsync(Guid playerId, int page = 1, int pageSize = 50)
     {
-        return await _dbContext.PlantDeliveries
+        return await dbContext.PlantDeliveries
             .Where(d => d.PlayerId == playerId)
             .OrderByDescending(d => d.DeliveredAt)
             .Skip((page - 1) * pageSize)
@@ -125,7 +118,7 @@ public class RecyclingPlantService : IRecyclingPlantService
 
     public async Task<EarningsBreakdown> GetPlayerEarningsBreakdownAsync(Guid playerId)
     {
-        var deliveries = await _dbContext.PlantDeliveries
+        var deliveries = await dbContext.PlantDeliveries
             .Where(d => d.PlayerId == playerId)
             .ToListAsync();
 
@@ -145,9 +138,9 @@ public class RecyclingPlantService : IRecyclingPlantService
 
     public async Task ResetAsync()
     {
-        _dbContext.PlantDeliveries.RemoveRange(_dbContext.PlantDeliveries);
-        _dbContext.PlayerEarnings.RemoveRange(_dbContext.PlayerEarnings);
-        await _dbContext.SaveChangesAsync();
+        dbContext.PlantDeliveries.RemoveRange(dbContext.PlantDeliveries);
+        dbContext.PlayerEarnings.RemoveRange(dbContext.PlayerEarnings);
+        await dbContext.SaveChangesAsync();
     }
 
     public Task CreateRecyclingPlantAsync()

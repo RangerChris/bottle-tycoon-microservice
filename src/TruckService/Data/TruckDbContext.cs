@@ -3,12 +3,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace TruckService.Data;
 
-public class TruckDbContext : DbContext
+public class TruckDbContext(DbContextOptions<TruckDbContext> opts) : DbContext(opts)
 {
-    public TruckDbContext(DbContextOptions<TruckDbContext> opts) : base(opts)
-    {
-    }
-
     public DbSet<TruckEntity> Trucks { get; set; } = null!;
     public DbSet<DeliveryEntity> Deliveries { get; set; } = null!;
 

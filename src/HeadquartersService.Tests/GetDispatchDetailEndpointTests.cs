@@ -18,7 +18,7 @@ public class GetDispatchDetailEndpointTests
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => { builder.UseEnvironment("Testing"); });
         var client = factory.CreateClient();
 
-        var resp = await client.GetAsync("/api/v1/headquarters/dispatch/not-a-guid", TestContext.Current.CancellationToken);
+        var resp = await client.GetAsync("/api/v1/headquarters/dispatch/not-a-guid", TestContext.TestContextInstance.CancellationToken);
         resp.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
@@ -29,7 +29,7 @@ public class GetDispatchDetailEndpointTests
         var client = factory.CreateClient();
 
         var missingId = Guid.NewGuid();
-        var resp = await client.GetAsync($"/api/v1/headquarters/dispatch/{missingId}", TestContext.Current.CancellationToken);
+        var resp = await client.GetAsync($"/api/v1/headquarters/dispatch/{missingId}", TestContext.TestContextInstance.CancellationToken);
         resp.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
@@ -53,10 +53,10 @@ public class GetDispatchDetailEndpointTests
         }
 
         var client = factory.CreateClient();
-        var resp = await client.GetAsync($"/api/v1/headquarters/dispatch/{seeded.Id}", TestContext.Current.CancellationToken);
+        var resp = await client.GetAsync($"/api/v1/headquarters/dispatch/{seeded.Id}", TestContext.TestContextInstance.CancellationToken);
         resp.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        var body = await resp.Content.ReadFromJsonAsync<DispatchRequest>(TestContext.Current.CancellationToken);
+        var body = await resp.Content.ReadFromJsonAsync<DispatchRequest>(TestContext.TestContextInstance.CancellationToken);
         body.ShouldNotBeNull();
         body.Id.ShouldBe(seeded.Id);
         body.RecyclerId.ShouldBe(seeded.RecyclerId);

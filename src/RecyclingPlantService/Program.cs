@@ -174,10 +174,6 @@ finally
     Log.CloseAndFlush();
 }
 
-public abstract partial class Program
-{
-}
-
 [ExcludeFromCodeCoverage]
 public abstract partial class Program
 {

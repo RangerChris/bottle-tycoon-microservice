@@ -8,19 +8,12 @@ using Xunit;
 
 namespace GameService.Tests;
 
-public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
+public class CreateGetPlayerEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public CreateGetPlayerEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task CreatePlayer_ThenGetPlayer_ShouldReturnPlayer()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
         createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -37,7 +30,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task CreditCredits_ShouldIncreasePlayerBalance()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create player
         var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
@@ -62,7 +55,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task DebitCredits_ShouldDecreasePlayerBalance()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create player
         var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
@@ -87,7 +80,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task DebitCredits_InsufficientFunds_ShouldReturnError()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create player
         var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
@@ -106,7 +99,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetPlayer_NonExistentPlayer_ReturnsNotFound()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var response = await client.GetAsync($"/player/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -115,7 +108,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task CreditCredits_InvalidAmount_ReturnsError()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create player
         var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
@@ -134,7 +127,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task DebitCredits_InvalidAmount_ReturnsError()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create player
         var createRes = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);
@@ -153,7 +146,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task CreditCredits_NonExistentPlayer_ReturnsError()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var creditReq = new { Amount = 100m, Reason = "test" };
         var creditRes = await client.PostAsJsonAsync($"/player/{Guid.NewGuid()}/deposit", creditReq, TestContext.Current.CancellationToken);
@@ -165,7 +158,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task DebitCredits_NonExistentPlayer_ReturnsError()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var debitReq = new { Amount = 50m, Reason = "test" };
         var debitRes = await client.PostAsJsonAsync($"/player/{Guid.NewGuid()}/deduct", debitReq, TestContext.Current.CancellationToken);
@@ -177,7 +170,7 @@ public class CreateGetPlayerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetAllPlayers_ReturnsAllPlayers()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create a few players
         var createRes1 = await client.PostAsJsonAsync("/player", new Player(), TestContext.Current.CancellationToken);

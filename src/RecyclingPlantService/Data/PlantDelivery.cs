@@ -4,25 +4,25 @@ namespace RecyclingPlantService.Data;
 
 public class PlantDelivery
 {
-    [Key] public Guid Id { get; set; }
+    [Key] public Guid Id { get; init; }
 
-    [Required] public Guid TruckId { get; set; }
+    [Required] public Guid TruckId { get; init; }
 
-    [Required] public Guid PlayerId { get; set; } // Assuming we get this from somewhere, maybe need to add to event
+    [Required] public Guid PlayerId { get; init; } // Assuming we get this from somewhere, maybe need to add to event
 
-    [Required] public int GlassCount { get; set; }
+    [Required] public int GlassCount { get; init; }
 
-    [Required] public int MetalCount { get; set; }
+    [Required] public int MetalCount { get; init; }
 
-    [Required] public int PlasticCount { get; set; }
+    [Required] public int PlasticCount { get; init; }
 
-    [Required] public decimal GrossEarnings { get; set; }
+    [Required] public decimal GrossEarnings { get; init; }
 
-    [Required] public decimal OperatingCost { get; set; }
+    [Required] public decimal OperatingCost { get; init; }
 
-    [Required] public decimal NetEarnings { get; set; }
+    [Required] public decimal NetEarnings { get; init; }
 
-    [Required] public DateTimeOffset DeliveredAt { get; set; }
+    [Required] public DateTimeOffset DeliveredAt { get; init; }
 
-    [Required] public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    [Required] public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 }

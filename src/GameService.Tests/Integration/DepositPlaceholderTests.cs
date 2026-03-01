@@ -7,19 +7,12 @@ using Xunit;
 
 namespace GameService.Tests.Integration;
 
-public class DepositPlaceholderTests : IClassFixture<TestcontainersFixture>
+public class DepositPlaceholderTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public DepositPlaceholderTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task Deposit_WithValidGuid_Succeeds_And_LiteralPlaceholder_ReturnsNotFound()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var token = TestContext.Current.CancellationToken;
 
         // Create player
@@ -43,7 +36,7 @@ public class DepositPlaceholderTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task Deduct_WithValidGuid_Succeeds_And_LiteralPlaceholder_ReturnsNotFound()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var token = TestContext.Current.CancellationToken;
 
         // Create player

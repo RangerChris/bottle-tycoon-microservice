@@ -19,11 +19,11 @@ public class ProgramPathsTests
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment(env);
-            builder.ConfigureAppConfiguration((ctx, conf) => { conf.AddInMemoryCollection(inMem); });
+            builder.ConfigureAppConfiguration((_, conf) => { conf.AddInMemoryCollection(inMem); });
         });
 
         var client = factory.CreateClient();
-        var res = await client.GetAsync("/", TestContext.Current.CancellationToken);
+        var res = await client.GetAsync("/", TestContext.TestContextInstance.CancellationToken);
         res.ShouldNotBeNull();
     }
 }

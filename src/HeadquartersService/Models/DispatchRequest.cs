@@ -5,8 +5,7 @@ public enum DispatchStatus
     Pending,
     Assigned,
     InProgress,
-    Completed,
-    Failed
+    Completed
 }
 
 public class DispatchRequest

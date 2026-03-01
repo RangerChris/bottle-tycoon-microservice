@@ -4,15 +4,8 @@ using GameService.Services;
 
 namespace GameService.Endpoints;
 
-public class CreatePlayerEndpoint : Endpoint<Player, Player>
+public class CreatePlayerEndpoint(IPlayerService playerService) : Endpoint<Player, Player>
 {
-    private readonly IPlayerService _playerService;
-
-    public CreatePlayerEndpoint(IPlayerService playerService)
-    {
-        _playerService = playerService;
-    }
-
     public override void Configure()
     {
         Post("/player");
@@ -21,7 +14,7 @@ public class CreatePlayerEndpoint : Endpoint<Player, Player>
 
     public override async Task HandleAsync(Player req, CancellationToken ct)
     {
-        var player = await _playerService.CreatePlayerAsync(req);
+        var player = await playerService.CreatePlayerAsync(req);
         var location = $"/player/{player.Id}";
         await Send.ResultAsync(TypedResults.Created(location, player));
     }

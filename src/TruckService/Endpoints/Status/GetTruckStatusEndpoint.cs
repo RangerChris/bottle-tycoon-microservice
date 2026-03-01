@@ -4,15 +4,8 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints.Status;
 
-public class GetTruckStatusEndpoint : Endpoint<GetTruckStatusRequest, TruckStatusDto>
+public class GetTruckStatusEndpoint(ITruckManager manager) : Endpoint<GetTruckStatusRequest, TruckStatusDto>
 {
-    private readonly ITruckManager _manager;
-
-    public GetTruckStatusEndpoint(ITruckManager manager)
-    {
-        _manager = manager;
-    }
-
     public override void Configure()
     {
         Get("/api/v1/truck/{TruckId}/status");
@@ -23,7 +16,7 @@ public class GetTruckStatusEndpoint : Endpoint<GetTruckStatusRequest, TruckStatu
     {
         try
         {
-            var status = await _manager.GetStatusAsync(req.TruckId, ct);
+            var status = await manager.GetStatusAsync(req.TruckId, ct);
             await Send.OkAsync(status, ct);
         }
         catch (KeyNotFoundException)

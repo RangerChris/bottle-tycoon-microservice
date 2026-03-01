@@ -11,9 +11,9 @@ namespace TruckService.Tests.Unit;
 
 public class RecyclerServiceLoadProviderTests
 {
+    private readonly Mock<IConfiguration> _configurationMock;
     private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
     private readonly Mock<ILogger<RecyclerServiceLoadProvider>> _loggerMock;
-    private readonly Mock<IConfiguration> _configurationMock;
     private readonly RecyclerServiceLoadProvider _provider;
 
     public RecyclerServiceLoadProviderTests()

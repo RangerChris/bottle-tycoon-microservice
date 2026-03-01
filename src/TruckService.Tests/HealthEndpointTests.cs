@@ -7,19 +7,12 @@ using Xunit;
 
 namespace TruckService.Tests;
 
-public class HealthEndpointTests : IClassFixture<TestcontainersFixture>
+public class HealthEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public HealthEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task HealthCheck_ReturnsHealthy()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var response = await client.GetAsync("/health", TestContext.Current.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);

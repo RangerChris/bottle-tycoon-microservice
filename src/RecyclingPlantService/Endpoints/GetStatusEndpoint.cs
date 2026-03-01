@@ -16,6 +16,6 @@ public class GetStatusEndpoint : EndpointWithoutRequest
         {
             Status = "Operational",
             Timestamp = DateTimeOffset.UtcNow
-        });
+        }, ct);
     }
 }

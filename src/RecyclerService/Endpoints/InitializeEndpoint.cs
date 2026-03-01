@@ -1,19 +1,10 @@
-﻿﻿using FastEndpoints;
+﻿using FastEndpoints;
 using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
-public class InitializeEndpoint : EndpointWithoutRequest
+public class InitializeEndpoint(IRecyclerService recyclerService, IRecyclerTelemetryStore telemetryStore) : EndpointWithoutRequest
 {
-    private readonly IRecyclerService _recyclerService;
-    private readonly IRecyclerTelemetryStore _telemetryStore;
-
-    public InitializeEndpoint(IRecyclerService recyclerService, IRecyclerTelemetryStore telemetryStore)
-    {
-        _recyclerService = recyclerService;
-        _telemetryStore = telemetryStore;
-    }
-
     public override void Configure()
     {
         Post("/initialize");
@@ -22,9 +13,9 @@ public class InitializeEndpoint : EndpointWithoutRequest
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        await _recyclerService.ResetAsync();
-        _telemetryStore.RemoveAll();
-        var recycler = await _recyclerService.CreateRecyclerAsync();
-        _telemetryStore.Set(recycler.Id, recycler.Name, 0, 0, 0);
+        await recyclerService.ResetAsync();
+        telemetryStore.RemoveAll();
+        var recycler = await recyclerService.CreateRecyclerAsync();
+        telemetryStore.Set(recycler.Id, recycler.Name, 0, 0, 0);
     }
 }

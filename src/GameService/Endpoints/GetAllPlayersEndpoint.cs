@@ -4,15 +4,8 @@ using GameService.Services;
 
 namespace GameService.Endpoints;
 
-public class GetAllPlayersEndpoint : EndpointWithoutRequest<List<Player>>
+public class GetAllPlayersEndpoint(IPlayerService playerService) : EndpointWithoutRequest<List<Player>>
 {
-    private readonly IPlayerService _playerService;
-
-    public GetAllPlayersEndpoint(IPlayerService playerService)
-    {
-        _playerService = playerService;
-    }
-
     public override void Configure()
     {
         Get("/player");
@@ -21,7 +14,7 @@ public class GetAllPlayersEndpoint : EndpointWithoutRequest<List<Player>>
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        var players = await _playerService.GetAllPlayersAsync();
+        var players = await playerService.GetAllPlayersAsync();
         await Send.ResultAsync(TypedResults.Ok(players));
     }
 }

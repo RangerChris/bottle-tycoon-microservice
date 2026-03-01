@@ -4,15 +4,8 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints.UpdateTruck;
 
-public class UpdateTruckEndpoint : Endpoint<UpdateTruckRequest>
+public class UpdateTruckEndpoint(ITruckRepository repo) : Endpoint<UpdateTruckRequest>
 {
-    private readonly ITruckRepository _repo;
-
-    public UpdateTruckEndpoint(ITruckRepository repo)
-    {
-        _repo = repo;
-    }
-
     public override void Configure()
     {
         Put("/truck");
@@ -22,7 +15,7 @@ public class UpdateTruckEndpoint : Endpoint<UpdateTruckRequest>
     public override async Task HandleAsync(UpdateTruckRequest req, CancellationToken ct)
     {
         var dto = new TruckDto { Id = req.TruckId, Model = req.Model, IsActive = req.IsActive };
-        var ok = await _repo.UpdateAsync(dto, ct);
+        var ok = await repo.UpdateAsync(dto, ct);
         if (!ok)
         {
             await Send.NotFoundAsync(ct);

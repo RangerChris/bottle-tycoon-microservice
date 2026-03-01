@@ -4,8 +4,7 @@ public enum TruckStatus
 {
     Idle,
     Assigned,
-    InProgress,
-    Unavailable
+    InProgress
 }
 
 public class Truck

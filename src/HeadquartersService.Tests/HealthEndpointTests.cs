@@ -16,10 +16,10 @@ public class HealthEndpointTests
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => { builder.UseEnvironment("Testing"); });
 
         var client = factory.CreateClient();
-        var response = await client.GetAsync("/health", TestContext.Current.CancellationToken);
+        var response = await client.GetAsync("/health", TestContext.TestContextInstance.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<HealthEndpoint.HealthResponse>(TestContext.Current.CancellationToken);
+        var result = await response.Content.ReadFromJsonAsync<HealthEndpoint.HealthResponse>(TestContext.TestContextInstance.CancellationToken);
 
         result.ShouldNotBeNull();
         result.Status.ShouldBe("Healthy");

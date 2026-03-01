@@ -4,17 +4,8 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints.CreateTruck;
 
-public class CreateTruckEndpoint : Endpoint<CreateTruckRequest, TruckDto>
+public class CreateTruckEndpoint(ITruckService service, IHttpClientFactory httpClientFactory) : Endpoint<CreateTruckRequest, TruckDto>
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ITruckService _service;
-
-    public CreateTruckEndpoint(ITruckService service, IHttpClientFactory httpClientFactory)
-    {
-        _service = service;
-        _httpClientFactory = httpClientFactory;
-    }
-
     public override void Configure()
     {
         Post("/truck");
@@ -32,7 +23,7 @@ public class CreateTruckEndpoint : Endpoint<CreateTruckRequest, TruckDto>
         }
 
         var dto = new TruckDto { Id = req.Id, Model = req.Model, IsActive = req.IsActive };
-        var created = await _service.CreateTruckAsync(dto);
+        var created = await service.CreateTruckAsync(dto);
         await Send.ResultAsync(TypedResults.Created($"/truck/{created.Id}", created));
     }
 
@@ -40,7 +31,7 @@ public class CreateTruckEndpoint : Endpoint<CreateTruckRequest, TruckDto>
     {
         try
         {
-            using var client = _httpClientFactory.CreateClient("GameService");
+            using var client = httpClientFactory.CreateClient("GameService");
             var response = await client.PostAsJsonAsync($"/player/{playerId}/deduct", new
             {
                 PlayerId = playerId,

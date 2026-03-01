@@ -6,19 +6,12 @@ using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class RecyclerEndpointResponseTests : IClassFixture<TestcontainersFixture>
+public class RecyclerEndpointResponseTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public RecyclerEndpointResponseTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task CreateRecycler_ResponseContainsLocationHeader()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var createRequest = new CreateRequest(Guid.NewGuid(), "Recycler Alpha", 120, "Sector 7");
         var response = await client.PostAsJsonAsync("/recyclers", createRequest, TestContext.Current.CancellationToken);
@@ -39,7 +32,7 @@ public class RecyclerEndpointResponseTests : IClassFixture<TestcontainersFixture
     [Fact]
     public async Task GetRecycler_NotFound_ReturnsErrorPayload()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var res = await client.GetAsync($"/recyclers/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -50,7 +43,7 @@ public class RecyclerEndpointResponseTests : IClassFixture<TestcontainersFixture
     [Fact]
     public async Task CustomerArrived_NonexistentRecycler_ReturnsErrorPayload()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var customerRequest = new CustomerRequest { Bottles = 15, CustomerType = "WalkIn" };
         var res = await client.PostAsJsonAsync($"/recyclers/{Guid.NewGuid()}/customers", customerRequest, TestContext.Current.CancellationToken);

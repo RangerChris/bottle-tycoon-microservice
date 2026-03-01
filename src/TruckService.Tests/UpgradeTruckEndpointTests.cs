@@ -9,19 +9,12 @@ using Xunit;
 
 namespace TruckService.Tests;
 
-public class UpgradeTruckEndpointTests : IClassFixture<TestcontainersFixture>
+public class UpgradeTruckEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public UpgradeTruckEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task UpgradeTruck_IncreasesLevel_AndUpdatesModel()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // 1. Create a truck
         var createReq = new CreateTruckRequest { Model = "Standard Truck", IsActive = true };
@@ -73,7 +66,7 @@ public class UpgradeTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task UpgradeTruck_ReturnsNotFound_ForInvalidId()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var invalidId = Guid.NewGuid();
 
         var res = await client.PostAsJsonAsync($"/truck/{invalidId}/upgrade", new { }, TestContext.Current.CancellationToken);

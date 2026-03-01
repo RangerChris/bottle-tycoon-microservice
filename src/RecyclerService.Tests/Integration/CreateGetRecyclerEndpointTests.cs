@@ -6,19 +6,12 @@ using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class CreateGetRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
+public class CreateGetRecyclerEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public CreateGetRecyclerEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task CreateRecycler_ShouldCreateAndReturnRecycler()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var createRequest = new CreateRequest(Guid.NewGuid(), "Test Recycler", 100, "Test Location");
         var createRes = await client.PostAsJsonAsync("/recyclers", createRequest, TestContext.Current.CancellationToken);
@@ -46,7 +39,7 @@ public class CreateGetRecyclerEndpointTests : IClassFixture<TestcontainersFixtur
     [Fact]
     public async Task VisitorArrived_ShouldIncreaseLoadAndReturnUpdatedRecycler()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create a recycler first
         var createRequest = new CreateRequest(Guid.NewGuid(), "Test Recycler", 100, "Test Location");
@@ -80,7 +73,7 @@ public class CreateGetRecyclerEndpointTests : IClassFixture<TestcontainersFixtur
     [Fact]
     public async Task VisitorArrived_WithNonExistentRecycler_ShouldReturn404()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Try to add visitor to non-existent recycler
         var visitorRequest = new VisitorRequest { Bottles = 10, VisitorType = "Regular" };
@@ -91,7 +84,7 @@ public class CreateGetRecyclerEndpointTests : IClassFixture<TestcontainersFixtur
     [Fact]
     public async Task MultipleVisitors_ShouldAccumulateLoadCorrectly()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create a recycler first
         var createRequest = new CreateRequest(Guid.NewGuid(), "Test Recycler", 100, "Test Location");

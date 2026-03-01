@@ -3,15 +3,8 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints.Admin;
 
-public class ProcessNextDeliveryEndpoint : EndpointWithoutRequest
+public class ProcessNextDeliveryEndpoint(IRouteWorker worker) : EndpointWithoutRequest
 {
-    private readonly IRouteWorker _worker;
-
-    public ProcessNextDeliveryEndpoint(IRouteWorker worker)
-    {
-        _worker = worker;
-    }
-
     public override void Configure()
     {
         Post("/admin/routeworker/process-next");
@@ -20,7 +13,7 @@ public class ProcessNextDeliveryEndpoint : EndpointWithoutRequest
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        await _worker.RunOnceAsync(ct);
-        await Send.OkAsync();
+        await worker.RunOnceAsync(ct);
+        await Send.OkAsync(null, ct);
     }
 }

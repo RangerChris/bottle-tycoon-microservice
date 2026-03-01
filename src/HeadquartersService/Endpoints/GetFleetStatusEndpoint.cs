@@ -3,15 +3,8 @@ using HeadquartersService.Services;
 
 namespace HeadquartersService.Endpoints;
 
-public class GetFleetStatusEndpoint : EndpointWithoutRequest
+public class GetFleetStatusEndpoint(IFleetService fleet) : EndpointWithoutRequest
 {
-    private readonly IFleetService _fleet;
-
-    public GetFleetStatusEndpoint(IFleetService fleet)
-    {
-        _fleet = fleet;
-    }
-
     public override void Configure()
     {
         Get("/api/v1/headquarters/fleet/status");
@@ -20,7 +13,7 @@ public class GetFleetStatusEndpoint : EndpointWithoutRequest
 
     public override Task HandleAsync(CancellationToken ct)
     {
-        var trucks = _fleet.GetAll();
+        var trucks = fleet.GetAll();
         Send.OkAsync(trucks, ct);
         return Task.CompletedTask;
     }

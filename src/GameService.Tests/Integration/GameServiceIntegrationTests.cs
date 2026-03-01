@@ -14,15 +14,8 @@ using Xunit;
 
 namespace GameService.Tests.Integration;
 
-public class GameServiceIntegrationTests : IClassFixture<TestcontainersFixture>
+public class GameServiceIntegrationTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public GameServiceIntegrationTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task PostPlayer_CreatesPlayer_AndGetPlayer_ReturnsSeededAndCreated()
     {
@@ -30,7 +23,7 @@ public class GameServiceIntegrationTests : IClassFixture<TestcontainersFixture>
         var bobId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
         // If the container didn't start, prefer to fail fast since this test seeds Postgres directly
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             throw new InvalidOperationException("Postgres testcontainer did not start; cannot run Postgres-seeding integration test.");
         }
@@ -42,10 +35,10 @@ public class GameServiceIntegrationTests : IClassFixture<TestcontainersFixture>
             {
                 var cfg = new ConfigurationBuilder()
                     .AddInMemoryCollection([
-                        new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", _fixture.ConnectionString),
+                        new KeyValuePair<string, string?>("ConnectionStrings:GameStateConnection", fixture.ConnectionString),
                         new KeyValuePair<string, string?>("APPLY_MIGRATIONS", "true"),
                         new KeyValuePair<string, string?>("ENABLE_MESSAGING", "false"),
-                        new KeyValuePair<string, string?>("DatabaseProvider", _fixture.Started ? "Npgsql" : "Sqlite")
+                        new KeyValuePair<string, string?>("DatabaseProvider", fixture.Started ? "Npgsql" : "Sqlite")
                     ])
                     .Build();
 

@@ -6,19 +6,12 @@ using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class RecyclerTelemetryEndpointSimpleTests : IClassFixture<TestcontainersFixture>
+public class RecyclerTelemetryEndpointSimpleTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public RecyclerTelemetryEndpointSimpleTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task TelemetryEndpoint_UpdatesSuccessfully()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var recyclerId = Guid.NewGuid();
 
         var createRequest = new { id = recyclerId, name = "Test", capacity = 100, location = (string?)null };

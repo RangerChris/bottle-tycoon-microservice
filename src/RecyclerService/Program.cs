@@ -1,4 +1,4 @@
-﻿﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
@@ -74,7 +74,7 @@ builder.Services.AddSingleton(meter);
 
 // create and register the bottles_processed counter
 var bottlesProcessedCounter = meter.CreateCounter<long>("bottles_processed", "bottles", "Number of bottles processed by type");
-builder.Services.AddSingleton<Counter<long>>(bottlesProcessedCounter);
+builder.Services.AddSingleton(bottlesProcessedCounter);
 
 
 // OpenTelemetry
@@ -190,10 +190,6 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
-}
-
-public abstract partial class Program
-{
 }
 
 [ExcludeFromCodeCoverage]

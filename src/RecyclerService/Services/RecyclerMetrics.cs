@@ -9,8 +9,8 @@ public sealed class RecyclerMetrics
     private readonly ObservableGauge<int> _currentBottles;
     private readonly ObservableGauge<int> _currentVisitors;
     private readonly ObservableGauge<int> _queueDepth;
-    private readonly IRecyclerTelemetryStore _telemetryStore;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IRecyclerTelemetryStore _telemetryStore;
 
     public RecyclerMetrics(Meter meter, IRecyclerTelemetryStore telemetryStore, IServiceProvider serviceProvider)
     {

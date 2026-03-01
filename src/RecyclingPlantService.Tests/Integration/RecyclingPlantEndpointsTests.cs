@@ -10,15 +10,8 @@ using Xunit;
 
 namespace RecyclingPlantService.Tests.Integration;
 
-public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
+public class RecyclingPlantEndpointsTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public RecyclingPlantEndpointsTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     private static bool TryGetPropertyCaseInsensitive(JsonElement el, string name, out JsonElement value)
     {
         value = default;
@@ -49,7 +42,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task StatusEndpoint_ReturnsOperational()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var res = await client.GetAsync("/api/v1/recycling-plant/status", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -84,7 +77,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     public async Task GetDeliveries_ReturnsSeededDeliveries_OrderedDescending()
     {
         // Clear existing data to ensure isolation
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
@@ -92,7 +85,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         }
 
         // Seed data into isolated DB
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.AddRange(new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow.AddMinutes(-1) },
@@ -101,7 +94,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var res = await client.GetAsync("/api/v1/recycling-plant/deliveries?page=1&pageSize=10", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -144,21 +137,21 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         var playerId = Guid.NewGuid();
 
         // Clear existing data to ensure isolation
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlayerEarnings.RemoveRange(db.PlayerEarnings);
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlayerEarnings.Add(new PlayerEarnings { PlayerId = playerId, TotalEarnings = 123.45m, DeliveryCount = 3, AverageEarnings = 41.15m });
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var res = await client.GetAsync($"/api/v1/recycling-plant/players/{playerId}/earnings", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await res.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
@@ -181,14 +174,14 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     public async Task GetTopEarners_ReturnsTopNOrdered()
     {
         // Clear existing data to ensure isolation
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlayerEarnings.RemoveRange(db.PlayerEarnings);
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             var a = Guid.NewGuid();
@@ -198,7 +191,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var res = await client.GetAsync("/api/v1/recycling-plant/reports/top-earners?Count=2", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -212,7 +205,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     public async Task InitializeEndpoint_ResetsData()
     {
         // Clear existing data
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
@@ -221,7 +214,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         }
 
         // Seed some data
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.Add(new PlantDelivery { Id = Guid.NewGuid(), TruckId = Guid.NewGuid(), PlayerId = Guid.NewGuid(), GlassCount = 1, MetalCount = 0, PlasticCount = 0, GrossEarnings = 4m, OperatingCost = 1m, NetEarnings = 3m, DeliveredAt = DateTimeOffset.UtcNow });
@@ -230,7 +223,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         }
 
         // Verify data exists
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.Count().ShouldBe(1);
@@ -238,12 +231,12 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         }
 
         // Call initialize
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var res = await client.PostAsync("/initialize", null, TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Verify data is reset
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.Count().ShouldBe(0);
@@ -257,7 +250,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         var playerId = Guid.NewGuid();
 
         // Clear existing data to ensure isolation
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
@@ -265,7 +258,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         }
 
         // Seed deliveries for the player
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.AddRange(
@@ -276,7 +269,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var res = await client.GetAsync($"/api/v1/recycling-plant/players/{playerId}/earnings/history?page=1&pageSize=10", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -292,7 +285,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
     public async Task ProcessDeliveryAsync_CreatesDeliveryAndUpdatesEarnings()
     {
         // Clear existing data to ensure isolation
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
@@ -300,7 +293,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        using var serviceScope = _fixture.Host!.Services.CreateScope();
+        using var serviceScope = fixture.Host!.Services.CreateScope();
         var service = serviceScope.ServiceProvider.GetRequiredService<IRecyclingPlantService>();
         var recyclingPlantDbContext = serviceScope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
 
@@ -339,7 +332,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         var playerId = Guid.NewGuid();
 
         // Clear existing data to ensure isolation
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.RemoveRange(db.PlantDeliveries);
@@ -347,7 +340,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
         }
 
         // Seed deliveries
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             db.PlantDeliveries.AddRange(
@@ -357,7 +350,7 @@ public class RecyclingPlantEndpointsTests : IClassFixture<TestcontainersFixture>
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        using var serviceScope = _fixture.Host!.Services.CreateScope();
+        using var serviceScope = fixture.Host!.Services.CreateScope();
         var service = serviceScope.ServiceProvider.GetRequiredService<IRecyclingPlantService>();
 
         var breakdown = await service.GetPlayerEarningsBreakdownAsync(playerId);

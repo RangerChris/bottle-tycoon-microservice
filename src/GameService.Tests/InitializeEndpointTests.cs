@@ -7,19 +7,12 @@ using Xunit;
 
 namespace GameService.Tests;
 
-public class InitializeEndpointTests : IClassFixture<TestcontainersFixture>
+public class InitializeEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public InitializeEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task Initialize_ResetsAndCreatesPlayer()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Initialize
         var initRes = await client.PostAsync("/initialize", null, TestContext.Current.CancellationToken);
@@ -33,7 +26,7 @@ public class InitializeEndpointTests : IClassFixture<TestcontainersFixture>
         playersAfter.Count.ShouldBe(1);
 
         // Verify that request was made to initialize recycler service
-        var recyclerInitRequest = _fixture.HttpRequests.FirstOrDefault(r => r.RequestUri?.AbsolutePath == "/initialize" && r.Method == HttpMethod.Post);
+        var recyclerInitRequest = fixture.HttpRequests.FirstOrDefault(r => r.RequestUri?.AbsolutePath == "/initialize" && r.Method == HttpMethod.Post);
         recyclerInitRequest.ShouldNotBeNull();
         recyclerInitRequest.RequestUri?.Host.ShouldBe("localhost");
         recyclerInitRequest.RequestUri?.Port.ShouldBe(5002);

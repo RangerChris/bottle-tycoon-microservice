@@ -131,7 +131,7 @@ try
         dbContext.Database.EnsureCreated();
 
         // Initialize GameMetrics to ensure ObservableGauge is created
-        var gameMetrics = app.Services.GetRequiredService<GameMetrics>();
+        app.Services.GetRequiredService<GameMetrics>();
         Log.Information("GameMetrics initialized for telemetry tracking");
     }
 

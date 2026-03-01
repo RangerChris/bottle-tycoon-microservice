@@ -4,27 +4,12 @@ using TruckService.Models;
 
 namespace TruckService.Services;
 
-public class TruckManager : ITruckManager
+public class TruckManager(ITruckRepository repo, TruckDbContext db, ILoadProvider loadProvider, ILogger<TruckManager> logger, ITruckTelemetryStore telemetryStore)
+    : ITruckManager
 {
-    private readonly TruckDbContext _db;
-    private readonly ILoadProvider _loadProvider;
-    private readonly ILogger<TruckManager> _logger;
-    private readonly ITruckRepository _repo;
-    private readonly ITruckTelemetryStore _telemetryStore;
-
-
-    public TruckManager(ITruckRepository repo, TruckDbContext db, ILoadProvider loadProvider, ILogger<TruckManager> logger, ITruckTelemetryStore telemetryStore)
-    {
-        _repo = repo;
-        _db = db;
-        _loadProvider = loadProvider;
-        _logger = logger;
-        _telemetryStore = telemetryStore;
-    }
-
     public async Task<TruckStatusDto> GetStatusAsync(Guid truckId, CancellationToken ct = default)
     {
-        var truck = await _db.Trucks.FindAsync([truckId], ct);
+        var truck = await db.Trucks.FindAsync([truckId], ct);
         if (truck == null)
         {
             throw new KeyNotFoundException($"Truck {truckId} not found");
@@ -35,7 +20,7 @@ public class TruckManager : ITruckManager
         var currentLoad = loadByType.Values.Sum();
         var status = truck.IsActive ? "idle" : "inactive";
 
-        _telemetryStore.Set(truck.Id, truck.Model, currentLoad, (int)Math.Floor(capacityUnits), status);
+        telemetryStore.Set(truck.Id, truck.Model, currentLoad, (int)Math.Floor(capacityUnits), status);
 
         return new TruckStatusDto
         {
@@ -51,22 +36,22 @@ public class TruckManager : ITruckManager
 
     public async Task<bool> DispatchAsync(Guid truckId, Guid recyclerId, double distanceKm, CancellationToken ct = default)
     {
-        var truck = await _repo.GetByIdAsync(truckId, ct);
+        var truck = await repo.GetByIdAsync(truckId, ct);
         if (truck == null)
         {
             return false;
         }
 
-        _logger.LogInformation("Dispatching truck {TruckId} to recycler {RecyclerId} (distance {Distance} km)", truckId, recyclerId, distanceKm);
+        logger.LogInformation("Dispatching truck {TruckId} to recycler {RecyclerId} (distance {Distance} km)", truckId, recyclerId, distanceKm);
 
         var truckCapacity = (int)CalculateMaxCapacityUnits(100, 0);
-        var (glass, metal, plastic) = await _loadProvider.GetLoadForRecyclerAsync(recyclerId, truckCapacity, ct);
+        var (glass, metal, plastic) = await loadProvider.GetLoadForRecyclerAsync(recyclerId, truckCapacity, ct);
 
         var loadUnits = CalculateCurrentLoadUnits(glass, metal, plastic);
         var maxUnits = CalculateMaxCapacityUnits(100, 0);
         if (loadUnits > maxUnits)
         {
-            _logger.LogWarning("Load {Load} exceeds capacity {Max}, trimming", loadUnits, maxUnits);
+            logger.LogWarning("Load {Load} exceeds capacity {Max}, trimming", loadUnits, maxUnits);
             // trim proportionally
             var factor = maxUnits / loadUnits;
             glass = (int)Math.Floor(glass * factor);
@@ -94,33 +79,33 @@ public class TruckManager : ITruckManager
             NetProfit = net
         };
 
-        _db.Deliveries.Add(delivery);
+        db.Deliveries.Add(delivery);
         // persist truck current load by type
-        var truckEnt = await _db.Trucks.FindAsync([truckId], ct);
+        var truckEnt = await db.Trucks.FindAsync([truckId], ct);
         if (truckEnt != null)
         {
             truckEnt.SetCurrentLoadByType(new Dictionary<string, int> { { "glass", glass }, { "metal", metal }, { "plastic", plastic } });
             var capacityUnits = CalculateMaxCapacityUnits(100, truckEnt.CapacityLevel);
             var currentLoad = glass + metal + plastic;
-            _telemetryStore.Set(truckEnt.Id, truckEnt.Model, currentLoad, (int)Math.Floor(capacityUnits), "loading");
+            telemetryStore.Set(truckEnt.Id, truckEnt.Model, currentLoad, (int)Math.Floor(capacityUnits), "loading");
         }
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Delivery persisted: id {Id}, gross {Gross}, cost {Cost}, net {Net}", delivery.Id, gross, operatingCost, net);
+        logger.LogInformation("Delivery persisted: id {Id}, gross {Gross}, cost {Cost}, net {Net}", delivery.Id, gross, operatingCost, net);
         return true;
     }
 
     public async Task<IEnumerable<TruckStatusDto>> GetFleetSummaryAsync(CancellationToken ct = default)
     {
-        var trucks = await _db.Trucks.ToListAsync(ct);
+        var trucks = await db.Trucks.ToListAsync(ct);
         var summaries = trucks.Select(t =>
         {
             var loadByType = t.GetCurrentLoadByType();
             var capacityUnits = CalculateMaxCapacityUnits(100, t.CapacityLevel);
             var currentLoad = loadByType.Values.Sum();
             var status = t.IsActive ? "idle" : "inactive";
-            _telemetryStore.Set(t.Id, t.Model, currentLoad, (int)Math.Floor(capacityUnits), status);
+            telemetryStore.Set(t.Id, t.Model, currentLoad, (int)Math.Floor(capacityUnits), status);
 
             return new TruckStatusDto
             {
@@ -139,7 +124,7 @@ public class TruckManager : ITruckManager
 
     public async Task<IEnumerable<object>> GetHistoryAsync(Guid truckId, CancellationToken ct = default)
     {
-        var deliveries = await _db.Deliveries.Where(d => d.TruckId == truckId).OrderByDescending(d => d.Timestamp).ToListAsync(ct);
+        var deliveries = await db.Deliveries.Where(d => d.TruckId == truckId).OrderByDescending(d => d.Timestamp).ToListAsync(ct);
         return deliveries.Select(d => new
         {
             d.Id,
@@ -155,7 +140,7 @@ public class TruckManager : ITruckManager
 
     public async Task<decimal> GetEarningsAsync(Guid truckId, CancellationToken ct = default)
     {
-        var total = await _db.Deliveries.Where(d => d.TruckId == truckId).SumAsync(d => (decimal?)d.NetProfit, ct);
+        var total = await db.Deliveries.Where(d => d.TruckId == truckId).SumAsync(d => (decimal?)d.NetProfit, ct);
         return total ?? 0m;
     }
 

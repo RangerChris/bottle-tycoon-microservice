@@ -3,15 +3,8 @@ using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
-public class GetRecyclerEndpoint : EndpointWithoutRequest<GetRecyclerEndpoint.RecyclerResponse>
+public class GetRecyclerEndpoint(IRecyclerService service) : EndpointWithoutRequest<GetRecyclerEndpoint.RecyclerResponse>
 {
-    private readonly IRecyclerService _service;
-
-    public GetRecyclerEndpoint(IRecyclerService service)
-    {
-        _service = service;
-    }
-
     public override void Configure()
     {
         Verbs("GET");
@@ -24,7 +17,7 @@ public class GetRecyclerEndpoint : EndpointWithoutRequest<GetRecyclerEndpoint.Re
     {
         var id = Route<Guid>("id");
 
-        var recycler = await _service.GetByIdAsync(id, ct);
+        var recycler = await service.GetByIdAsync(id, ct);
         if (recycler == null)
         {
             ThrowError("Recycler not found", 404);

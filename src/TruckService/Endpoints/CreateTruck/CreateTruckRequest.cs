@@ -4,6 +4,6 @@ public class CreateTruckRequest
 {
     public Guid PlayerId { get; set; }
     public Guid Id { get; set; }
-    public string Model { get; set; } = string.Empty;
-    public bool IsActive { get; set; } = true;
+    public string Model { get; init; } = string.Empty;
+    public bool IsActive { get; init; } = true;
 }

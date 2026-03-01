@@ -4,19 +4,12 @@ using Xunit;
 
 namespace TruckService.Tests;
 
-public class ProgramPathsTests : IClassFixture<TestcontainersFixture>
+public class ProgramPathsTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public ProgramPathsTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task Start_Works()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var res = await client.GetAsync("/", TestContext.Current.CancellationToken);
         res.ShouldNotBeNull();
     }

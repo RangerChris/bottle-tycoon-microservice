@@ -3,17 +3,8 @@ using RecyclingPlantService.Services;
 
 namespace RecyclingPlantService.Endpoints;
 
-public sealed class ProcessDeliveryEndpoint : Endpoint<ProcessDeliveryEndpoint.Request, ProcessDeliveryEndpoint.Response>
+public sealed class ProcessDeliveryEndpoint(IRecyclingPlantService plantService, ILogger<ProcessDeliveryEndpoint> logger) : Endpoint<ProcessDeliveryEndpoint.Request, ProcessDeliveryEndpoint.Response>
 {
-    private readonly ILogger<ProcessDeliveryEndpoint> _logger;
-    private readonly IRecyclingPlantService _plantService;
-
-    public ProcessDeliveryEndpoint(IRecyclingPlantService plantService, ILogger<ProcessDeliveryEndpoint> logger)
-    {
-        _plantService = plantService;
-        _logger = logger;
-    }
-
     public override void Configure()
     {
         Post("/deliveries");
@@ -44,7 +35,7 @@ public sealed class ProcessDeliveryEndpoint : Endpoint<ProcessDeliveryEndpoint.R
             return;
         }
 
-        var deliveryId = await _plantService.ProcessDeliveryAsync(
+        var deliveryId = await plantService.ProcessDeliveryAsync(
             req.TruckId,
             req.TruckName,
             req.PlayerId,
@@ -52,9 +43,9 @@ public sealed class ProcessDeliveryEndpoint : Endpoint<ProcessDeliveryEndpoint.R
             req.OperatingCost,
             DateTimeOffset.UtcNow);
 
-        var (gross, net) = _plantService.CalculateEarnings(req.LoadByType, req.OperatingCost);
+        var (gross, net) = plantService.CalculateEarnings(req.LoadByType, req.OperatingCost);
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Delivery processed: ID={DeliveryId}, Truck={TruckId}, Player={PlayerId}, Gross={Gross}, Net={Net}",
             deliveryId, req.TruckId, req.PlayerId, gross, net);
 

@@ -5,21 +5,9 @@ using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
-public class SellRecyclerEndpoint : Endpoint<SellRecyclerEndpoint.Request, SellRecyclerEndpoint.SellRecyclerResponse>
+public class SellRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory, ILogger<SellRecyclerEndpoint> logger, IRecyclerTelemetryStore telemetryStore)
+    : Endpoint<SellRecyclerEndpoint.Request, SellRecyclerEndpoint.SellRecyclerResponse>
 {
-    private readonly RecyclerDbContext _db;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<SellRecyclerEndpoint> _logger;
-    private readonly IRecyclerTelemetryStore _telemetryStore;
-
-    public SellRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory, ILogger<SellRecyclerEndpoint> logger, IRecyclerTelemetryStore telemetryStore)
-    {
-        _db = db;
-        _httpClientFactory = httpClientFactory;
-        _logger = logger;
-        _telemetryStore = telemetryStore;
-    }
-
     public override void Configure()
     {
         Post("/recyclers/{RecyclerId}/sell");
@@ -29,7 +17,7 @@ public class SellRecyclerEndpoint : Endpoint<SellRecyclerEndpoint.Request, SellR
 
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
-        var recycler = await _db.Recyclers
+        var recycler = await db.Recyclers
             .Include(r => r.Customers)
             .FirstOrDefaultAsync(r => r.Id == req.RecyclerId, ct);
 
@@ -55,24 +43,24 @@ public class SellRecyclerEndpoint : Endpoint<SellRecyclerEndpoint.Request, SellR
 
         recycler.IsBlockedForSale = true;
         recycler.BlockedForSaleAt = DateTimeOffset.UtcNow;
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
 
         const decimal salePrice = 400m;
         var creditSuccess = await CreditPlayerAsync(req.PlayerId, salePrice, $"Sold recycler {recycler.Name}", ct);
 
         if (!creditSuccess)
         {
-            _logger.LogError("Failed to credit player {PlayerId} for recycler sale", req.PlayerId);
+            logger.LogError("Failed to credit player {PlayerId} for recycler sale", req.PlayerId);
             AddError("Failed to credit player account");
             await Send.ErrorsAsync(500, ct);
             return;
         }
 
-        _db.Recyclers.Remove(recycler);
-        await _db.SaveChangesAsync(ct);
-        _telemetryStore.Remove(recycler.Id);
+        db.Recyclers.Remove(recycler);
+        await db.SaveChangesAsync(ct);
+        telemetryStore.Remove(recycler.Id);
 
-        _logger.LogInformation("Recycler {RecyclerId} sold for {SalePrice} credits to player {PlayerId}",
+        logger.LogInformation("Recycler {RecyclerId} sold for {SalePrice} credits to player {PlayerId}",
             recycler.Id, salePrice, req.PlayerId);
 
         await Send.OkAsync(new SellRecyclerResponse
@@ -88,11 +76,11 @@ public class SellRecyclerEndpoint : Endpoint<SellRecyclerEndpoint.Request, SellR
     {
         try
         {
-            var client = _httpClientFactory.CreateClient();
-            var gameServiceUrl = "http://gameservice:80";
+            var client = httpClientFactory.CreateClient("GameService");
+            var baseUrl = client.BaseAddress?.ToString().TrimEnd('/') ?? "http://gameservice:80";
 
             var response = await client.PostAsJsonAsync(
-                $"{gameServiceUrl}/player/{playerId}/deposit",
+                $"{baseUrl}/player/{playerId}/deposit",
                 new { PlayerId = playerId, Amount = amount, Reason = reason },
                 ct);
 
@@ -100,7 +88,7 @@ public class SellRecyclerEndpoint : Endpoint<SellRecyclerEndpoint.Request, SellR
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to credit player {PlayerId}", playerId);
+            logger.LogError(ex, "Failed to credit player {PlayerId}", playerId);
             return false;
         }
     }

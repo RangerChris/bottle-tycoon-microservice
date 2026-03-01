@@ -6,19 +6,12 @@ using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class AllEndpointsTests : IClassFixture<TestcontainersFixture>
+public class AllEndpointsTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public AllEndpointsTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task CreateRecycler_ShouldReturnCreatedWithBody()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var createRequest = new CreateRequest(Guid.NewGuid(), "Endpoint Test Recycler", 150, "Zone A");
         var response = await client.PostAsJsonAsync("/recyclers", createRequest, TestContext.Current.CancellationToken);
@@ -37,7 +30,7 @@ public class AllEndpointsTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetRecycler_ShouldReturnPersistedEntity()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var createRequest = new CreateRequest(Guid.NewGuid(), "Fetcher", 80, "Zone B");
         var createRes = await client.PostAsJsonAsync("/recyclers", createRequest, TestContext.Current.CancellationToken);
@@ -55,7 +48,7 @@ public class AllEndpointsTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetRecycler_NotFound_ShouldReturn404()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var res = await client.GetAsync($"/recyclers/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -66,7 +59,7 @@ public class AllEndpointsTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task VisitorArrived_ShouldIncreaseCurrentLoad()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var recyclerId = Guid.NewGuid();
         var createRequest = new CreateRequest(recyclerId, "Visitor Target", 60, "Zone C");
@@ -86,7 +79,7 @@ public class AllEndpointsTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task VisitorArrived_InvalidRecycler_ShouldReturn404()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var visitorReq = new VisitorRequest { Bottles = 10, VisitorType = "WalkIn" };
         var res = await client.PostAsJsonAsync($"/recyclers/{Guid.NewGuid()}/visitors", visitorReq, TestContext.Current.CancellationToken);
@@ -98,7 +91,7 @@ public class AllEndpointsTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task HealthEndpoint_ShouldReturnHealthy()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var res = await client.GetAsync("/health", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
