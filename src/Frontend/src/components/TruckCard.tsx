@@ -4,6 +4,7 @@ import useGameStore, { GameState } from '../store/useGameStore'
 
 export default function TruckCard({ truck }: { truck: Truck }) {
   const upgradeTruck = useGameStore((s: GameState) => s.upgradeTruck)
+  const sellTruck = useGameStore((s: GameState) => s.sellTruck)
   const recyclers = useGameStore((s: GameState) => s.recyclers)
 
   const capacity = Math.floor(truck.capacity * Math.pow(1.25, truck.level))
@@ -23,8 +24,15 @@ export default function TruckCard({ truck }: { truck: Truck }) {
   else if (truck.status === 'delivering') { statusText = 'Delivering'; statusClass = 'badge badge-success' }
   else if (truck.status === 'en route') { statusText = 'En Route'; statusClass = 'badge badge-info' }
 
+  const isBlocked = truck.isBlockedForSale || false
+
   return (
-    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+    <div className={`bg-gray-800 p-4 rounded-lg border border-gray-700 ${isBlocked ? 'opacity-60 grayscale' : ''}`}>
+      {isBlocked && (
+        <div className="mb-2">
+          <span className="badge badge-error badge-sm">FOR SALE</span>
+        </div>
+      )}
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-semibold">{truck.model || 'Truck'}</h3>
@@ -51,7 +59,24 @@ export default function TruckCard({ truck }: { truck: Truck }) {
       </div>
 
       <div className="mt-4 flex gap-2">
-        <button className="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white flex-1" onClick={() => upgradeTruck(truck.id)} disabled={truck.level >= 3}>⬆️ Upgrade ({300 * (truck.level + 1)})</button>
+        <button
+          className="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white flex-1"
+          onClick={() => upgradeTruck(truck.id)}
+          disabled={truck.level >= 3 || isBlocked}
+        >
+          ⬆️ Upgrade ({300 * (truck.level + 1)})
+        </button>
+      </div>
+
+      <div className="mt-2">
+        <button
+          className="btn btn-sm bg-red-600 hover:bg-red-700 text-white w-full"
+          onClick={() => sellTruck(truck.id)}
+          disabled={isBlocked}
+          title="Sell for 600 credits"
+        >
+          🏷️ Sell (600)
+        </button>
       </div>
     </div>
   )

@@ -22,7 +22,10 @@ public class GetAllRecyclersEndpoint : EndpointWithoutRequest<List<GetAllRecycle
     public override async Task HandleAsync(CancellationToken ct)
     {
         var recyclers = await _service.GetAllAsync(ct);
-        var response = recyclers.Select(r => new RecyclerResponse { Id = r.Id, Name = r.Name, CurrentLoad = r.CurrentLoad, Capacity = r.Capacity, CapacityLevel = r.CapacityLevel }).ToList();
+        var response = recyclers
+            .Where(r => !r.IsBlockedForSale)
+            .Select(r => new RecyclerResponse { Id = r.Id, Name = r.Name, CurrentLoad = r.CurrentLoad, Capacity = r.Capacity, CapacityLevel = r.CapacityLevel })
+            .ToList();
         await Send.ResultAsync(TypedResults.Ok(response));
     }
 

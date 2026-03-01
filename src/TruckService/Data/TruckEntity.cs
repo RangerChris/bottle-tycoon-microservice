@@ -17,6 +17,8 @@ public class TruckEntity
     public int CapacityLevel { get; set; }
     public string CurrentLoadByTypeJson { get; set; } = "{}";
     public decimal TotalEarnings { get; set; }
+    public bool IsBlockedForSale { get; set; }
+    public DateTimeOffset? BlockedForSaleAt { get; set; }
 
     public Dictionary<string, int> GetCurrentLoadByType()
     {

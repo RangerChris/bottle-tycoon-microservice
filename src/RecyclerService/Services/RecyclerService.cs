@@ -38,6 +38,11 @@ public class RecyclerService : IRecyclerService
             throw new KeyNotFoundException($"Recycler {recyclerId} not found");
         }
 
+        if (recycler.IsBlockedForSale)
+        {
+            throw new InvalidOperationException("Cannot accept customers - recycler is being sold");
+        }
+
         var customerCounts = customer.GetBottleCounts();
         var recyclerInventory = recycler.GetBottleInventory();
 

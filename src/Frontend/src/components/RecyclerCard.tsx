@@ -5,13 +5,21 @@ import useGameStore, { GameState } from '../store/useGameStore'
 export default function RecyclerCard({ recycler }: { recycler: Recycler }) {
   const upgradeRecycler = useGameStore((s: GameState) => s.upgradeRecycler)
   const deliverBottlesRandom = useGameStore((s: GameState) => s.deliverBottlesRandom)
+  const sellRecycler = useGameStore((s: GameState) => s.sellRecycler)
 
   const totalBottles = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
   const capacity = Math.floor(recycler.capacity * Math.pow(1.25, recycler.level))
   const percentage = Math.min((totalBottles / capacity) * 100, 100)
 
+  const isBlocked = recycler.isBlockedForSale || false
+
   return (
-    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+    <div className={`bg-gray-800 p-4 rounded-lg border border-gray-700 ${isBlocked ? 'opacity-60 grayscale' : ''}`}>
+      {isBlocked && (
+        <div className="mb-2">
+          <span className="badge badge-error badge-sm">FOR SALE</span>
+        </div>
+      )}
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-semibold">{recycler.name || 'Recycler'}</h3>
@@ -41,8 +49,31 @@ export default function RecyclerCard({ recycler }: { recycler: Recycler }) {
       </div>
 
       <div className="mt-4 flex gap-2">
-        <button className="btn btn-sm bg-green-600 hover:bg-green-700 text-white flex-1" onClick={() => deliverBottlesRandom(recycler.id)}>📦 Add bottles</button>
-        <button className="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white min-w-40" onClick={() => upgradeRecycler(recycler.id)} disabled={recycler.level >= 3}>⬆️ Upgrade ({200 * (recycler.level + 1)})</button>
+        <button
+          className="btn btn-sm bg-green-600 hover:bg-green-700 text-white flex-1"
+          onClick={() => deliverBottlesRandom(recycler.id)}
+          disabled={isBlocked}
+        >
+          📦 Add bottles
+        </button>
+        <button
+          className="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white min-w-40"
+          onClick={() => upgradeRecycler(recycler.id)}
+          disabled={recycler.level >= 3 || isBlocked}
+        >
+          ⬆️ Upgrade ({200 * (recycler.level + 1)})
+        </button>
+      </div>
+
+      <div className="mt-2">
+        <button
+          className="btn btn-sm bg-red-600 hover:bg-red-700 text-white w-full"
+          onClick={() => sellRecycler(recycler.id)}
+          disabled={isBlocked}
+          title="Sell for 400 credits"
+        >
+          🏷️ Sell (400)
+        </button>
       </div>
     </div>
   )
