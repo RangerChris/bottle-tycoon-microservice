@@ -4,23 +4,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameService.Services;
 
-public class PlayerService : IPlayerService
+public class PlayerService(GameDbContext context) : IPlayerService
 {
-    private readonly GameDbContext _context;
-
-    public PlayerService(GameDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<Player?> GetPlayerAsync(Guid playerId)
     {
-        return await _context.Players.FirstOrDefaultAsync(p => p.Id == playerId);
+        return await context.Players.FirstOrDefaultAsync(p => p.Id == playerId);
     }
 
     public async Task<List<Player>> GetAllPlayersAsync()
     {
-        return await _context.Players.ToListAsync();
+        return await context.Players.ToListAsync();
     }
 
     public async Task<Player> CreatePlayerAsync(Player? player = null)
@@ -36,14 +29,14 @@ public class PlayerService : IPlayerService
         // Always set starting credits for new players
         p.Credits = 1300;
 
-        _context.Players.Add(p);
-        await _context.SaveChangesAsync();
+        context.Players.Add(p);
+        await context.SaveChangesAsync();
         return p;
     }
 
     public async Task<bool> DebitCreditsAsync(Guid playerId, decimal amount, string reason)
     {
-        var player = await _context.Players.FindAsync(playerId);
+        var player = await context.Players.FindAsync(playerId);
         if (player == null || player.Credits < amount)
         {
             return false;
@@ -52,13 +45,13 @@ public class PlayerService : IPlayerService
         player.Credits -= amount;
         player.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<bool> CreditCreditsAsync(Guid playerId, decimal amount, string reason)
     {
-        var player = await _context.Players.FindAsync(playerId);
+        var player = await context.Players.FindAsync(playerId);
         if (player == null)
         {
             return false;
@@ -67,18 +60,18 @@ public class PlayerService : IPlayerService
         player.Credits += amount;
         player.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task ResetAsync()
     {
-        await _context.Players.ExecuteDeleteAsync();
+        await context.Players.ExecuteDeleteAsync();
     }
 
     public async Task UpdatePlayerAsync(Player player)
     {
-        _context.Players.Update(player);
-        await _context.SaveChangesAsync();
+        context.Players.Update(player);
+        await context.SaveChangesAsync();
     }
 }

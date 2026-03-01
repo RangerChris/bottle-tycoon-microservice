@@ -6,19 +6,12 @@ using Xunit;
 
 namespace GameService.Tests.Integration;
 
-public class GameTelemetryEndpointTests : IClassFixture<TestcontainersFixture>
+public class GameTelemetryEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public GameTelemetryEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task PostTelemetry_WithPositiveEarnings_StoresAndReturns()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var playerId = Guid.NewGuid();
         var request = new { TotalEarnings = 1000m };
 
@@ -34,7 +27,7 @@ public class GameTelemetryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task PostTelemetry_WithZeroEarnings_StoresAndReturns()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var playerId = Guid.NewGuid();
         var request = new { TotalEarnings = 0m };
 
@@ -49,7 +42,7 @@ public class GameTelemetryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task PostTelemetry_WithNullEarnings_DefaultsToZero()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var playerId = Guid.NewGuid();
         var request = new { TotalEarnings = (decimal?)null };
 
@@ -64,7 +57,7 @@ public class GameTelemetryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task PostTelemetry_WithEmptyBody_DefaultsToZero()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var playerId = Guid.NewGuid();
         var request = new { };
 
@@ -79,7 +72,7 @@ public class GameTelemetryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task PostTelemetry_WithNegativeEarnings_StoresAsZero()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var playerId = Guid.NewGuid();
         var request = new { TotalEarnings = -500m };
 
@@ -94,7 +87,7 @@ public class GameTelemetryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task PostTelemetry_WithLargeEarnings_StoresCorrectly()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var playerId = Guid.NewGuid();
         var largeAmount = 999999999.99m;
         var request = new { TotalEarnings = largeAmount };
@@ -110,7 +103,7 @@ public class GameTelemetryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task PostTelemetry_MultipleUpdates_OverwritesPrevious()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var playerId = Guid.NewGuid();
 
         await client.PostAsJsonAsync($"/player/{playerId}/telemetry", new { TotalEarnings = 1000m }, TestContext.Current.CancellationToken);

@@ -12,20 +12,11 @@ public interface ICustomerQueueService
     Task<int> GetQueueDepthAsync(Guid recyclerId, CancellationToken ct = default);
 }
 
-public class CustomerQueueService : ICustomerQueueService
+public class CustomerQueueService(RecyclerDbContext db, ILogger<CustomerQueueService> logger) : ICustomerQueueService
 {
-    private readonly RecyclerDbContext _db;
-    private readonly ILogger<CustomerQueueService> _logger;
-
-    public CustomerQueueService(RecyclerDbContext db, ILogger<CustomerQueueService> logger)
-    {
-        _db = db;
-        _logger = logger;
-    }
-
     public async Task<Customer?> GetNextWaitingCustomerAsync(Guid recyclerId, CancellationToken ct = default)
     {
-        var customer = await _db.Customers
+        var customer = await db.Customers
             .Where(c => c.RecyclerId == recyclerId && c.Status == CustomerStatus.Waiting)
             .OrderBy(c => c.ArrivedAt)
             .FirstOrDefaultAsync(ct);
@@ -34,9 +25,9 @@ public class CustomerQueueService : ICustomerQueueService
         {
             customer.Status = CustomerStatus.Processing;
             customer.ServiceStartedAt = DateTimeOffset.UtcNow;
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Customer {CustomerId} marked as Processing at Recycler {RecyclerId}", customer.Id, recyclerId);
+            logger.LogInformation("Customer {CustomerId} marked as Processing at Recycler {RecyclerId}", customer.Id, recyclerId);
         }
 
         return customer;
@@ -44,33 +35,33 @@ public class CustomerQueueService : ICustomerQueueService
 
     public async Task MarkAsProcessingAsync(Guid customerId, CancellationToken ct = default)
     {
-        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Id == customerId, ct);
+        var customer = await db.Customers.FirstOrDefaultAsync(c => c.Id == customerId, ct);
         if (customer != null)
         {
             customer.Status = CustomerStatus.Processing;
             customer.ServiceStartedAt = DateTimeOffset.UtcNow;
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Customer {CustomerId} marked as Processing", customerId);
+            logger.LogInformation("Customer {CustomerId} marked as Processing", customerId);
         }
     }
 
     public async Task MarkAsDoneAsync(Guid customerId, CancellationToken ct = default)
     {
-        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Id == customerId, ct);
+        var customer = await db.Customers.FirstOrDefaultAsync(c => c.Id == customerId, ct);
         if (customer != null)
         {
             customer.Status = CustomerStatus.Done;
             customer.ProcessedAt = DateTimeOffset.UtcNow;
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
 
-            _logger.LogInformation("Customer {CustomerId} marked as Done at {ProcessedAt}", customerId, customer.ProcessedAt);
+            logger.LogInformation("Customer {CustomerId} marked as Done at {ProcessedAt}", customerId, customer.ProcessedAt);
         }
     }
 
     public async Task<int> GetQueueDepthAsync(Guid recyclerId, CancellationToken ct = default)
     {
-        return await _db.Customers
+        return await db.Customers
             .Where(c => c.RecyclerId == recyclerId && c.Status == CustomerStatus.Waiting)
             .CountAsync(ct);
     }

@@ -3,17 +3,8 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints;
 
-public class InitializeEndpoint : EndpointWithoutRequest
+public class InitializeEndpoint(ITruckService truckService, ITruckTelemetryStore telemetryStore) : EndpointWithoutRequest
 {
-    private readonly ITruckTelemetryStore _telemetryStore;
-    private readonly ITruckService _truckService;
-
-    public InitializeEndpoint(ITruckService truckService, ITruckTelemetryStore telemetryStore)
-    {
-        _truckService = truckService;
-        _telemetryStore = telemetryStore;
-    }
-
     public override void Configure()
     {
         Post("/initialize");
@@ -22,8 +13,8 @@ public class InitializeEndpoint : EndpointWithoutRequest
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        await _truckService.ResetAsync();
-        _telemetryStore.RemoveAll();
-        await _truckService.CreateTruckAsync();
+        await truckService.ResetAsync();
+        telemetryStore.RemoveAll();
+        await truckService.CreateTruckAsync();
     }
 }

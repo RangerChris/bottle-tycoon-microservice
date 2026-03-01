@@ -4,15 +4,8 @@ using RecyclingPlantService.Services;
 
 namespace RecyclingPlantService.Endpoints;
 
-public class GetTopEarnersEndpoint : Endpoint<GetTopEarnersRequest, IEnumerable<PlayerEarnings>>
+public class GetTopEarnersEndpoint(IRecyclingPlantService service) : Endpoint<GetTopEarnersRequest, IEnumerable<PlayerEarnings>>
 {
-    private readonly IRecyclingPlantService _service;
-
-    public GetTopEarnersEndpoint(IRecyclingPlantService service)
-    {
-        _service = service;
-    }
-
     public override void Configure()
     {
         Get("/api/v1/recycling-plant/reports/top-earners");
@@ -21,7 +14,7 @@ public class GetTopEarnersEndpoint : Endpoint<GetTopEarnersRequest, IEnumerable<
 
     public override async Task HandleAsync(GetTopEarnersRequest req, CancellationToken ct)
     {
-        var topEarners = await _service.GetTopEarnersAsync(req.Count);
+        var topEarners = await service.GetTopEarnersAsync(req.Count);
         await Send.OkAsync(topEarners);
     }
 }

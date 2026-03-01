@@ -7,19 +7,12 @@ using Xunit;
 
 namespace RecyclerService.Tests;
 
-public class InitializeEndpointTests : IClassFixture<TestcontainersFixture>
+public class InitializeEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public InitializeEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task Initialize_ResetsAndCreatesRecycler()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create some recyclers
         var createRes1 = await client.PostAsJsonAsync("/recyclers", new Recycler { Name = "R1", Capacity = 50 }, TestContext.Current.CancellationToken);

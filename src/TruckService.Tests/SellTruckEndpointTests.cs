@@ -7,25 +7,19 @@ using Xunit;
 
 namespace TruckService.Tests;
 
-public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
+public class SellTruckEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
     private readonly Guid _testPlayerId = Guid.NewGuid();
-
-    public SellTruckEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
 
     [Fact]
     public async Task SellTruck_WhenIdle_ShouldSucceed()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host!.Services.CreateScope();
+        using var scope = fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
 
         var truck = new TruckEntity
@@ -52,12 +46,12 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellTruck_WhenActive_ShouldFail()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host!.Services.CreateScope();
+        using var scope = fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
 
         var truck = new TruckEntity
@@ -77,12 +71,12 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellTruck_AlreadyBlocked_ShouldFail()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host!.Services.CreateScope();
+        using var scope = fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
 
         var truck = new TruckEntity
@@ -103,12 +97,12 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellTruck_NonExistent_ShouldReturnNull()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host!.Services.CreateScope();
+        using var scope = fixture.Host!.Services.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<ITruckRepository>();
 
         var nonExistentId = Guid.NewGuid();
@@ -119,12 +113,12 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task BlockedTrucks_ShouldNotAppearInList()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host!.Services.CreateScope();
+        using var scope = fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
         var repo = scope.ServiceProvider.GetRequiredService<ITruckRepository>();
 
@@ -163,12 +157,12 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetEntityByIdAsync_ShouldReturnEntity()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host!.Services.CreateScope();
+        using var scope = fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
         var repo = scope.ServiceProvider.GetRequiredService<ITruckRepository>();
 

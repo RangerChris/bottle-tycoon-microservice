@@ -3,12 +3,8 @@ using RecyclerService.Models;
 
 namespace RecyclerService.Data;
 
-public class RecyclerDbContext : DbContext
+public class RecyclerDbContext(DbContextOptions<RecyclerDbContext> options) : DbContext(options)
 {
-    public RecyclerDbContext(DbContextOptions<RecyclerDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<Recycler> Recyclers { get; set; } = null!;
     public DbSet<Customer> Customers { get; set; } = null!;
 

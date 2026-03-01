@@ -8,19 +8,12 @@ using Xunit;
 
 namespace RecyclingPlantService.Tests.Integration;
 
-public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
+public class ProcessDeliveryEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public ProcessDeliveryEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task ProcessDelivery_WithValidData_CreatesDeliveryRecord()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var truckId = Guid.NewGuid();
         var playerId = Guid.NewGuid();
 
@@ -51,7 +44,7 @@ public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ProcessDelivery_CalculatesCorrectEarnings()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var request = new ProcessDeliveryRequest
         {
@@ -78,7 +71,7 @@ public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ProcessDelivery_WithEmptyTruckId_ReturnsBadRequest()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var request = new ProcessDeliveryRequest
         {
@@ -96,7 +89,7 @@ public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ProcessDelivery_WithEmptyPlayerId_ReturnsBadRequest()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var request = new ProcessDeliveryRequest
         {
@@ -114,7 +107,7 @@ public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ProcessDelivery_WithEmptyLoad_ReturnsBadRequest()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var request = new ProcessDeliveryRequest
         {
@@ -132,7 +125,7 @@ public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ProcessDelivery_WithZeroOperatingCost_StillProcesses()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var request = new ProcessDeliveryRequest
         {
@@ -157,7 +150,7 @@ public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ProcessDelivery_PersistsToDatabase()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var truckId = Guid.NewGuid();
         var playerId = Guid.NewGuid();
 
@@ -179,7 +172,7 @@ public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
         var body = await response.Content.ReadFromJsonAsync<ProcessDeliveryResponse>(TestContext.Current.CancellationToken);
         body.ShouldNotBeNull();
 
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclingPlantDbContext>();
             var delivery = await db.PlantDeliveries.FindAsync(new object?[] { body.DeliveryId }, TestContext.Current.CancellationToken);
@@ -196,7 +189,7 @@ public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ProcessDelivery_WithOnlyGlass_CalculatesCorrectly()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var request = new ProcessDeliveryRequest
         {
@@ -221,7 +214,7 @@ public class ProcessDeliveryEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ProcessDelivery_WithMixedBottleTypes_CalculatesAllTypes()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var request = new ProcessDeliveryRequest
         {

@@ -12,19 +12,12 @@ using Xunit;
 
 namespace TruckService.Tests;
 
-public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
+public class CrudTruckEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public CrudTruckEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task CreateListUpdateDeleteFlow_Works()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create
         var createReq = new CreateTruckRequest { Model = "Model-X", IsActive = true };
@@ -66,7 +59,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
     public async Task ProcessNextDelivery_AdvancesDeliveryState()
     {
         // Clear database to ensure test isolation
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
             db.Deliveries.RemoveRange(db.Deliveries);
@@ -76,7 +69,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
 
         // Seed a truck and a queued delivery
         Guid truckId, deliveryId;
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
             var truck = new TruckEntity { Id = Guid.NewGuid(), Model = "Test", IsActive = true };
@@ -100,14 +93,14 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         }
 
         // Call RunOnceAsync directly
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var worker = scope.ServiceProvider.GetRequiredService<IRouteWorker>();
             await worker.RunOnceAsync(TestContext.Current.CancellationToken);
         }
 
         // Verify delivery completed and truck earnings updated
-        using (var scope = _fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host!.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
             var delivery = await db.Deliveries.FindAsync([deliveryId], Xunit.TestContext.Current.CancellationToken);
@@ -124,7 +117,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task DispatchTruck_Succeeds()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create a truck
         var createReq = new CreateTruckRequest { Model = "Model-D", IsActive = true };
@@ -146,7 +139,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetTruckEarnings_ReturnsEarnings()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create a truck
         var createReq = new CreateTruckRequest { Model = "Model-E", IsActive = true };
@@ -168,7 +161,7 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetTruckStatus_ReturnsStatus()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create a truck
         var createReq = new CreateTruckRequest { Model = "Model-S", IsActive = true };

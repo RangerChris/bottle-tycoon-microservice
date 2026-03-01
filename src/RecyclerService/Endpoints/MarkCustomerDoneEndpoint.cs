@@ -3,15 +3,8 @@ using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
-public class MarkCustomerDoneEndpoint : EndpointWithoutRequest<MarkCustomerDoneEndpoint.MarkDoneResponse>
+public class MarkCustomerDoneEndpoint(IRecyclerService service) : EndpointWithoutRequest<MarkCustomerDoneEndpoint.MarkDoneResponse>
 {
-    private readonly IRecyclerService _service;
-
-    public MarkCustomerDoneEndpoint(IRecyclerService service)
-    {
-        _service = service;
-    }
-
     public override void Configure()
     {
         Verbs("POST");
@@ -24,7 +17,7 @@ public class MarkCustomerDoneEndpoint : EndpointWithoutRequest<MarkCustomerDoneE
     {
         var customerId = Route<Guid>("customerId");
 
-        await _service.MarkCustomerDoneAsync(customerId, ct);
+        await service.MarkCustomerDoneAsync(customerId, ct);
 
         await Send.ResultAsync(TypedResults.Ok(new MarkDoneResponse
         {

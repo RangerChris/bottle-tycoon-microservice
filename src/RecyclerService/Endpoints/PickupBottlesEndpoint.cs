@@ -18,19 +18,8 @@ public class PickupBottlesResponse
     public Dictionary<string, int> RemainingBottles { get; set; } = new();
 }
 
-public class PickupBottlesEndpoint : Endpoint<PickupBottlesRequest, PickupBottlesResponse>
+public class PickupBottlesEndpoint(RecyclerDbContext db, ILogger<PickupBottlesEndpoint> logger, IRecyclerService recyclerService) : Endpoint<PickupBottlesRequest, PickupBottlesResponse>
 {
-    private readonly RecyclerDbContext _db;
-    private readonly ILogger<PickupBottlesEndpoint> _logger;
-    private readonly IRecyclerService _recyclerService;
-
-    public PickupBottlesEndpoint(RecyclerDbContext db, ILogger<PickupBottlesEndpoint> logger, IRecyclerService recyclerService)
-    {
-        _db = db;
-        _logger = logger;
-        _recyclerService = recyclerService;
-    }
-
     public override void Configure()
     {
         Post("/recyclers/{RecyclerId}/pickup");
@@ -39,7 +28,7 @@ public class PickupBottlesEndpoint : Endpoint<PickupBottlesRequest, PickupBottle
 
     public override async Task HandleAsync(PickupBottlesRequest req, CancellationToken ct)
     {
-        var recycler = await _db.Recyclers.FirstOrDefaultAsync(r => r.Id == req.RecyclerId, ct);
+        var recycler = await db.Recyclers.FirstOrDefaultAsync(r => r.Id == req.RecyclerId, ct);
         if (recycler == null)
         {
             ThrowError("Recycler not found", 404);
@@ -65,11 +54,11 @@ public class PickupBottlesEndpoint : Endpoint<PickupBottlesRequest, PickupBottle
 
         recycler.SetBottleInventory(currentInventory);
         recycler.LastEmptiedAt = DateTimeOffset.UtcNow;
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
 
-        await _recyclerService.RecordBottlesProcessedAsync(pickedUp, ct);
+        await recyclerService.RecordBottlesProcessedAsync(pickedUp, ct);
 
-        _logger.LogInformation("Picked up {Total} bottles from Recycler {RecyclerId}: Glass={Glass}, Metal={Metal}, Plastic={Plastic}",
+        logger.LogInformation("Picked up {Total} bottles from Recycler {RecyclerId}: Glass={Glass}, Metal={Metal}, Plastic={Plastic}",
             remaining, req.RecyclerId, pickedUp.GetValueOrDefault("glass", 0), pickedUp.GetValueOrDefault("metal", 0), pickedUp.GetValueOrDefault("plastic", 0));
 
         await Send.OkAsync(new PickupBottlesResponse

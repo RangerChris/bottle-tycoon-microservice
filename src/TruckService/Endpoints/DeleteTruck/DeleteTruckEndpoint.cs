@@ -3,15 +3,8 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints.DeleteTruck;
 
-public class DeleteTruckEndpoint : EndpointWithoutRequest
+public class DeleteTruckEndpoint(ITruckRepository repo) : EndpointWithoutRequest
 {
-    private readonly ITruckRepository _repo;
-
-    public DeleteTruckEndpoint(ITruckRepository repo)
-    {
-        _repo = repo;
-    }
-
     public override void Configure()
     {
         Delete("/truck/{TruckId}");
@@ -27,7 +20,7 @@ public class DeleteTruckEndpoint : EndpointWithoutRequest
             return;
         }
 
-        var ok = await _repo.DeleteAsync(id, ct);
+        var ok = await repo.DeleteAsync(id, ct);
         if (!ok)
         {
             await Send.ResultAsync(TypedResults.NotFound());

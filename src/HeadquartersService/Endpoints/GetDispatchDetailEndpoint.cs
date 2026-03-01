@@ -3,15 +3,8 @@ using HeadquartersService.Services;
 
 namespace HeadquartersService.Endpoints;
 
-public class GetDispatchDetailEndpoint : EndpointWithoutRequest
+public class GetDispatchDetailEndpoint(IDispatchQueue queue) : EndpointWithoutRequest
 {
-    private readonly IDispatchQueue _queue;
-
-    public GetDispatchDetailEndpoint(IDispatchQueue queue)
-    {
-        _queue = queue;
-    }
-
     public override void Configure()
     {
         Get("/api/v1/headquarters/dispatch/{id}");
@@ -27,7 +20,7 @@ public class GetDispatchDetailEndpoint : EndpointWithoutRequest
             return Task.CompletedTask;
         }
 
-        var req = _queue.Get(id);
+        var req = queue.Get(id);
         if (req == null)
         {
             Send.NotFoundAsync(ct);

@@ -170,18 +170,11 @@ public class TestcontainersFixture : IAsyncLifetime
         }
     }
 
-    private class CapturingHandler : DelegatingHandler
+    private class CapturingHandler(List<HttpRequestMessage> requests) : DelegatingHandler
     {
-        private readonly List<HttpRequestMessage> _requests;
-
-        public CapturingHandler(List<HttpRequestMessage> requests)
-        {
-            _requests = requests;
-        }
-
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            _requests.Add(request);
+            requests.Add(request);
             // Return a successful response since the service isn't running
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
         }

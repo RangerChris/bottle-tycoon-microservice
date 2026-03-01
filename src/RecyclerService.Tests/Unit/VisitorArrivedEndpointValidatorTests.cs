@@ -6,12 +6,7 @@ namespace RecyclerService.Tests.Unit;
 
 public class VisitorArrivedEndpointValidatorTests
 {
-    private readonly VisitorArrivedEndpoint.RequestValidator _validator;
-
-    public VisitorArrivedEndpointValidatorTests()
-    {
-        _validator = new VisitorArrivedEndpoint.RequestValidator();
-    }
+    private readonly VisitorArrivedEndpoint.RequestValidator _validator = new();
 
     [Fact]
     public void Validate_WithPositiveBottles_IsValid()

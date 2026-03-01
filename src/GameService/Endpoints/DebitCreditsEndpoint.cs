@@ -10,15 +10,8 @@ public class DebitCreditsRequest
     public string Reason { get; set; } = string.Empty;
 }
 
-public class DebitCreditsEndpoint : Endpoint<DebitCreditsRequest, bool>
+public class DebitCreditsEndpoint(IPlayerService playerService) : Endpoint<DebitCreditsRequest, bool>
 {
-    private readonly IPlayerService _playerService;
-
-    public DebitCreditsEndpoint(IPlayerService playerService)
-    {
-        _playerService = playerService;
-    }
-
     public override void Configure()
     {
         Post("/player/{PlayerId:guid}/deduct");
@@ -29,7 +22,7 @@ public class DebitCreditsEndpoint : Endpoint<DebitCreditsRequest, bool>
     {
         // If model binding produced validation failures (for example when the route contains a non-GUID value),
         // return them as a structured 400 response early.
-        if (ValidationFailures?.Any() == true)
+        if (ValidationFailures.Any())
         {
             var err = ValidationFailures
                 .GroupBy(f => f.PropertyName)
@@ -41,28 +34,23 @@ public class DebitCreditsEndpoint : Endpoint<DebitCreditsRequest, bool>
         if (req.Amount <= 0)
         {
             AddError("Amount must be positive");
-            if (ValidationFailures != null)
-            {
-                var err = ValidationFailures
-                    .GroupBy(f => f.PropertyName)
-                    .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
-                await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
-            }
+
+            var err = ValidationFailures
+                .GroupBy(f => f.PropertyName)
+                .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
+            await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
 
             return;
         }
 
-        var success = await _playerService.DebitCreditsAsync(req.PlayerId, req.Amount, req.Reason);
+        var success = await playerService.DebitCreditsAsync(req.PlayerId, req.Amount, req.Reason);
         if (!success)
         {
             AddError("Insufficient credits or player not found");
-            if (ValidationFailures != null)
-            {
-                var err = ValidationFailures
-                    .GroupBy(f => f.PropertyName)
-                    .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
-                await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
-            }
+            var err = ValidationFailures
+                .GroupBy(f => f.PropertyName)
+                .ToDictionary(g => g.Key ?? string.Empty, g => g.Select(f => f.ErrorMessage).ToArray());
+            await Send.ResultAsync(TypedResults.BadRequest(new { errors = err }));
 
             return;
         }

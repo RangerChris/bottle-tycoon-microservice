@@ -6,19 +6,12 @@ using Xunit;
 
 namespace TruckService.Tests.Integration;
 
-public class TruckTelemetryEndpointTests : IClassFixture<TestcontainersFixture>
+public class TruckTelemetryEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public TruckTelemetryEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task TruckTelemetry_UpdatesSuccessfully()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var truckId = Guid.NewGuid();
         var playerId = Guid.NewGuid();

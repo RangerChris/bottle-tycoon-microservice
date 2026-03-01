@@ -5,7 +5,6 @@ namespace GameService.Services;
 public interface IGameTelemetryStore
 {
     void SetTotalEarnings(Guid playerId, decimal totalEarnings);
-    void RemoveAll();
     IReadOnlyCollection<GameTelemetrySnapshot> GetAll();
 }
 

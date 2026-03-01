@@ -5,19 +5,12 @@ using Xunit;
 
 namespace TruckService.Tests;
 
-public class TruckServiceSmokeTests : IClassFixture<TestcontainersFixture>
+public class TruckServiceSmokeTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public TruckServiceSmokeTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task GetRoot_ReturnsOk()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
         var res = await client.GetAsync("/", TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
         var content = await res.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);

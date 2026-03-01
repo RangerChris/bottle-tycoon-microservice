@@ -3,15 +3,8 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace TruckService.Endpoints;
 
-public class HealthEndpoint : EndpointWithoutRequest<HealthEndpoint.HealthResponse>
+public class HealthEndpoint(HealthCheckService healthService) : EndpointWithoutRequest<HealthEndpoint.HealthResponse>
 {
-    private readonly HealthCheckService _healthService;
-
-    public HealthEndpoint(HealthCheckService healthService)
-    {
-        _healthService = healthService;
-    }
-
     public override void Configure()
     {
         Get("/health");
@@ -21,7 +14,7 @@ public class HealthEndpoint : EndpointWithoutRequest<HealthEndpoint.HealthRespon
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        var report = await _healthService.CheckHealthAsync(ct);
+        var report = await healthService.CheckHealthAsync(ct);
         var response = new HealthResponse(
             report.Status.ToString(),
             report.Entries.ToDictionary(e => e.Key, e => e.Value.Status.ToString())

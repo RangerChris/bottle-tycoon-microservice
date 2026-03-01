@@ -4,17 +4,8 @@ using TruckService.Models;
 
 namespace TruckService.Endpoints.UpgradeTruck;
 
-public class UpgradeTruckEndpoint : Endpoint<UpgradeTruckRequest, TruckDto>
+public class UpgradeTruckEndpoint(TruckDbContext db, IHttpClientFactory httpClientFactory) : Endpoint<UpgradeTruckRequest, TruckDto>
 {
-    private readonly TruckDbContext _db;
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public UpgradeTruckEndpoint(TruckDbContext db, IHttpClientFactory httpClientFactory)
-    {
-        _db = db;
-        _httpClientFactory = httpClientFactory;
-    }
-
     public override void Configure()
     {
         Post("/truck/{TruckId}/upgrade");
@@ -23,7 +14,7 @@ public class UpgradeTruckEndpoint : Endpoint<UpgradeTruckRequest, TruckDto>
 
     public override async Task HandleAsync(UpgradeTruckRequest req, CancellationToken ct)
     {
-        var truck = await _db.Trucks.FindAsync([req.TruckId], ct);
+        var truck = await db.Trucks.FindAsync([req.TruckId], ct);
         if (truck == null)
         {
             await Send.NotFoundAsync(ct);
@@ -54,7 +45,7 @@ public class UpgradeTruckEndpoint : Endpoint<UpgradeTruckRequest, TruckDto>
             truck.Model = $"Standard Truck Mk {truck.CapacityLevel + 1}";
         }
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
 
         var dto = new TruckDto
         {
@@ -71,7 +62,7 @@ public class UpgradeTruckEndpoint : Endpoint<UpgradeTruckRequest, TruckDto>
     {
         try
         {
-            using var client = _httpClientFactory.CreateClient("GameService");
+            using var client = httpClientFactory.CreateClient("GameService");
             var response = await client.PostAsJsonAsync($"/player/{playerId}/deduct", new
             {
                 PlayerId = playerId,

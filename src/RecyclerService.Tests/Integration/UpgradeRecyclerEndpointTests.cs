@@ -7,19 +7,12 @@ using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class UpgradeRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
+public class UpgradeRecyclerEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public UpgradeRecyclerEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task UpgradeRecycler_ShouldUpgradeSuccessfully()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create a recycler
         var recyclerId = Guid.NewGuid();
@@ -50,7 +43,7 @@ public class UpgradeRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task UpgradeRecycler_RecyclerNotFound_ShouldReturn404()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var upgradeRequest = new UpgradeRecyclerEndpoint.Request
         {
@@ -64,7 +57,7 @@ public class UpgradeRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task UpgradeRecycler_AlreadyAtMaxLevel_ShouldReturn400()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create a recycler
         var recyclerId = Guid.NewGuid();
@@ -109,7 +102,7 @@ public class UpgradeRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task UpgradeRecycler_ShouldSendCorrectDebitRequest()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Create a recycler
         var recyclerId = Guid.NewGuid();
@@ -119,7 +112,7 @@ public class UpgradeRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
         createResponse.StatusCode.ShouldBe(HttpStatusCode.Created);
 
         // Clear previous requests
-        _fixture.HttpRequests.Clear();
+        fixture.HttpRequests.Clear();
 
         // Upgrade the recycler
         var upgradeRequest = new UpgradeRecyclerEndpoint.Request
@@ -131,8 +124,8 @@ public class UpgradeRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
         upgradeResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         // Check that a debit request was made
-        _fixture.HttpRequests.ShouldHaveSingleItem();
-        var request = _fixture.HttpRequests[0];
+        fixture.HttpRequests.ShouldHaveSingleItem();
+        var request = fixture.HttpRequests[0];
         request.RequestUri?.AbsolutePath.ShouldBe($"/player/{playerId}/deduct");
         request.Method.ShouldBe(HttpMethod.Post);
     }

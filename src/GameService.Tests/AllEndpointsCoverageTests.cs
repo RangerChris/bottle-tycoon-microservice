@@ -7,19 +7,12 @@ using Xunit;
 
 namespace GameService.Tests;
 
-public class AllEndpointsCoverageTests : IClassFixture<TestcontainersFixture>
+public class AllEndpointsCoverageTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public AllEndpointsCoverageTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task AllEndpoints_BasicFlow_ShouldSucceedAndReturnExpectedStatuses()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         // Health
         var health = await client.GetAsync("/health", TestContext.Current.CancellationToken);

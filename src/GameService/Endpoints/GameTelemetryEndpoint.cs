@@ -3,17 +3,8 @@ using GameService.Services;
 
 namespace GameService.Endpoints;
 
-public sealed class GameTelemetryEndpoint : Endpoint<GameTelemetryEndpoint.Request, GameTelemetryEndpoint.Response>
+public sealed class GameTelemetryEndpoint(IGameTelemetryStore telemetryStore, ILogger<GameTelemetryEndpoint> logger) : Endpoint<GameTelemetryEndpoint.Request, GameTelemetryEndpoint.Response>
 {
-    private readonly ILogger<GameTelemetryEndpoint> _logger;
-    private readonly IGameTelemetryStore _telemetryStore;
-
-    public GameTelemetryEndpoint(IGameTelemetryStore telemetryStore, ILogger<GameTelemetryEndpoint> logger)
-    {
-        _telemetryStore = telemetryStore;
-        _logger = logger;
-    }
-
     public override void Configure()
     {
         Post("/player/{id:guid}/telemetry");
@@ -27,8 +18,8 @@ public sealed class GameTelemetryEndpoint : Endpoint<GameTelemetryEndpoint.Reque
 
         var totalEarnings = req.TotalEarnings ?? 0;
 
-        _telemetryStore.SetTotalEarnings(playerId, totalEarnings);
-        _logger.LogInformation("Telemetry updated for player {PlayerId} with total earnings {TotalEarnings}",
+        telemetryStore.SetTotalEarnings(playerId, totalEarnings);
+        logger.LogInformation("Telemetry updated for player {PlayerId} with total earnings {TotalEarnings}",
             playerId, totalEarnings);
 
         await Send.OkAsync(new Response { PlayerId = playerId, TotalEarnings = totalEarnings }, ct);

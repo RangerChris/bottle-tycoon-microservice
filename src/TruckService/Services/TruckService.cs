@@ -4,21 +4,14 @@ using TruckService.Models;
 
 namespace TruckService.Services;
 
-public class TruckService : ITruckService
+public class TruckService(TruckDbContext db, ILogger<TruckService> logger) : ITruckService
 {
-    private readonly TruckDbContext _db;
-    private readonly ILogger<TruckService> _logger;
-
-    public TruckService(TruckDbContext db, ILogger<TruckService> logger)
-    {
-        _db = db;
-        _logger = logger;
-    }
+    private readonly ILogger<TruckService> _logger = logger;
 
     public async Task ResetAsync()
     {
-        await _db.Trucks.ExecuteDeleteAsync();
-        await _db.Deliveries.ExecuteDeleteAsync();
+        await db.Trucks.ExecuteDeleteAsync();
+        await db.Deliveries.ExecuteDeleteAsync();
     }
 
     public async Task<TruckDto> CreateTruckAsync(TruckDto? truck = null)
@@ -31,7 +24,7 @@ public class TruckService : ITruckService
 
         if (string.IsNullOrEmpty(t.Model))
         {
-            var existingCount = await _db.Trucks.CountAsync();
+            var existingCount = await db.Trucks.CountAsync();
             t.Model = $"Truck {existingCount + 1}";
         }
 
@@ -48,8 +41,8 @@ public class TruckService : ITruckService
             TotalEarnings = 0
         };
 
-        _db.Trucks.Add(ent);
-        await _db.SaveChangesAsync();
+        db.Trucks.Add(ent);
+        await db.SaveChangesAsync();
         return t;
     }
 }

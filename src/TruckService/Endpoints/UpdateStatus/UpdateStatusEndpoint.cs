@@ -3,15 +3,8 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints.UpdateStatus;
 
-public class UpdateStatusEndpoint : Endpoint<UpdateStatusRequest>
+public class UpdateStatusEndpoint(ITruckRepository repo) : Endpoint<UpdateStatusRequest>
 {
-    private readonly ITruckRepository _repo;
-
-    public UpdateStatusEndpoint(ITruckRepository repo)
-    {
-        _repo = repo;
-    }
-
     public override void Configure()
     {
         Patch("/truck/{TruckId}/status");
@@ -27,7 +20,7 @@ public class UpdateStatusEndpoint : Endpoint<UpdateStatusRequest>
             return;
         }
 
-        var truck = await _repo.GetByIdAsync(id, ct);
+        var truck = await repo.GetByIdAsync(id, ct);
         if (truck is null)
         {
             await Send.ResultAsync(TypedResults.NotFound());
@@ -35,7 +28,7 @@ public class UpdateStatusEndpoint : Endpoint<UpdateStatusRequest>
         }
 
         truck.IsActive = req.IsActive;
-        await _repo.UpdateAsync(truck, ct);
+        await repo.UpdateAsync(truck, ct);
         await Send.ResultAsync(TypedResults.NoContent());
     }
 }

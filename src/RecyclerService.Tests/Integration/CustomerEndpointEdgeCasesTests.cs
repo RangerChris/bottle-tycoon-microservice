@@ -6,19 +6,12 @@ using Xunit;
 
 namespace RecyclerService.Tests.Integration;
 
-public class CustomerEndpointEdgeCasesTests : IClassFixture<TestcontainersFixture>
+public class CustomerEndpointEdgeCasesTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public CustomerEndpointEdgeCasesTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task CustomerArrived_WhenRecyclerBecomesFull_ResponseReflectsCapacity()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var recyclerId = Guid.NewGuid();
         var createRequest = new CreateRequest(recyclerId, "High Capacity", 50, null);
@@ -44,7 +37,7 @@ public class CustomerEndpointEdgeCasesTests : IClassFixture<TestcontainersFixtur
     [Fact]
     public async Task CustomerArrived_InvalidPayload_ReturnsBadRequest()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var recyclerId = Guid.NewGuid();
         var createRequest = new CreateRequest(recyclerId, "Validator", 30, "Aisle 2");

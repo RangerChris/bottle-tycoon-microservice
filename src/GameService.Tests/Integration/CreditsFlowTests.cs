@@ -8,19 +8,12 @@ using Xunit;
 
 namespace GameService.Tests.Integration;
 
-public class CreditsFlowTests : IClassFixture<TestcontainersFixture>
+public class CreditsFlowTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public CreditsFlowTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task CreditEndpoint_ShouldPersistCredits()
     {
-        var client = _fixture.Client;
+        var client = fixture.Client;
 
         var createRes = await client.PostAsJsonAsync("/player", new { }, TestContext.Current.CancellationToken);
         if (createRes.StatusCode != HttpStatusCode.Created)

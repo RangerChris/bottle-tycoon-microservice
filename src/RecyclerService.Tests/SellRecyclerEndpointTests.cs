@@ -8,25 +8,19 @@ using Xunit;
 
 namespace RecyclerService.Tests;
 
-public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
+public class SellRecyclerEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
     private readonly Guid _testPlayerId = Guid.NewGuid();
-
-    public SellRecyclerEndpointTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
 
     [Fact]
     public async Task SellRecycler_WithNoCustomers_ShouldSucceed()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
 
         var recycler = new Recycler
@@ -54,12 +48,12 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellRecycler_WithCustomers_ShouldFail()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
 
         var recycler = new Recycler
@@ -85,12 +79,12 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellRecycler_AlreadyBlocked_ShouldFail()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
 
         var recycler = new Recycler
@@ -112,12 +106,12 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellRecycler_NonExistent_ShouldReturnNotFound()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
 
         var nonExistentId = Guid.NewGuid();
@@ -128,12 +122,12 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task BlockedRecyclers_ShouldNotAppearInList()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
 
         var testId1 = Guid.NewGuid();

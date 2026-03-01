@@ -3,21 +3,9 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints.SellTruck;
 
-public class SellTruckEndpoint : Endpoint<SellTruckEndpoint.Request, SellTruckEndpoint.SellTruckResponse>
+public class SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpClientFactory, ILogger<SellTruckEndpoint> logger, ITruckTelemetryStore telemetryStore)
+    : Endpoint<SellTruckEndpoint.Request, SellTruckEndpoint.SellTruckResponse>
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<SellTruckEndpoint> _logger;
-    private readonly ITruckRepository _repo;
-    private readonly ITruckTelemetryStore _telemetryStore;
-
-    public SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpClientFactory, ILogger<SellTruckEndpoint> logger, ITruckTelemetryStore telemetryStore)
-    {
-        _repo = repo;
-        _httpClientFactory = httpClientFactory;
-        _logger = logger;
-        _telemetryStore = telemetryStore;
-    }
-
     public override void Configure()
     {
         Post("/truck/{TruckId}/sell");
@@ -34,7 +22,7 @@ public class SellTruckEndpoint : Endpoint<SellTruckEndpoint.Request, SellTruckEn
             return;
         }
 
-        var truck = await _repo.GetEntityByIdAsync(truckId, ct);
+        var truck = await repo.GetEntityByIdAsync(truckId, ct);
         if (truck == null)
         {
             await Send.NotFoundAsync(ct);
@@ -57,23 +45,23 @@ public class SellTruckEndpoint : Endpoint<SellTruckEndpoint.Request, SellTruckEn
 
         truck.IsBlockedForSale = true;
         truck.BlockedForSaleAt = DateTimeOffset.UtcNow;
-        await _repo.UpdateAsync(truck, ct);
+        await repo.UpdateAsync(truck, ct);
 
         const decimal salePrice = 600m;
         var creditSuccess = await CreditPlayerAsync(req.PlayerId, salePrice, $"Sold truck {truck.Model}", ct);
 
         if (!creditSuccess)
         {
-            _logger.LogError("Failed to credit player {PlayerId} for truck sale", req.PlayerId);
+            logger.LogError("Failed to credit player {PlayerId} for truck sale", req.PlayerId);
             AddError("Failed to credit player account");
             await Send.ErrorsAsync(500, ct);
             return;
         }
 
-        await _repo.DeleteAsync(truckId, ct);
-        _telemetryStore.Remove(truckId);
+        await repo.DeleteAsync(truckId, ct);
+        telemetryStore.Remove(truckId);
 
-        _logger.LogInformation("Truck {TruckId} sold for {SalePrice} credits to player {PlayerId}",
+        logger.LogInformation("Truck {TruckId} sold for {SalePrice} credits to player {PlayerId}",
             truckId, salePrice, req.PlayerId);
 
         await Send.OkAsync(new SellTruckResponse
@@ -89,7 +77,7 @@ public class SellTruckEndpoint : Endpoint<SellTruckEndpoint.Request, SellTruckEn
     {
         try
         {
-            var client = _httpClientFactory.CreateClient();
+            var client = httpClientFactory.CreateClient();
             var gameServiceUrl = "http://gameservice:80";
 
             var response = await client.PostAsJsonAsync(
@@ -101,7 +89,7 @@ public class SellTruckEndpoint : Endpoint<SellTruckEndpoint.Request, SellTruckEn
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to credit player {PlayerId}", playerId);
+            logger.LogError(ex, "Failed to credit player {PlayerId}", playerId);
             return false;
         }
     }

@@ -11,24 +11,17 @@ using Xunit;
 
 namespace RecyclerService.Tests;
 
-public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
+public class RecyclerServiceTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly TestcontainersFixture _fixture;
-
-    public RecyclerServiceTests(TestcontainersFixture fixture)
-    {
-        _fixture = fixture;
-    }
-
     [Fact]
     public async Task CreateRecyclerAsync_CreatesRecycler()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
@@ -54,12 +47,12 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task ResetAsync_DeletesAllRecyclers()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
@@ -85,12 +78,12 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task RecordBottlesProcessedAsync_WithValidBottles_RecordsMetrics()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
@@ -113,12 +106,12 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task RecordBottlesProcessedAsync_WithEmptyDictionary_Completes()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
@@ -136,12 +129,12 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task RecordBottlesProcessedAsync_WithZeroValues_IgnoresZeros()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
@@ -164,12 +157,12 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task RecordBottlesProcessedAsync_WithEmptyKey_IgnoresEmptyKeys()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
@@ -191,12 +184,12 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task RecordBottlesProcessedAsync_WithWhitespaceKey_IgnoresWhitespaceKeys()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");
@@ -218,12 +211,12 @@ public class RecyclerServiceTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task RecordBottlesProcessedAsync_WithNegativeValue_StillRecords()
     {
-        if (!_fixture.Started)
+        if (!fixture.Started)
         {
             return;
         }
 
-        using var scope = _fixture.Host.Services.CreateScope();
+        using var scope = fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Services.RecyclerService>>();
         var meter = new Meter("RecyclerService.Tests");

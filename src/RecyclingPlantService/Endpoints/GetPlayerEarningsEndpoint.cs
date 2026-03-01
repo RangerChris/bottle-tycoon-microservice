@@ -4,15 +4,8 @@ using RecyclingPlantService.Services;
 
 namespace RecyclingPlantService.Endpoints;
 
-public class GetPlayerEarningsEndpoint : EndpointWithoutRequest<PlayerEarnings>
+public class GetPlayerEarningsEndpoint(IRecyclingPlantService service) : EndpointWithoutRequest<PlayerEarnings>
 {
-    private readonly IRecyclingPlantService _service;
-
-    public GetPlayerEarningsEndpoint(IRecyclingPlantService service)
-    {
-        _service = service;
-    }
-
     public override void Configure()
     {
         Get("/api/v1/recycling-plant/players/{PlayerId}/earnings");
@@ -22,7 +15,7 @@ public class GetPlayerEarningsEndpoint : EndpointWithoutRequest<PlayerEarnings>
     public override async Task HandleAsync(CancellationToken ct)
     {
         var playerId = Route<Guid>("PlayerId");
-        var earnings = await _service.GetPlayerEarningsAsync(playerId);
+        var earnings = await service.GetPlayerEarningsAsync(playerId);
         await Send.OkAsync(earnings);
     }
 }

@@ -5,19 +5,8 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints;
 
-public sealed class TruckTelemetryEndpoint : Endpoint<TruckTelemetryEndpoint.Request, TruckTelemetryEndpoint.Response>
+public sealed class TruckTelemetryEndpoint(TruckDbContext db, ITruckTelemetryStore telemetryStore, ILogger<TruckTelemetryEndpoint> logger) : Endpoint<TruckTelemetryEndpoint.Request, TruckTelemetryEndpoint.Response>
 {
-    private readonly TruckDbContext _db;
-    private readonly ILogger<TruckTelemetryEndpoint> _logger;
-    private readonly ITruckTelemetryStore _telemetryStore;
-
-    public TruckTelemetryEndpoint(TruckDbContext db, ITruckTelemetryStore telemetryStore, ILogger<TruckTelemetryEndpoint> logger)
-    {
-        _db = db;
-        _telemetryStore = telemetryStore;
-        _logger = logger;
-    }
-
     public override void Configure()
     {
         Post("/trucks/{id:guid}/telemetry");
@@ -28,7 +17,7 @@ public sealed class TruckTelemetryEndpoint : Endpoint<TruckTelemetryEndpoint.Req
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
         var truckId = Route<Guid>("id");
-        var truck = await _db.Trucks.FirstOrDefaultAsync(t => t.Id == truckId, ct);
+        var truck = await db.Trucks.FirstOrDefaultAsync(t => t.Id == truckId, ct);
         if (truck == null)
         {
             await Send.NotFoundAsync(ct);
@@ -39,8 +28,8 @@ public sealed class TruckTelemetryEndpoint : Endpoint<TruckTelemetryEndpoint.Req
         var currentLoad = req.CurrentLoad ?? 0;
         var status = req.Status ?? "idle";
 
-        _telemetryStore.Set(truckId, truck.Model, currentLoad, capacity, status);
-        _logger.LogInformation("Telemetry updated for truck {TruckId}: load={CurrentLoad}, capacity={Capacity}, status={Status}",
+        telemetryStore.Set(truckId, truck.Model, currentLoad, capacity, status);
+        logger.LogInformation("Telemetry updated for truck {TruckId}: load={CurrentLoad}, capacity={Capacity}, status={Status}",
             truckId, currentLoad, capacity, status);
 
         await Send.OkAsync(new Response { TruckId = truckId, CurrentLoad = currentLoad, Capacity = capacity, Status = status }, ct);

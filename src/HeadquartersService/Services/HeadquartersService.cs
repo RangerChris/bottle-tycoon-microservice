@@ -2,21 +2,12 @@
 
 namespace HeadquartersService.Services;
 
-public class HeadquartersService : IHeadquartersService
+public class HeadquartersService(IFleetService fleetService, IDispatchQueue dispatchQueue) : IHeadquartersService
 {
-    private readonly IDispatchQueue _dispatchQueue;
-    private readonly IFleetService _fleetService;
-
-    public HeadquartersService(IFleetService fleetService, IDispatchQueue dispatchQueue)
-    {
-        _fleetService = fleetService;
-        _dispatchQueue = dispatchQueue;
-    }
-
     public Task ResetAsync()
     {
-        _fleetService.Reset();
-        _dispatchQueue.Reset();
+        fleetService.Reset();
+        dispatchQueue.Reset();
         return Task.CompletedTask;
     }
 
@@ -31,7 +22,7 @@ public class HeadquartersService : IHeadquartersService
             Reliability = 0.95
         };
 
-        _fleetService.AddTruck(truck);
+        fleetService.AddTruck(truck);
 
         return Task.CompletedTask;
     }
