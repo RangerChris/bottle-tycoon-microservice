@@ -16,6 +16,6 @@ public class GetPlayerEarningsEndpoint(IRecyclingPlantService service) : Endpoin
     {
         var playerId = Route<Guid>("PlayerId");
         var earnings = await service.GetPlayerEarningsAsync(playerId);
-        await Send.OkAsync(earnings);
+        await Send.OkAsync(earnings, ct);
     }
 }

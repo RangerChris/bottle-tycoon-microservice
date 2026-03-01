@@ -21,14 +21,12 @@ namespace RecyclingPlantService.Tests.TestFixtures;
 
 public class TestcontainersFixture : IAsyncLifetime
 {
-    private readonly string _databaseName;
-
     public TestcontainersFixture()
     {
-        _databaseName = $"recyclingstate_{Guid.NewGuid().ToString("N")}";
+        var databaseName = $"recyclingstate_{Guid.NewGuid():N}";
         // Configure a wait strategy so StartAsync doesn't return until the container port is available
         Postgres = new PostgreSqlBuilder("postgres:16-alpine")
-            .WithDatabase(_databaseName)
+            .WithDatabase(databaseName)
             .WithUsername("postgres")
             .WithPassword("password")
             .WithPortBinding(5432, true)
@@ -38,13 +36,11 @@ public class TestcontainersFixture : IAsyncLifetime
             .Build();
     }
 
-    public PostgreSqlContainer Postgres { get; }
+    private PostgreSqlContainer Postgres { get; }
 
     public HttpClient Client { get; private set; } = null!;
 
-    public bool Started { get; private set; }
-
-    public string ConnectionString { get; private set; } = "";
+    private string ConnectionString { get; set; } = "";
 
     public IHost? Host { get; private set; }
 
@@ -60,7 +56,6 @@ public class TestcontainersFixture : IAsyncLifetime
         ConnectionString = Postgres.GetConnectionString();
 
         // set public flag so callers/tests can safely decide whether the container is available
-        Started = started;
 
         // Build minimal WebApplication for tests (fallback to in-memory sqlite when containers not available)
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Testing" });

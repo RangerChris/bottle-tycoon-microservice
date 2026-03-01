@@ -15,7 +15,7 @@ public class GetTopEarnersEndpoint(IRecyclingPlantService service) : Endpoint<Ge
     public override async Task HandleAsync(GetTopEarnersRequest req, CancellationToken ct)
     {
         var topEarners = await service.GetTopEarnersAsync(req.Count);
-        await Send.OkAsync(topEarners);
+        await Send.OkAsync(topEarners, ct);
     }
 }
 

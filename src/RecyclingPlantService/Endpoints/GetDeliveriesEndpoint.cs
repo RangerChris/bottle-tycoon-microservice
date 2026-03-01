@@ -15,7 +15,7 @@ public class GetDeliveriesEndpoint(IRecyclingPlantService service) : Endpoint<Ge
     public override async Task HandleAsync(GetDeliveriesRequest req, CancellationToken ct)
     {
         var deliveries = await service.GetDeliveriesAsync(req.Page, req.PageSize);
-        await Send.OkAsync(deliveries);
+        await Send.OkAsync(deliveries, ct);
     }
 }
 
