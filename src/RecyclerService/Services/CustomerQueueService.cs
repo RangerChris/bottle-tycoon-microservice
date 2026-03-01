@@ -7,7 +7,6 @@ namespace RecyclerService.Services;
 public interface ICustomerQueueService
 {
     Task<Customer?> GetNextWaitingCustomerAsync(Guid recyclerId, CancellationToken ct = default);
-    Task MarkAsProcessingAsync(Guid customerId, CancellationToken ct = default);
     Task MarkAsDoneAsync(Guid customerId, CancellationToken ct = default);
     Task<int> GetQueueDepthAsync(Guid recyclerId, CancellationToken ct = default);
 }

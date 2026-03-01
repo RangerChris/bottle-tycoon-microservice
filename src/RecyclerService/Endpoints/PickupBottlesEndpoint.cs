@@ -56,7 +56,7 @@ public class PickupBottlesEndpoint(RecyclerDbContext db, ILogger<PickupBottlesEn
         recycler.LastEmptiedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        await recyclerService.RecordBottlesProcessedAsync(pickedUp, ct);
+        await recyclerService.RecordBottlesProcessedAsync(pickedUp);
 
         logger.LogInformation("Picked up {Total} bottles from Recycler {RecyclerId}: Glass={Glass}, Metal={Metal}, Plastic={Plastic}",
             remaining, req.RecyclerId, pickedUp.GetValueOrDefault("glass", 0), pickedUp.GetValueOrDefault("metal", 0), pickedUp.GetValueOrDefault("plastic", 0));

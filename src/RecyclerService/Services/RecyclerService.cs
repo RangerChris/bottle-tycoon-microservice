@@ -85,7 +85,7 @@ public class RecyclerService(RecyclerDbContext db, ILogger<RecyclerService> logg
         return r;
     }
 
-    public Task RecordBottlesProcessedAsync(Dictionary<string, int> bottlesByType, CancellationToken ct = default)
+    public Task RecordBottlesProcessedAsync(Dictionary<string, int> bottlesByType)
     {
         foreach (var kv in bottlesByType)
         {

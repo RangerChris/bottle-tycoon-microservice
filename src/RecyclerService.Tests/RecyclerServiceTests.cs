@@ -98,7 +98,7 @@ public class RecyclerServiceTests(TestcontainersFixture fixture) : IClassFixture
             { "plastic", 8 }
         };
 
-        await svc.RecordBottlesProcessedAsync(bottlesByType, TestContext.Current.CancellationToken);
+        await svc.RecordBottlesProcessedAsync(bottlesByType);
 
         bottlesByType.Count.ShouldBe(3);
     }
@@ -121,7 +121,7 @@ public class RecyclerServiceTests(TestcontainersFixture fixture) : IClassFixture
 
         var bottlesByType = new Dictionary<string, int>();
 
-        await svc.RecordBottlesProcessedAsync(bottlesByType, TestContext.Current.CancellationToken);
+        await svc.RecordBottlesProcessedAsync(bottlesByType);
 
         bottlesByType.Count.ShouldBe(0);
     }
@@ -149,7 +149,7 @@ public class RecyclerServiceTests(TestcontainersFixture fixture) : IClassFixture
             { "plastic", 0 }
         };
 
-        await svc.RecordBottlesProcessedAsync(bottlesByType, TestContext.Current.CancellationToken);
+        await svc.RecordBottlesProcessedAsync(bottlesByType);
 
         bottlesByType["metal"].ShouldBe(5);
     }
@@ -176,7 +176,7 @@ public class RecyclerServiceTests(TestcontainersFixture fixture) : IClassFixture
             { "glass", 5 }
         };
 
-        await svc.RecordBottlesProcessedAsync(bottlesByType, TestContext.Current.CancellationToken);
+        await svc.RecordBottlesProcessedAsync(bottlesByType);
 
         bottlesByType["glass"].ShouldBe(5);
     }
@@ -203,7 +203,7 @@ public class RecyclerServiceTests(TestcontainersFixture fixture) : IClassFixture
             { "metal", 8 }
         };
 
-        await svc.RecordBottlesProcessedAsync(bottlesByType, TestContext.Current.CancellationToken);
+        await svc.RecordBottlesProcessedAsync(bottlesByType);
 
         bottlesByType["metal"].ShouldBe(8);
     }
@@ -230,7 +230,7 @@ public class RecyclerServiceTests(TestcontainersFixture fixture) : IClassFixture
             { "metal", 10 }
         };
 
-        await svc.RecordBottlesProcessedAsync(bottlesByType, TestContext.Current.CancellationToken);
+        await svc.RecordBottlesProcessedAsync(bottlesByType);
 
         bottlesByType["glass"].ShouldBe(-5);
         bottlesByType["metal"].ShouldBe(10);

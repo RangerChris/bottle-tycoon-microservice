@@ -82,11 +82,11 @@ public class UpgradeRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory ht
 
     public new record Response
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = default!;
-        public int Capacity { get; set; }
-        public int CapacityLevel { get; set; }
-        public int CurrentLoad { get; set; }
-        public string? Location { get; set; }
+        public Guid Id { get; init; }
+        public string Name { get; init; } = string.Empty;
+        public int Capacity { get; init; }
+        public int CapacityLevel { get; init; }
+        public int CurrentLoad { get; init; }
+        public string? Location { get; init; }
     }
 }

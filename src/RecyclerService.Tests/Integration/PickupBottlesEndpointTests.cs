@@ -17,7 +17,7 @@ public class PickupBottlesEndpointTests(TestcontainersFixture fixture) : IClassF
         var client = fixture.Client;
         Guid recyclerId;
 
-        using (var scope = fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
             var recycler = new Recycler
@@ -57,7 +57,7 @@ public class PickupBottlesEndpointTests(TestcontainersFixture fixture) : IClassF
         var client = fixture.Client;
         Guid recyclerId;
 
-        using (var scope = fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
             var recycler = new Recycler
@@ -106,7 +106,7 @@ public class PickupBottlesEndpointTests(TestcontainersFixture fixture) : IClassF
         var client = fixture.Client;
         Guid recyclerId;
 
-        using (var scope = fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
             var recycler = new Recycler
@@ -143,7 +143,7 @@ public class PickupBottlesEndpointTests(TestcontainersFixture fixture) : IClassF
         var client = fixture.Client;
         Guid recyclerId;
 
-        using (var scope = fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
             var recycler = new Recycler
@@ -168,10 +168,10 @@ public class PickupBottlesEndpointTests(TestcontainersFixture fixture) : IClassF
         var request = new { RecyclerId = recyclerId, MaxCapacity = 30 };
         await client.PostAsJsonAsync($"/recyclers/{recyclerId}/pickup", request, TestContext.Current.CancellationToken);
 
-        using (var scope = fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
-            var recycler = await db.Recyclers.FindAsync(new object[] { recyclerId }, TestContext.Current.CancellationToken);
+            var recycler = await db.Recyclers.FindAsync([recyclerId], TestContext.Current.CancellationToken);
             recycler.ShouldNotBeNull();
             var inventory = recycler.GetBottleInventory();
             inventory["glass"].ShouldBe(0);
@@ -186,7 +186,7 @@ public class PickupBottlesEndpointTests(TestcontainersFixture fixture) : IClassF
         var client = fixture.Client;
         Guid recyclerId;
 
-        using (var scope = fixture.Host!.Services.CreateScope())
+        using (var scope = fixture.Host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
             var recycler = new Recycler
