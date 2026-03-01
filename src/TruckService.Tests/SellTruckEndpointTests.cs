@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Net;
+using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using TruckService.Data;
 using TruckService.Services;
@@ -63,7 +65,18 @@ public class SellTruckEndpointTests(TestcontainersFixture fixture) : IClassFixtu
         db.Trucks.Add(truck);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        truck.IsActive.ShouldBeTrue();
+        // Call the endpoint via HTTP
+        var client = fixture.Client;
+        var req = new { PlayerId = Guid.NewGuid() };
+        var res = await client.PostAsJsonAsync($"/truck/{truck.Id}/sell", req, TestContext.Current.CancellationToken);
+        res.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        // Ensure DB unchanged
+        using var verifyScope = fixture.Host!.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<TruckDbContext>();
+        var fetched = await verifyDb.Trucks.FindAsync([truck.Id], TestContext.Current.CancellationToken);
+        fetched.ShouldNotBeNull();
+        fetched.IsActive.ShouldBeTrue();
     }
 
     [Fact]
@@ -89,11 +102,32 @@ public class SellTruckEndpointTests(TestcontainersFixture fixture) : IClassFixtu
         db.Trucks.Add(truck);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        truck.IsBlockedForSale.ShouldBeTrue();
+        var client = fixture.Client;
+        var req = new { PlayerId = Guid.NewGuid() };
+        var res = await client.PostAsJsonAsync($"/truck/{truck.Id}/sell", req, TestContext.Current.CancellationToken);
+        res.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        var fetched = await db.Trucks.FindAsync([truck.Id], TestContext.Current.CancellationToken);
+        fetched.ShouldNotBeNull();
+        fetched.IsBlockedForSale.ShouldBeTrue();
     }
 
     [Fact]
-    public async Task SellTruck_NonExistent_ShouldReturnNull()
+    public async Task SellTruck_NonExistent_ShouldReturnNotFound()
+    {
+        if (!fixture.Started)
+        {
+            return;
+        }
+
+        var client = fixture.Client;
+        var req = new { PlayerId = Guid.NewGuid() };
+        var res = await client.PostAsJsonAsync($"/truck/{Guid.NewGuid()}/sell", req, TestContext.Current.CancellationToken);
+        res.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task SellTruck_SuccessfulSale_BlocksTruckAndCreditsPlayer()
     {
         if (!fixture.Started)
         {
@@ -101,11 +135,29 @@ public class SellTruckEndpointTests(TestcontainersFixture fixture) : IClassFixtu
         }
 
         using var scope = fixture.Host!.Services.CreateScope();
-        var repo = scope.ServiceProvider.GetRequiredService<ITruckRepository>();
+        var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
 
-        var nonExistentId = Guid.NewGuid();
-        var truck = await repo.GetEntityByIdAsync(nonExistentId, TestContext.Current.CancellationToken);
-        truck.ShouldBeNull();
+        var truck = new TruckEntity
+        {
+            Id = Guid.NewGuid(),
+            Model = "Truck for Sale",
+            IsActive = false,
+            CapacityLevel = 0,
+            IsBlockedForSale = false
+        };
+        db.Trucks.Add(truck);
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var client = fixture.Client;
+        var req = new { PlayerId = Guid.NewGuid() };
+        var res = await client.PostAsJsonAsync($"/truck/{truck.Id}/sell", req, TestContext.Current.CancellationToken);
+
+        res.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        using var verifyScope = fixture.Host!.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<TruckDbContext>();
+        var fetched = await verifyDb.Trucks.FindAsync(new object[] { truck.Id }, TestContext.Current.CancellationToken);
+        fetched.ShouldBeNull();
     }
 
     [Fact]

@@ -76,11 +76,11 @@ public class SellRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpC
     {
         try
         {
-            var client = httpClientFactory.CreateClient();
-            var gameServiceUrl = "http://gameservice:80";
+            var client = httpClientFactory.CreateClient("GameService");
+            var baseUrl = client.BaseAddress?.ToString().TrimEnd('/') ?? "http://gameservice:80";
 
             var response = await client.PostAsJsonAsync(
-                $"{gameServiceUrl}/player/{playerId}/deposit",
+                $"{baseUrl}/player/{playerId}/deposit",
                 new { PlayerId = playerId, Amount = amount, Reason = reason },
                 ct);
 

@@ -36,7 +36,8 @@ public class SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpCli
             return;
         }
 
-        if (!truck.IsActive)
+        // Fix: do not allow selling when truck is active
+        if (truck.IsActive)
         {
             AddError("Cannot sell active truck. Wait for truck to become idle.");
             await Send.ErrorsAsync(400, ct);
@@ -77,11 +78,12 @@ public class SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpCli
     {
         try
         {
-            var client = httpClientFactory.CreateClient();
-            var gameServiceUrl = "http://gameservice:80";
+            // Use named client so TestcontainersFixture's mock client is used in tests
+            var client = httpClientFactory.CreateClient("GameService");
+            var baseUrl = client.BaseAddress?.ToString()?.TrimEnd('/') ?? "http://gameservice:80";
 
             var response = await client.PostAsJsonAsync(
-                $"{gameServiceUrl}/player/{playerId}/deposit",
+                $"{baseUrl}/player/{playerId}/deposit",
                 new { PlayerId = playerId, Amount = amount, Reason = reason },
                 ct);
 
