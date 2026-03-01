@@ -8,12 +8,14 @@ public class SellTruckEndpoint : Endpoint<SellTruckEndpoint.Request, SellTruckEn
     private readonly ITruckRepository _repo;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<SellTruckEndpoint> _logger;
+    private readonly ITruckTelemetryStore _telemetryStore;
 
-    public SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpClientFactory, ILogger<SellTruckEndpoint> logger)
+    public SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpClientFactory, ILogger<SellTruckEndpoint> logger, ITruckTelemetryStore telemetryStore)
     {
         _repo = repo;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _telemetryStore = telemetryStore;
     }
 
     public override void Configure()
@@ -69,6 +71,7 @@ public class SellTruckEndpoint : Endpoint<SellTruckEndpoint.Request, SellTruckEn
         }
 
         await _repo.DeleteAsync(truckId, ct);
+        _telemetryStore.Remove(truckId);
 
         _logger.LogInformation("Truck {TruckId} sold for {SalePrice} credits to player {PlayerId}",
             truckId, salePrice, req.PlayerId);

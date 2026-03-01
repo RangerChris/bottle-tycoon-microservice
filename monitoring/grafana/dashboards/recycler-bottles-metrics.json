@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "recycler_current_visitors{job=\"recyclerservice\"} and on(recycler_id) (timestamp(recycler_current_visitors{job=\"recyclerservice\"}) - time() < 60)",
+          "expr": "max by (recycler_name) (recycler_current_visitors{job=\"recyclerservice\"} and (timestamp(recycler_current_visitors{job=\"recyclerservice\"}) > (time() - 30)))",
           "legendFormat": "{{ recycler_name }}",
           "refId": "A"
         }

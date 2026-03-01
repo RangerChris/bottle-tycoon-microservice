@@ -5,6 +5,7 @@ namespace TruckService.Services;
 public interface ITruckTelemetryStore
 {
     void Set(Guid truckId, string truckName, int currentLoad, int capacity, string status);
+    void Remove(Guid truckId);
     void RemoveAll();
     IReadOnlyCollection<TruckTelemetrySnapshot> GetAll();
 }
@@ -20,6 +21,11 @@ public sealed class TruckTelemetryStore : ITruckTelemetryStore
         var sanitizedLoad = currentLoad < 0 ? 0 : currentLoad;
         var sanitizedCapacity = capacity < 0 ? 0 : capacity;
         _trucksById[truckId] = new TruckTelemetrySnapshot(truckId, truckName, sanitizedLoad, sanitizedCapacity, status);
+    }
+
+    public void Remove(Guid truckId)
+    {
+        _trucksById.TryRemove(truckId, out _);
     }
 
     public void RemoveAll()

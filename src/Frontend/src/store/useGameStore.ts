@@ -250,11 +250,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       return
     }
 
+    const recyclerName = recycler.name
+
     set((draft: any) => {
-      const r = draft.recyclers.find((r: any) => r.id == recyclerId)
-      if (r) {
-        r.isBlockedForSale = true
-      }
+      draft.recyclers = draft.recyclers.filter((r: any) => r.id != recyclerId)
+      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Selling ${recyclerName}...` })
     })
 
     try {
@@ -272,10 +272,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       if (!response.ok) {
         const errorText = await response.text()
         set((draft: any) => {
-          const r = draft.recyclers.find((r: any) => r.id == recyclerId)
-          if (r) {
-            r.isBlockedForSale = false
-          }
+          draft.recyclers.push(recycler)
           draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: `Failed to sell recycler: ${errorText}` })
         })
         return
@@ -285,17 +282,13 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
       set((draft: any) => {
         draft.credits += result.creditsAwarded
-        draft.recyclers = draft.recyclers.filter((r: any) => r.id != recyclerId)
         draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Sold ${result.recyclerName} for ${result.creditsAwarded} credits` })
       })
 
       await get().reportRecyclerTelemetry()
     } catch (error) {
       set((draft: any) => {
-        const r = draft.recyclers.find((r: any) => r.id == recyclerId)
-        if (r) {
-          r.isBlockedForSale = false
-        }
+        draft.recyclers.push(recycler)
         draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to sell recycler' })
       })
     }
@@ -310,11 +303,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       return
     }
 
+    const truckModel = truck.model
+
     set((draft: any) => {
-      const t = draft.trucks.find((t: any) => t.id == truckId)
-      if (t) {
-        t.isBlockedForSale = true
-      }
+      draft.trucks = draft.trucks.filter((t: any) => t.id != truckId)
+      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Selling ${truckModel}...` })
     })
 
     try {
@@ -331,10 +324,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       if (!response.ok) {
         const errorText = await response.text()
         set((draft: any) => {
-          const t = draft.trucks.find((t: any) => t.id == truckId)
-          if (t) {
-            t.isBlockedForSale = false
-          }
+          draft.trucks.push(truck)
           draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: `Failed to sell truck: ${errorText}` })
         })
         return
@@ -344,17 +334,13 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
       set((draft: any) => {
         draft.credits += result.creditsAwarded
-        draft.trucks = draft.trucks.filter((t: any) => t.id != truckId)
         draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Sold ${result.truckModel} for ${result.creditsAwarded} credits` })
       })
 
       await get().reportTruckTelemetry()
     } catch (error) {
       set((draft: any) => {
-        const t = draft.trucks.find((t: any) => t.id == truckId)
-        if (t) {
-          t.isBlockedForSale = false
-        }
+        draft.trucks.push(truck)
         draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to sell truck' })
       })
     }

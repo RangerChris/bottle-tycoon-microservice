@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "recycler_current_bottles{job=\"recyclerservice\"} and on(recycler_id) (timestamp(recycler_current_bottles{job=\"recyclerservice\"}) - time() < 60)",
+          "expr": "recycler_current_bottles{job=\"recyclerservice\"} and (timestamp(recycler_current_bottles{job=\"recyclerservice\"}) > (time() - 30))",
           "legendFormat": "{{ recycler_name }}",
           "refId": "A"
         }
@@ -191,7 +191,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "recycler_queue_depth_customers{job=\"recyclerservice\"} and on(recycler_id) (timestamp(recycler_queue_depth_customers{job=\"recyclerservice\"}) - time() < 300)",
+          "expr": "max by (recycler_name) (recycler_queue_depth_customers{job=\"recyclerservice\"} and (timestamp(recycler_queue_depth_customers{job=\"recyclerservice\"}) > (time() - 30)))",
           "legendFormat": "{{ recycler_name }}",
           "refId": "A"
         }

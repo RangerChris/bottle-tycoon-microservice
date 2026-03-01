@@ -5,6 +5,7 @@ namespace RecyclerService.Services;
 public interface IRecyclerTelemetryStore
 {
     void Set(Guid recyclerId, string recyclerName, int currentBottles, int currentVisitors, int queueDepth);
+    void Remove(Guid recyclerId);
     void RemoveAll();
     IReadOnlyCollection<RecyclerTelemetrySnapshot> GetAll();
 }
@@ -21,6 +22,11 @@ public sealed class RecyclerTelemetryStore : IRecyclerTelemetryStore
         var sanitizedVisitors = currentVisitors < 0 ? 0 : currentVisitors;
         var sanitizedQueueDepth = queueDepth < 0 ? 0 : queueDepth;
         _recyclerById[recyclerId] = new RecyclerTelemetrySnapshot(recyclerId, recyclerName, sanitizedBottles, sanitizedVisitors, sanitizedQueueDepth);
+    }
+
+    public void Remove(Guid recyclerId)
+    {
+        _recyclerById.TryRemove(recyclerId, out _);
     }
 
     public void RemoveAll()

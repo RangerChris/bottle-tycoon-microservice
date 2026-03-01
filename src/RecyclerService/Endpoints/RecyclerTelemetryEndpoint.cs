@@ -31,6 +31,7 @@ public sealed class RecyclerTelemetryEndpoint : Endpoint<RecyclerTelemetryEndpoi
         var recycler = await _db.Recyclers.FirstOrDefaultAsync(r => r.Id == recyclerId, ct);
         if (recycler == null)
         {
+            _logger.LogWarning("Telemetry update attempted for non-existent recycler {RecyclerId}", recyclerId);
             await Send.NotFoundAsync(ct);
             return;
         }
@@ -45,7 +46,7 @@ public sealed class RecyclerTelemetryEndpoint : Endpoint<RecyclerTelemetryEndpoi
         var queueDepth = req.QueueDepth ?? 0;
 
         _telemetryStore.Set(recyclerId, recycler.Name, total, visitorCount, queueDepth);
-        _logger.LogInformation("Telemetry updated for recycler {RecyclerId} with {TotalBottles} bottles, {VisitorCount} visitors, and {QueueDepth} in queue", recyclerId, total, visitorCount, queueDepth);
+        _logger.LogInformation("Telemetry updated for recycler {RecyclerId} ({RecyclerName}) with {TotalBottles} bottles, {VisitorCount} visitors, and {QueueDepth} in queue", recyclerId, recycler.Name, total, visitorCount, queueDepth);
 
         await Send.OkAsync(new Response { RecyclerId = recyclerId, CurrentBottles = total, CurrentVisitors = visitorCount, QueueDepth = queueDepth }, ct);
     }

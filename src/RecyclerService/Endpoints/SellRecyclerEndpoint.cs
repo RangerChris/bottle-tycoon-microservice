@@ -1,6 +1,7 @@
 ﻿using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
+using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
@@ -9,12 +10,14 @@ public class SellRecyclerEndpoint : Endpoint<SellRecyclerEndpoint.Request, SellR
     private readonly RecyclerDbContext _db;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<SellRecyclerEndpoint> _logger;
+    private readonly IRecyclerTelemetryStore _telemetryStore;
 
-    public SellRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory, ILogger<SellRecyclerEndpoint> logger)
+    public SellRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpClientFactory, ILogger<SellRecyclerEndpoint> logger, IRecyclerTelemetryStore telemetryStore)
     {
         _db = db;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _telemetryStore = telemetryStore;
     }
 
     public override void Configure()
@@ -67,6 +70,7 @@ public class SellRecyclerEndpoint : Endpoint<SellRecyclerEndpoint.Request, SellR
 
         _db.Recyclers.Remove(recycler);
         await _db.SaveChangesAsync(ct);
+        _telemetryStore.Remove(recycler.Id);
 
         _logger.LogInformation("Recycler {RecyclerId} sold for {SalePrice} credits to player {PlayerId}",
             recycler.Id, salePrice, req.PlayerId);
