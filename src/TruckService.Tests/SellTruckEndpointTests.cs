@@ -9,8 +9,6 @@ namespace TruckService.Tests;
 
 public class SellTruckEndpointTests(TestcontainersFixture fixture) : IClassFixture<TestcontainersFixture>
 {
-    private readonly Guid _testPlayerId = Guid.NewGuid();
-
     [Fact]
     public async Task SellTruck_WhenIdle_ShouldSucceed()
     {

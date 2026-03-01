@@ -15,6 +15,6 @@ public class ListTrucksEndpoint(ITruckRepository repo) : EndpointWithoutRequest<
     public override async Task HandleAsync(CancellationToken ct)
     {
         var trucks = await repo.GetAllAsync(ct);
-        await Send.OkAsync(trucks);
+        await Send.OkAsync(trucks, ct);
     }
 }

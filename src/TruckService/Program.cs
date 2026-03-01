@@ -180,10 +180,6 @@ app.MapGet("/", () => Results.Text("TruckService OK"));
 Log.Information("Starting TruckService host");
 app.Run();
 
-public abstract partial class Program
-{
-}
-
 [ExcludeFromCodeCoverage]
 public abstract partial class Program
 {

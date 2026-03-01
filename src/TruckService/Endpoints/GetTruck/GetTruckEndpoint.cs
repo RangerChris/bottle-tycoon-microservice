@@ -21,7 +21,7 @@ public class GetTruckEndpoint(ITruckRepository repo) : Endpoint<GetTruckRequest,
         }
         else
         {
-            await Send.OkAsync(truck);
+            await Send.OkAsync(truck, ct);
         }
     }
 }

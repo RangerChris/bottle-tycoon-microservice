@@ -23,14 +23,12 @@ namespace TruckService.Tests.TestFixtures;
 
 public class TestcontainersFixture : IAsyncLifetime
 {
-    private readonly string _databaseName;
-
     public TestcontainersFixture()
     {
-        _databaseName = $"truckstate_{Guid.NewGuid().ToString("N")}";
+        var databaseName = $"truckstate_{Guid.NewGuid().ToString("N")}";
         // Configure a wait strategy so StartAsync doesn't return until the container port is available
         Postgres = new PostgreSqlBuilder("postgres:16-alpine")
-            .WithDatabase(_databaseName)
+            .WithDatabase(databaseName)
             .WithUsername("postgres")
             .WithPassword("password")
             .WithPortBinding(5432, true)
@@ -40,15 +38,15 @@ public class TestcontainersFixture : IAsyncLifetime
             .Build();
     }
 
-    public PostgreSqlContainer Postgres { get; }
+    private PostgreSqlContainer Postgres { get; }
 
     public HttpClient Client { get; private set; } = null!;
 
     public bool Started { get; private set; }
 
-    public string ConnectionString { get; private set; } = "";
+    private string ConnectionString { get; set; } = "";
 
-    public List<HttpRequestMessage> HttpRequests { get; } = [];
+    private List<HttpRequestMessage> HttpRequests { get; } = [];
 
     public IHost? Host { get; private set; }
 
@@ -98,7 +96,7 @@ public class TestcontainersFixture : IAsyncLifetime
         builder.Services.AddScoped<IRouteWorker, RouteWorker>();
         builder.Services.AddScoped<ITruckService, Services.TruckService>();
 
-        builder.Services.AddSingleton<Meter>(sp => new Meter("TruckService", "1.0"));
+        builder.Services.AddSingleton<Meter>(_ => new Meter("TruckService", "1.0"));
         builder.Services.AddSingleton<ITruckTelemetryStore, TruckTelemetryStore>();
         builder.Services.AddSingleton<TruckMetrics>();
 

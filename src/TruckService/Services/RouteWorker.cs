@@ -24,9 +24,7 @@ public class RouteWorker(TruckDbContext db, ILogger<RouteWorker> logger, TruckMe
         await db.SaveChangesAsync(ct);
 
         // Publish TruckLoaded event
-        var loadByType = delivery.GetLoadByType();
-        var operatingCost = delivery.OperatingCost; // assuming cost is per delivery
-
+        delivery.GetLoadByType();
         delivery.State = "AtPlant";
         await db.SaveChangesAsync(ct);
 

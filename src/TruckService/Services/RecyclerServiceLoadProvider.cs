@@ -47,8 +47,8 @@ public class RecyclerServiceLoadProvider(IHttpClientFactory httpClientFactory, I
 
     private class PickupResponse
     {
-        public Dictionary<string, int>? BottlesPickedUp { get; set; }
-        public int TotalPickedUp { get; set; }
-        public Dictionary<string, int>? RemainingBottles { get; set; }
+        public Dictionary<string, int>? BottlesPickedUp { get; init; }
+        public int TotalPickedUp { get; init; }
+        public Dictionary<string, int>? RemainingBottles { get; init; }
     }
 }

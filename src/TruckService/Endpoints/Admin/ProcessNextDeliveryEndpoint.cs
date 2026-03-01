@@ -14,6 +14,6 @@ public class ProcessNextDeliveryEndpoint(IRouteWorker worker) : EndpointWithoutR
     public override async Task HandleAsync(CancellationToken ct)
     {
         await worker.RunOnceAsync(ct);
-        await Send.OkAsync();
+        await Send.OkAsync(null, ct);
     }
 }
