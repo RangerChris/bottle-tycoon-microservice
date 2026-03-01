@@ -24,9 +24,17 @@ public class EfTruckRepository : ITruckRepository
         return new TruckDto { Id = ent.Id, Model = ent.Model, IsActive = ent.IsActive, Level = ent.CapacityLevel };
     }
 
+    public async Task<TruckEntity?> GetEntityByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return await _db.Trucks.FindAsync([id], ct);
+    }
+
     public async Task<IEnumerable<TruckDto>> GetAllAsync(CancellationToken ct = default)
     {
-        return await _db.Trucks.Select(ent => new TruckDto { Id = ent.Id, Model = ent.Model, IsActive = ent.IsActive, Level = ent.CapacityLevel }).ToListAsync(ct);
+        return await _db.Trucks
+            .Where(t => !t.IsBlockedForSale)
+            .Select(ent => new TruckDto { Id = ent.Id, Model = ent.Model, IsActive = ent.IsActive, Level = ent.CapacityLevel })
+            .ToListAsync(ct);
     }
 
     public async Task<TruckDto> CreateAsync(TruckDto truck, CancellationToken ct = default)
@@ -48,6 +56,13 @@ public class EfTruckRepository : ITruckRepository
 
         ent.Model = truck.Model;
         ent.IsActive = truck.IsActive;
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> UpdateAsync(TruckEntity truck, CancellationToken ct = default)
+    {
+        _db.Trucks.Update(truck);
         await _db.SaveChangesAsync(ct);
         return true;
     }

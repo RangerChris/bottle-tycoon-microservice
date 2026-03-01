@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics.Metrics;
+using Microsoft.EntityFrameworkCore;
+using TruckService.Data;
 
 namespace TruckService.Services;
 
@@ -7,12 +9,17 @@ public sealed class TruckMetrics
     private readonly ObservableGauge<int> _capacity;
     private readonly ObservableGauge<int> _currentLoad;
     private readonly Counter<long> _deliveriesCompleted;
+    private readonly ITruckTelemetryStore _telemetryStore;
+    private readonly IServiceProvider _serviceProvider;
 
-    public TruckMetrics(Meter meter, ITruckTelemetryStore telemetryStore)
+    public TruckMetrics(Meter meter, ITruckTelemetryStore telemetryStore, IServiceProvider serviceProvider)
     {
+        _telemetryStore = telemetryStore;
+        _serviceProvider = serviceProvider;
+
         _currentLoad = meter.CreateObservableGauge(
             "truck_current_load",
-            () => telemetryStore.GetAll().Select(snapshot =>
+            () => GetValidSnapshots().Select(snapshot =>
                 new Measurement<int>(snapshot.CurrentLoad,
                     new KeyValuePair<string, object?>("truck_id", snapshot.TruckId.ToString()),
                     new KeyValuePair<string, object?>("truck_name", snapshot.TruckName))),
@@ -21,7 +28,7 @@ public sealed class TruckMetrics
 
         _capacity = meter.CreateObservableGauge(
             "truck_capacity",
-            () => telemetryStore.GetAll().Select(snapshot =>
+            () => GetValidSnapshots().Select(snapshot =>
                 new Measurement<int>(snapshot.Capacity,
                     new KeyValuePair<string, object?>("truck_id", snapshot.TruckId.ToString()),
                     new KeyValuePair<string, object?>("truck_name", snapshot.TruckName))),
@@ -32,6 +39,19 @@ public sealed class TruckMetrics
             "truck_deliveries",
             "deliveries",
             "Number of deliveries completed by truck");
+    }
+
+    private IEnumerable<TruckTelemetrySnapshot> GetValidSnapshots()
+    {
+        var allSnapshots = _telemetryStore.GetAll();
+
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
+        var validTruckIds = db.Trucks.AsNoTracking().Select(t => t.Id).ToList();
+
+        var validSnapshots = allSnapshots.Where(s => validTruckIds.Contains(s.TruckId)).ToList();
+
+        return validSnapshots;
     }
 
     public void RecordDeliveryCompleted()

@@ -14,6 +14,8 @@ public class Recycler
     public string? Location { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? LastEmptiedAt { get; set; }
+    public bool IsBlockedForSale { get; set; }
+    public DateTimeOffset? BlockedForSaleAt { get; set; }
 
     public ICollection<Customer> Customers { get; set; } = new List<Customer>();
 

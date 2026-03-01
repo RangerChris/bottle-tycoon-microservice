@@ -37,6 +37,10 @@ public class CustomerArrivedEndpoint : Endpoint<CustomerArrivedEndpoint.Request,
         {
             ThrowError("Recycler not found", 404);
         }
+        catch (InvalidOperationException ex)
+        {
+            ThrowError(ex.Message, 400);
+        }
     }
 
     private static Dictionary<string, int> BuildBottleCounts(Request req)

@@ -16,6 +16,7 @@ export type Recycler = {
   currentBottles: BottleCounts;
   visitors: Visitor[];
   targetedByTruckId?: string | number | null;
+  isBlockedForSale?: boolean;
 };
 
 export type TruckStatus = 'idle' | 'en route' | 'to_recycler' | 'loading' | 'to_plant' | 'delivering' | 'picking';
@@ -29,6 +30,7 @@ export type Truck = {
   status: TruckStatus;
   targetRecyclerId?: number | null;
   cargo?: BottleCounts | null;
+  isBlockedForSale?: boolean;
 };
 
 export type LogEntry = {

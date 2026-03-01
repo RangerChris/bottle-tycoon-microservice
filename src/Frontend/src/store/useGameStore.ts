@@ -63,6 +63,8 @@ export type GameState = {
   addLog: (message: string, type?: LogEntry['type']) => void
   buyRecycler: () => void
   buyTruck: () => void
+  sellRecycler: (recyclerId: number | string) => void
+  sellTruck: (truckId: number | string) => void
   deliverBottlesRandom: (recyclerId: number | string) => void
   upgradeRecycler: (recyclerId: number | string) => void
   upgradeTruck: (truckId: number | string) => void
@@ -236,6 +238,111 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             draft.buyingTruck = false;
             draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to purchase truck.' })
         });
+    }
+  },
+
+  sellRecycler: async (recyclerId: number | string) => {
+    const state = get()
+    const recycler = state.recyclers.find(r => r.id == recyclerId)
+    if (!recycler) return
+
+    if (recycler.isBlockedForSale) {
+      return
+    }
+
+    const recyclerName = recycler.name
+
+    set((draft: any) => {
+      draft.recyclers = draft.recyclers.filter((r: any) => r.id != recyclerId)
+      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Selling ${recyclerName}...` })
+    })
+
+    try {
+      const { recyclerBase } = getApiBaseUrls()
+
+      const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers/${recyclerId}/sell`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: state.playerId,
+          recyclerId: recyclerId
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        set((draft: any) => {
+          draft.recyclers.push(recycler)
+          draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: `Failed to sell recycler: ${errorText}` })
+        })
+        return
+      }
+
+      const result = await response.json()
+
+      set((draft: any) => {
+        draft.credits += result.creditsAwarded
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Sold ${result.recyclerName} for ${result.creditsAwarded} credits` })
+      })
+
+      await get().reportRecyclerTelemetry()
+    } catch (error) {
+      set((draft: any) => {
+        draft.recyclers.push(recycler)
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to sell recycler' })
+      })
+    }
+  },
+
+  sellTruck: async (truckId: number | string) => {
+    const state = get()
+    const truck = state.trucks.find(t => t.id == truckId)
+    if (!truck) return
+
+    if (truck.isBlockedForSale) {
+      return
+    }
+
+    const truckModel = truck.model
+
+    set((draft: any) => {
+      draft.trucks = draft.trucks.filter((t: any) => t.id != truckId)
+      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Selling ${truckModel}...` })
+    })
+
+    try {
+      const { truckBase } = getApiBaseUrls()
+
+      const response = await fetch(`${truckBase.replace(/\/$/, '')}/truck/${truckId}/sell`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: state.playerId
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        set((draft: any) => {
+          draft.trucks.push(truck)
+          draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: `Failed to sell truck: ${errorText}` })
+        })
+        return
+      }
+
+      const result = await response.json()
+
+      set((draft: any) => {
+        draft.credits += result.creditsAwarded
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Sold ${result.truckModel} for ${result.creditsAwarded} credits` })
+      })
+
+      await get().reportTruckTelemetry()
+    } catch (error) {
+      set((draft: any) => {
+        draft.trucks.push(truck)
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to sell truck' })
+      })
     }
   },
 

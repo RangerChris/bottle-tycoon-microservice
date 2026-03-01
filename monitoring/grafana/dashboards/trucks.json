@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "truck_current_load_bottles{job=\"truckservice\"} and on(truck_id) (timestamp(truck_current_load_bottles{job=\"truckservice\"}) - time() < 60)",
+          "expr": "truck_current_load_bottles{job=\"truckservice\"} and (timestamp(truck_current_load_bottles{job=\"truckservice\"}) > (time() - 30))",
           "legendFormat": "{{ truck_name }}",
           "refId": "A"
         }
@@ -191,7 +191,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "truck_capacity_bottles{job=\"truckservice\"} and on(truck_id) (timestamp(truck_capacity_bottles{job=\"truckservice\"}) - time() < 60)",
+          "expr": "truck_capacity_bottles{job=\"truckservice\"} and (timestamp(truck_capacity_bottles{job=\"truckservice\"}) > (time() - 30))",
           "legendFormat": "{{ truck_name }}",
           "refId": "A"
         }
@@ -280,7 +280,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "increase(deliveries_processed_deliveries_total{job=\"recyclingplantservice\",truck_name!=\"\"}[$__rate_interval])",
+          "expr": "max by (truck_name) (increase(deliveries_processed_deliveries_total{job=\"recyclingplantservice\",truck_name!=\"\"}[5m]) and (timestamp(deliveries_processed_deliveries_total{job=\"recyclingplantservice\",truck_name!=\"\"}) > (time() - 30)))",
           "legendFormat": "{{truck_name}}",
           "refId": "A"
         }
