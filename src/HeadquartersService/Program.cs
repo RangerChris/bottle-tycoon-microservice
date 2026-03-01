@@ -18,9 +18,18 @@ builder.Configuration.AddJsonFile($"appsettings.{environmentName}.json", true, t
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .CreateLogger();
+try
+{
+    Log.Logger = new LoggerConfiguration()
+        .ReadFrom.Configuration(builder.Configuration)
+        .CreateLogger();
+}
+catch
+{
+    Log.Logger = new LoggerConfiguration()
+        .WriteTo.Console()
+        .CreateLogger();
+}
 
 builder.Host.UseSerilog();
 
