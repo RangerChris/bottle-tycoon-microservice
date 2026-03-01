@@ -19,7 +19,7 @@ public class FleetAndQueueEndpointTests
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
+            builder.ConfigureServices(_ =>
             {
                 /* no-op, we'll seed below via Build callback */
             });
@@ -35,9 +35,9 @@ public class FleetAndQueueEndpointTests
         }
 
         var client = factory.CreateClient();
-        var resp = await client.GetAsync("/api/v1/headquarters/fleet/status", TestContext.Current.CancellationToken);
+        var resp = await client.GetAsync("/api/v1/headquarters/fleet/status", TestContext.TestContextInstance.CancellationToken);
         resp.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var trucks = await resp.Content.ReadFromJsonAsync<List<Truck>>(TestContext.Current.CancellationToken);
+        var trucks = await resp.Content.ReadFromJsonAsync<List<Truck>>(TestContext.TestContextInstance.CancellationToken);
         trucks.ShouldNotBeNull();
         trucks.Count.ShouldBeGreaterThanOrEqualTo(2);
     }
@@ -48,7 +48,7 @@ public class FleetAndQueueEndpointTests
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            builder.ConfigureServices(services =>
+            builder.ConfigureServices(_ =>
             {
                 /* no-op */
             });
@@ -63,9 +63,9 @@ public class FleetAndQueueEndpointTests
         }
 
         var client = factory.CreateClient();
-        var resp = await client.GetAsync("/api/v1/headquarters/dispatch-queue", TestContext.Current.CancellationToken);
+        var resp = await client.GetAsync("/api/v1/headquarters/dispatch-queue", TestContext.TestContextInstance.CancellationToken);
         resp.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var list = await resp.Content.ReadFromJsonAsync<List<DispatchRequest>>(TestContext.Current.CancellationToken);
+        var list = await resp.Content.ReadFromJsonAsync<List<DispatchRequest>>(TestContext.TestContextInstance.CancellationToken);
         list.ShouldNotBeNull();
         list.Count.ShouldBeGreaterThanOrEqualTo(2);
     }
