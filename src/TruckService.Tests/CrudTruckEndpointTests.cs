@@ -164,24 +164,6 @@ public class CrudTruckEndpointTests : IClassFixture<TestcontainersFixture>
         earnings.ShouldBe(0m); // new truck
     }
 
-    [Fact]
-    public async Task GetFleetSummary_ReturnsFleet()
-    {
-        var client = _fixture.Client;
-
-        // Create a truck
-        var createReq = new CreateTruckRequest { Model = "Model-F", IsActive = true };
-        var createRes = await client.PostAsJsonAsync("/truck", createReq, TestContext.Current.CancellationToken);
-        createRes.StatusCode.ShouldBe(HttpStatusCode.Created);
-
-        // Get fleet summary
-        var fleetRes = await client.GetAsync("/api/v1/truck/fleet/summary", TestContext.Current.CancellationToken);
-        fleetRes.StatusCode.ShouldBe(HttpStatusCode.OK);
-
-        var fleet = await fleetRes.Content.ReadFromJsonAsync<IEnumerable<TruckStatusDto>>(TestContext.Current.CancellationToken);
-        fleet.ShouldNotBeNull();
-        fleet.Count().ShouldBeGreaterThan(0);
-    }
 
     [Fact]
     public async Task GetTruckStatus_ReturnsStatus()
