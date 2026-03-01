@@ -21,7 +21,10 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellRecycler_WithNoCustomers_ShouldSucceed()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
@@ -51,7 +54,10 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellRecycler_WithCustomers_ShouldFail()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
@@ -66,7 +72,7 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
             IsBlockedForSale = false,
             Customers = new List<Customer>
             {
-                new Customer { Id = Guid.NewGuid(), CustomerType = "Walk-in" }
+                new() { Id = Guid.NewGuid(), CustomerType = "Walk-in" }
             }
         };
         db.Recyclers.Add(recycler);
@@ -79,7 +85,10 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellRecycler_AlreadyBlocked_ShouldFail()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
@@ -103,7 +112,10 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellRecycler_NonExistent_ShouldReturnNotFound()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();
@@ -116,7 +128,10 @@ public class SellRecyclerEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task BlockedRecyclers_ShouldNotAppearInList()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<RecyclerDbContext>();

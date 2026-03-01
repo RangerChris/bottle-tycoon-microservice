@@ -5,9 +5,9 @@ namespace TruckService.Endpoints.SellTruck;
 
 public class SellTruckEndpoint : Endpoint<SellTruckEndpoint.Request, SellTruckEndpoint.SellTruckResponse>
 {
-    private readonly ITruckRepository _repo;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<SellTruckEndpoint> _logger;
+    private readonly ITruckRepository _repo;
     private readonly ITruckTelemetryStore _telemetryStore;
 
     public SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpClientFactory, ILogger<SellTruckEndpoint> logger, ITruckTelemetryStore telemetryStore)

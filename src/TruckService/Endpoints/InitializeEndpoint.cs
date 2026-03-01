@@ -5,8 +5,8 @@ namespace TruckService.Endpoints;
 
 public class InitializeEndpoint : EndpointWithoutRequest
 {
-    private readonly ITruckService _truckService;
     private readonly ITruckTelemetryStore _telemetryStore;
+    private readonly ITruckService _truckService;
 
     public InitializeEndpoint(ITruckService truckService, ITruckTelemetryStore telemetryStore)
     {

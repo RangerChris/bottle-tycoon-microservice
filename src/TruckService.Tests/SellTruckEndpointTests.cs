@@ -20,7 +20,10 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellTruck_WhenIdle_ShouldSucceed()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
@@ -49,7 +52,10 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellTruck_WhenActive_ShouldFail()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
@@ -71,7 +77,10 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellTruck_AlreadyBlocked_ShouldFail()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
@@ -94,7 +103,10 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task SellTruck_NonExistent_ShouldReturnNull()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host!.Services.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<ITruckRepository>();
@@ -107,7 +119,10 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task BlockedTrucks_ShouldNotAppearInList()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
@@ -148,7 +163,10 @@ public class SellTruckEndpointTests : IClassFixture<TestcontainersFixture>
     [Fact]
     public async Task GetEntityByIdAsync_ShouldReturnEntity()
     {
-        if (!_fixture.Started) return;
+        if (!_fixture.Started)
+        {
+            return;
+        }
 
         using var scope = _fixture.Host!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();

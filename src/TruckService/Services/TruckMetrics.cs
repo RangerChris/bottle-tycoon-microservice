@@ -9,8 +9,8 @@ public sealed class TruckMetrics
     private readonly ObservableGauge<int> _capacity;
     private readonly ObservableGauge<int> _currentLoad;
     private readonly Counter<long> _deliveriesCompleted;
-    private readonly ITruckTelemetryStore _telemetryStore;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ITruckTelemetryStore _telemetryStore;
 
     public TruckMetrics(Meter meter, ITruckTelemetryStore telemetryStore, IServiceProvider serviceProvider)
     {

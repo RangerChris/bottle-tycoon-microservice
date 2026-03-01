@@ -1,4 +1,4 @@
-﻿﻿using FastEndpoints;
+﻿using FastEndpoints;
 using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;

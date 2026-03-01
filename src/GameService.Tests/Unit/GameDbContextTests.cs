@@ -1,4 +1,5 @@
 ﻿using GameService.Data;
+using GameService.Models;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 using Xunit;
@@ -11,12 +12,12 @@ public class GameDbContextTests
     public void ApplyLowercaseNamingConvention_ConvertsTableNameToLowercase()
     {
         var options = new DbContextOptionsBuilder<GameDbContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_TableName")
+            .UseInMemoryDatabase("TestDb_TableName")
             .Options;
 
         using var context = new GameDbContext(options);
         var model = context.Model;
-        var playerEntity = model.FindEntityType(typeof(Models.Player));
+        var playerEntity = model.FindEntityType(typeof(Player));
 
         playerEntity.ShouldNotBeNull();
         playerEntity.GetTableName().ShouldBe("players");
@@ -26,12 +27,12 @@ public class GameDbContextTests
     public void ApplyLowercaseNamingConvention_ConvertsColumnNamesToLowercase()
     {
         var options = new DbContextOptionsBuilder<GameDbContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_Columns")
+            .UseInMemoryDatabase("TestDb_Columns")
             .Options;
 
         using var context = new GameDbContext(options);
         var model = context.Model;
-        var playerEntity = model.FindEntityType(typeof(Models.Player));
+        var playerEntity = model.FindEntityType(typeof(Player));
 
         playerEntity.ShouldNotBeNull();
         var idProperty = playerEntity.FindProperty("Id");
@@ -51,12 +52,12 @@ public class GameDbContextTests
     public void ApplyLowercaseNamingConvention_ConvertsPrimaryKeyNameToLowercase()
     {
         var options = new DbContextOptionsBuilder<GameDbContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_PrimaryKey")
+            .UseInMemoryDatabase("TestDb_PrimaryKey")
             .Options;
 
         using var context = new GameDbContext(options);
         var model = context.Model;
-        var playerEntity = model.FindEntityType(typeof(Models.Player));
+        var playerEntity = model.FindEntityType(typeof(Player));
 
         playerEntity.ShouldNotBeNull();
         var primaryKey = playerEntity.FindPrimaryKey();
@@ -67,12 +68,12 @@ public class GameDbContextTests
     public void OnModelCreating_ConfiguresPlayerEntity()
     {
         var options = new DbContextOptionsBuilder<GameDbContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_PlayerEntity")
+            .UseInMemoryDatabase("TestDb_PlayerEntity")
             .Options;
 
         using var context = new GameDbContext(options);
         var model = context.Model;
-        var playerEntity = model.FindEntityType(typeof(Models.Player));
+        var playerEntity = model.FindEntityType(typeof(Player));
 
         playerEntity.ShouldNotBeNull();
         playerEntity.GetTableName().ShouldBe("players");
@@ -87,7 +88,7 @@ public class GameDbContextTests
     public void DbContext_CanBeConstructed()
     {
         var options = new DbContextOptionsBuilder<GameDbContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_Construction")
+            .UseInMemoryDatabase("TestDb_Construction")
             .Options;
 
         using var context = new GameDbContext(options);
@@ -100,12 +101,12 @@ public class GameDbContextTests
     public void ApplyLowercaseNamingConvention_HandlesAllProperties()
     {
         var options = new DbContextOptionsBuilder<GameDbContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb_AllProperties")
+            .UseInMemoryDatabase("TestDb_AllProperties")
             .Options;
 
         using var context = new GameDbContext(options);
         var model = context.Model;
-        var playerEntity = model.FindEntityType(typeof(Models.Player));
+        var playerEntity = model.FindEntityType(typeof(Player));
 
         playerEntity.ShouldNotBeNull();
         foreach (var property in playerEntity.GetProperties())

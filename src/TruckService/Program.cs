@@ -144,12 +144,12 @@ var aspnetcoreUrls = builder.Configuration["ASPNETCORE_URLS"] ?? "http://+:80";
 var httpsUrlConfigured = aspnetcoreUrls.IndexOf("https", StringComparison.OrdinalIgnoreCase) >= 0;
 var useHttpsRedirection = enableHttpsRedirection && httpsUrlConfigured;
 
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
-        c.RoutePrefix = string.Empty;
-    });
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+    c.RoutePrefix = string.Empty;
+});
 
 if (useHttpsRedirection)
 {
