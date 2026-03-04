@@ -1,4 +1,5 @@
-﻿using FastEndpoints;
+﻿using System.Text.Json;
+using FastEndpoints;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace GameService.Endpoints;
@@ -22,7 +23,8 @@ public class HealthEndpoint(HealthCheckService healthService) : EndpointWithoutR
         var statusCode = report.Status == HealthStatus.Healthy ? 200 : 503;
         HttpContext.Response.StatusCode = statusCode;
         HttpContext.Response.ContentType = "application/json";
-        await HttpContext.Response.WriteAsJsonAsync(response, ct);
+        var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        await HttpContext.Response.WriteAsJsonAsync(response, jsonOptions, contentType: "application/json", cancellationToken: ct);
     }
 
     public sealed record HealthResponse(string Status, Dictionary<string, string> Checks);
