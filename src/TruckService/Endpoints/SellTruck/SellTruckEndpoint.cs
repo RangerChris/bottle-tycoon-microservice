@@ -1,10 +1,11 @@
 ﻿using FastEndpoints;
 using TruckService.Services;
+using TruckService.Endpoints.SellTruck;
 
 namespace TruckService.Endpoints.SellTruck;
 
 public class SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpClientFactory, ILogger<SellTruckEndpoint> logger, ITruckTelemetryStore telemetryStore)
-    : Endpoint<SellTruckEndpoint.Request, SellTruckEndpoint.SellTruckResponse>
+    : Endpoint<SellTruckRequest, SellTruckEndpoint.SellTruckResponse>
 {
     public override void Configure()
     {
@@ -13,7 +14,7 @@ public class SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpCli
         Options(x => x.WithTags("Truck"));
     }
 
-    public override async Task HandleAsync(Request req, CancellationToken ct)
+    public override async Task HandleAsync(SellTruckRequest req, CancellationToken ct)
     {
         var idStr = Route<string>("TruckId");
         if (string.IsNullOrEmpty(idStr) || !Guid.TryParse(idStr, out var truckId))
@@ -96,10 +97,6 @@ public class SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpCli
         }
     }
 
-    public class Request
-    {
-        public Guid PlayerId { get; set; }
-    }
 
     public class SellTruckResponse
     {
