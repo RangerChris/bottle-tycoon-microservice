@@ -27,19 +27,13 @@ public class MetricsEndpointTests(TestcontainersFixture fixture) : IClassFixture
         var res = await client.PostAsJsonAsync($"/recyclers/{recyclerId}/customers", visitor, TestContext.Current.CancellationToken);
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        await Task.Delay(200, TestContext.Current.CancellationToken);
-
-        var metricsRes = await client.GetAsync("/metrics", TestContext.Current.CancellationToken);
-        metricsRes.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await metricsRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-
-        for (var attempt = 0; attempt < 10 && !body.Contains("bottle_type=\"glass\"", StringComparison.OrdinalIgnoreCase); attempt++)
-        {
-            await Task.Delay(200, TestContext.Current.CancellationToken);
-            metricsRes = await client.GetAsync("/metrics", TestContext.Current.CancellationToken);
-            metricsRes.StatusCode.ShouldBe(HttpStatusCode.OK);
-            body = await metricsRes.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        }
+        var body = await WaitForMetricsAsync(
+            client,
+            metrics => metrics.Contains("bottles_processed_bottles_total", StringComparison.OrdinalIgnoreCase) &&
+                       metrics.Contains("bottle_type=\"glass\"", StringComparison.OrdinalIgnoreCase) &&
+                       metrics.Contains("bottle_type=\"metal\"", StringComparison.OrdinalIgnoreCase) &&
+                       metrics.Contains("bottle_type=\"plastic\"", StringComparison.OrdinalIgnoreCase),
+            TestContext.Current.CancellationToken);
 
         body.ShouldContain("bottles_processed_bottles_total");
         body.ShouldContain("bottle_type=\"glass\"");
@@ -134,12 +128,15 @@ public class MetricsEndpointTests(TestcontainersFixture fixture) : IClassFixture
         var fetchRes = await client.GetAsync("/recyclers", TestContext.Current.CancellationToken);
         fetchRes.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        await Task.Delay(100, TestContext.Current.CancellationToken);
+        var metricsAfterFetch = await WaitForMetricsAsync(
+            client,
+            body => body.Contains("recycler_active_state", StringComparison.OrdinalIgnoreCase) &&
+                    body.Contains($"recycler_id=\"{recyclerId}\"", StringComparison.OrdinalIgnoreCase),
+            TestContext.Current.CancellationToken);
 
-        var metricsAfterFetch = await client.GetStringAsync("/metrics", TestContext.Current.CancellationToken);
         metricsAfterFetch.ShouldContain("recycler_active_state");
         metricsAfterFetch.ShouldContain($"recycler_id=\"{recyclerId}\"");
-        metricsAfterFetch.ShouldContain($"recycler_active_state{{");
+        metricsAfterFetch.ShouldContain("recycler_active_state{");
     }
 
     private static async Task<string> WaitForMetricsAsync(
