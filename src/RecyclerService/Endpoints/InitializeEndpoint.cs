@@ -1,4 +1,4 @@
-﻿using FastEndpoints;
+﻿﻿using FastEndpoints;
 using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
@@ -16,6 +16,7 @@ public class InitializeEndpoint(IRecyclerService recyclerService, IRecyclerTelem
         await recyclerService.ResetAsync();
         telemetryStore.RemoveAll();
         var recycler = await recyclerService.CreateRecyclerAsync();
+        telemetryStore.MarkActive(recycler.Id, recycler.Name);
         telemetryStore.Set(recycler.Id, recycler.Name, 0, 0, 0);
     }
 }

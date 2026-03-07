@@ -1,6 +1,4 @@
 ﻿using System.Diagnostics.Metrics;
-using Microsoft.EntityFrameworkCore;
-using TruckService.Data;
 
 namespace TruckService.Services;
 
@@ -8,18 +6,17 @@ public sealed class TruckMetrics
 {
     private readonly ObservableGauge<int> _capacity;
     private readonly ObservableGauge<int> _currentLoad;
+    private readonly ObservableGauge<int> _active;
     private readonly Counter<long> _deliveriesCompleted;
-    private readonly IServiceProvider _serviceProvider;
     private readonly ITruckTelemetryStore _telemetryStore;
 
-    public TruckMetrics(Meter meter, ITruckTelemetryStore telemetryStore, IServiceProvider serviceProvider)
+    public TruckMetrics(Meter meter, ITruckTelemetryStore telemetryStore)
     {
         _telemetryStore = telemetryStore;
-        _serviceProvider = serviceProvider;
 
         _currentLoad = meter.CreateObservableGauge(
             "truck_current_load",
-            () => GetValidSnapshots().Select(snapshot =>
+            () => GetActiveSnapshots().Select(snapshot =>
                 new Measurement<int>(snapshot.CurrentLoad,
                     new KeyValuePair<string, object?>("truck_id", snapshot.TruckId.ToString()),
                     new KeyValuePair<string, object?>("truck_name", snapshot.TruckName))),
@@ -28,12 +25,21 @@ public sealed class TruckMetrics
 
         _capacity = meter.CreateObservableGauge(
             "truck_capacity",
-            () => GetValidSnapshots().Select(snapshot =>
+            () => GetActiveSnapshots().Select(snapshot =>
                 new Measurement<int>(snapshot.Capacity,
                     new KeyValuePair<string, object?>("truck_id", snapshot.TruckId.ToString()),
                     new KeyValuePair<string, object?>("truck_name", snapshot.TruckName))),
             "bottles",
             "Truck capacity per truck");
+
+        _active = meter.CreateObservableGauge(
+            "truck_active",
+            () => _telemetryStore.GetAll().Select(snapshot =>
+                new Measurement<int>(snapshot.IsActive ? 1 : 0,
+                    new KeyValuePair<string, object?>("truck_id", snapshot.TruckId.ToString()),
+                    new KeyValuePair<string, object?>("truck_name", snapshot.TruckName))),
+            "state",
+            "Truck active lifecycle state (1=active, 0=inactive)");
 
         _deliveriesCompleted = meter.CreateCounter<long>(
             "truck_deliveries",
@@ -41,17 +47,9 @@ public sealed class TruckMetrics
             "Number of deliveries completed by truck");
     }
 
-    private IEnumerable<TruckTelemetrySnapshot> GetValidSnapshots()
+    private IEnumerable<TruckTelemetrySnapshot> GetActiveSnapshots()
     {
-        var allSnapshots = _telemetryStore.GetAll();
-
-        using var scope = _serviceProvider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<TruckDbContext>();
-        var validTruckIds = db.Trucks.AsNoTracking().Select(t => t.Id).ToList();
-
-        var validSnapshots = allSnapshots.Where(s => validTruckIds.Contains(s.TruckId)).ToList();
-
-        return validSnapshots;
+        return _telemetryStore.GetAll().Where(snapshot => snapshot.IsActive);
     }
 
     public void RecordDeliveryCompleted()

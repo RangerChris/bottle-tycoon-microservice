@@ -133,4 +133,46 @@ public class TruckTelemetryStoreTests
         var snapshot = store.GetAll().First();
         snapshot.TruckName.ShouldBe("");
     }
+
+    [Fact]
+    public void Set_MarksSnapshotAsActive()
+    {
+        var store = new TruckTelemetryStore();
+        var truckId = Guid.NewGuid();
+
+        store.Set(truckId, "Truck 1", 10, 45, "idle");
+
+        var snapshot = store.GetAll().Single();
+        snapshot.IsActive.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void MarkInactive_KeepsSnapshotAndMarksInactive()
+    {
+        var store = new TruckTelemetryStore();
+        var truckId = Guid.NewGuid();
+
+        store.Set(truckId, "Truck 1", 10, 45, "loading");
+        store.MarkInactive(truckId);
+
+        var snapshot = store.GetAll().Single();
+        snapshot.IsActive.ShouldBeFalse();
+        snapshot.CurrentLoad.ShouldBe(0);
+        snapshot.Capacity.ShouldBe(0);
+        snapshot.Status.ShouldBe("inactive");
+    }
+
+    [Fact]
+    public void MarkActive_RestoresInactiveSnapshotToActive()
+    {
+        var store = new TruckTelemetryStore();
+        var truckId = Guid.NewGuid();
+
+        store.Set(truckId, "Truck 1", 5, 45, "idle");
+        store.MarkInactive(truckId);
+        store.MarkActive(truckId, "Truck 1");
+
+        var snapshot = store.GetAll().Single();
+        snapshot.IsActive.ShouldBeTrue();
+    }
 }

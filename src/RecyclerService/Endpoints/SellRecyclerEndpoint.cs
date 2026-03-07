@@ -1,4 +1,4 @@
-﻿using FastEndpoints;
+﻿﻿using FastEndpoints;
 using Microsoft.EntityFrameworkCore;
 using RecyclerService.Data;
 using RecyclerService.Services;
@@ -58,7 +58,7 @@ public class SellRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory httpC
 
         db.Recyclers.Remove(recycler);
         await db.SaveChangesAsync(ct);
-        telemetryStore.Remove(recycler.Id);
+        telemetryStore.MarkInactive(recycler.Id);
 
         logger.LogInformation("Recycler {RecyclerId} sold for {SalePrice} credits to player {PlayerId}",
             recycler.Id, salePrice, req.PlayerId);

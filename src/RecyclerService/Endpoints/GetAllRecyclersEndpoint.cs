@@ -3,7 +3,7 @@ using RecyclerService.Services;
 
 namespace RecyclerService.Endpoints;
 
-public class GetAllRecyclersEndpoint(IRecyclerService service) : EndpointWithoutRequest<List<GetAllRecyclersEndpoint.RecyclerResponse>>
+public class GetAllRecyclersEndpoint(IRecyclerService service, IRecyclerTelemetryStore telemetryStore) : EndpointWithoutRequest<List<GetAllRecyclersEndpoint.RecyclerResponse>>
 {
     public override void Configure()
     {
@@ -15,8 +15,14 @@ public class GetAllRecyclersEndpoint(IRecyclerService service) : EndpointWithout
     public override async Task HandleAsync(CancellationToken ct)
     {
         var recyclers = await service.GetAllAsync(ct);
-        var response = recyclers
-            .Where(r => !r.IsBlockedForSale)
+        var activeRecyclers = recyclers.Where(r => !r.IsBlockedForSale).ToList();
+
+        foreach (var recycler in activeRecyclers)
+        {
+            telemetryStore.MarkActive(recycler.Id, recycler.Name);
+        }
+
+        var response = activeRecyclers
             .Select(r => new RecyclerResponse { Id = r.Id, Name = r.Name, CurrentLoad = r.CurrentLoad, Capacity = r.Capacity, CapacityLevel = r.CapacityLevel })
             .ToList();
         await Send.ResultAsync(TypedResults.Ok(response));

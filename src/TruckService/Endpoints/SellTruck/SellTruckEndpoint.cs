@@ -1,6 +1,5 @@
 ﻿using FastEndpoints;
 using TruckService.Services;
-using TruckService.Endpoints.SellTruck;
 
 namespace TruckService.Endpoints.SellTruck;
 
@@ -37,8 +36,11 @@ public class SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpCli
             return;
         }
 
-        // Fix: do not allow selling when truck is active
-        if (truck.IsActive)
+        var telemetrySnapshot = telemetryStore.GetAll().FirstOrDefault(s => s.TruckId == truckId);
+        var isTransporting = telemetrySnapshot != null &&
+                             !string.Equals(telemetrySnapshot.Status, "idle", StringComparison.OrdinalIgnoreCase) &&
+                             !string.Equals(telemetrySnapshot.Status, "inactive", StringComparison.OrdinalIgnoreCase);
+        if (isTransporting)
         {
             AddError("Cannot sell active truck. Wait for truck to become idle.");
             await Send.ErrorsAsync(400, ct);
@@ -61,7 +63,7 @@ public class SellTruckEndpoint(ITruckRepository repo, IHttpClientFactory httpCli
         }
 
         await repo.DeleteAsync(truckId, ct);
-        telemetryStore.Remove(truckId);
+        telemetryStore.MarkInactive(truckId);
 
         logger.LogInformation("Truck {TruckId} sold for {SalePrice} credits to player {PlayerId}",
             truckId, salePrice, req.PlayerId);

@@ -15,6 +15,8 @@ public class InitializeEndpoint(ITruckService truckService, ITruckTelemetryStore
     {
         await truckService.ResetAsync();
         telemetryStore.RemoveAll();
-        await truckService.CreateTruckAsync();
+        var truck = await truckService.CreateTruckAsync();
+        telemetryStore.MarkActive(truck.Id, truck.Model);
+        telemetryStore.Set(truck.Id, truck.Model, 0, 0, "idle");
     }
 }

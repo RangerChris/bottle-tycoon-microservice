@@ -45,6 +45,25 @@ function getApiBaseUrls() {
   return { gameServiceBase, recyclerBase, truckBase, recyclingPlantBase }
 }
 
+async function postTruckTelemetry(truckId: number | string, currentLoad: number, capacity: number, status: string) {
+  const { truckBase } = getApiBaseUrls()
+  const baseUrl = truckBase.replace(/\/$/, '')
+
+  try {
+    await fetch(`${baseUrl}/trucks/${truckId}/telemetry`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentLoad,
+        capacity,
+        status
+      })
+    })
+  } catch {
+    // Best-effort telemetry only
+  }
+}
+
 
 export type GameState = {
   credits: number
@@ -74,7 +93,6 @@ export type GameState = {
   createVisitorForRecycler: (recyclerId: number | string) => void
   scheduleNextArrival: (recyclerId: number | string, minSec?: number, maxSec?: number) => void
   reportRecyclerTelemetry: () => Promise<void>
-  reportTruckTelemetry: () => Promise<void>
   reportGameTelemetry: () => Promise<void>
   // internal helpers for init
   init: () => Promise<void>
@@ -231,8 +249,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             draft.buyingTruck = false
             draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased ${newTruck.model}` })
         })
-
-        await get().reportTruckTelemetry()
     } catch (error) {
         set((draft: any) => {
             draft.buyingTruck = false;
@@ -337,7 +353,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Sold ${result.truckModel} for ${result.creditsAwarded} credits` })
       })
 
-      await get().reportTruckTelemetry()
     } catch (error) {
       set((draft: any) => {
         draft.trucks.push(truck)
@@ -551,6 +566,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         }
       })
 
+      const telemetryTruck = get().trucks.find(t => t.id == truck.id)
+      if (telemetryTruck) {
+        void postTruckTelemetry(telemetryTruck.id, telemetryTruck.currentLoad || 0, telemetryTruck.capacity || 45, 'transporting')
+      }
+
       const deliveryTime = Math.max(1000, 10000 / mult)
       setTimeout(() => get().deliverToPlant(truck.id), deliveryTime)
     }
@@ -627,6 +647,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `${truckName} delivered ${totalBottles} bottles to the recycling plant and earned ${earnings} credits.` })
           }
         })
+
+        void postTruckTelemetry(truck.id, 0, truck.capacity || 45, 'idle')
 
         // Report telemetry immediately after delivery
         // Use setTimeout to ensure state has been updated
@@ -898,7 +920,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     await get().fetchRecyclers()
     await get().fetchTrucks()
     await get().reportRecyclerTelemetry()
-    await get().reportTruckTelemetry()
     await get().reportGameTelemetry()
 
     if (arrivalsWatchdog === null) {
@@ -915,7 +936,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (telemetryReportingInterval === null) {
       telemetryReportingInterval = window.setInterval(() => {
         get().reportRecyclerTelemetry()
-        get().reportTruckTelemetry()
         get().reportGameTelemetry()
       }, 5000)
     }
@@ -929,8 +949,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     const requests = state.recyclers.map(r => {
       const bottles = r.currentBottles || { glass: 0, metal: 0, plastic: 0 }
       const visitorCount = r.visitors?.length || 0
-      // Queue depth = total visitors in queue (all of them are waiting for space or being served)
-      const queueDepth = visitorCount
       return fetch(`${baseUrl}/recyclers/${r.id}/telemetry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -941,37 +959,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             plastic: bottles.plastic
           },
           visitorCount: visitorCount,
-          queueDepth: queueDepth
+          queueDepth: visitorCount
         })
       })
     })
 
-    if (requests.length === 0) return
-
-    await Promise.allSettled(requests)
-  },
-
-  reportTruckTelemetry: async () => {
-    const state = get()
-    const { truckBase } = getApiBaseUrls()
-    const baseUrl = truckBase.replace(/\/$/, '')
-
-    const requests = state.trucks
-      .filter(t => typeof t.id === 'string')
-      .map(t => {
-        const currentLoad = t.currentLoad || 0
-        const capacity = t.capacity || 45
-        const status = t.status || 'idle'
-        return fetch(`${baseUrl}/trucks/${t.id}/telemetry`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentLoad,
-            capacity,
-            status
-          })
-        })
-      })
 
     if (requests.length === 0) return
 

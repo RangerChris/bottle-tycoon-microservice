@@ -4,7 +4,7 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints.ListTrucks;
 
-public class ListTrucksEndpoint(ITruckRepository repo) : EndpointWithoutRequest<IEnumerable<TruckDto>>
+public class ListTrucksEndpoint(ITruckRepository repo, ITruckTelemetryStore telemetryStore) : EndpointWithoutRequest<IEnumerable<TruckDto>>
 {
     public override void Configure()
     {
@@ -14,7 +14,12 @@ public class ListTrucksEndpoint(ITruckRepository repo) : EndpointWithoutRequest<
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        var trucks = await repo.GetAllAsync(ct);
+        var trucks = (await repo.GetAllAsync(ct)).ToList();
+        foreach (var truck in trucks)
+        {
+            telemetryStore.MarkActive(truck.Id, truck.Model);
+        }
+
         await Send.OkAsync(trucks, ct);
     }
 }

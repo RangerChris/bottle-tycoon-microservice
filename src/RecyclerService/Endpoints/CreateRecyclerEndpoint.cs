@@ -1,4 +1,4 @@
-﻿using FastEndpoints;
+﻿﻿using FastEndpoints;
 using RecyclerService.Data;
 using RecyclerService.Models;
 using RecyclerService.Services;
@@ -38,6 +38,7 @@ public class CreateRecyclerEndpoint(RecyclerDbContext db, IHttpClientFactory htt
         db.Recyclers.Add(entity);
         await db.SaveChangesAsync(ct);
 
+        telemetryStore.MarkActive(entity.Id, entity.Name);
         telemetryStore.Set(entity.Id, entity.Name, 0, 0, 0);
 
         await Send.ResultAsync(TypedResults.Created($"/recyclers/{entity.Id}", new Response

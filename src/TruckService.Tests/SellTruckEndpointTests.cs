@@ -65,6 +65,9 @@ public class SellTruckEndpointTests(TestcontainersFixture fixture) : IClassFixtu
         db.Trucks.Add(truck);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
+        var telemetryStore = scope.ServiceProvider.GetRequiredService<ITruckTelemetryStore>();
+        telemetryStore.Set(truck.Id, truck.Model, 12, 45, "transporting");
+
         // Call the endpoint via HTTP
         var client = fixture.Client;
         var req = new { PlayerId = Guid.NewGuid() };
@@ -148,6 +151,9 @@ public class SellTruckEndpointTests(TestcontainersFixture fixture) : IClassFixtu
         db.Trucks.Add(truck);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
+        var telemetryStore = scope.ServiceProvider.GetRequiredService<ITruckTelemetryStore>();
+        telemetryStore.Set(truck.Id, truck.Model, 12, 45, "idle");
+
         var client = fixture.Client;
         var req = new { PlayerId = Guid.NewGuid() };
         var res = await client.PostAsJsonAsync($"/truck/{truck.Id}/sell", req, TestContext.Current.CancellationToken);
@@ -158,6 +164,10 @@ public class SellTruckEndpointTests(TestcontainersFixture fixture) : IClassFixtu
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<TruckDbContext>();
         var fetched = await verifyDb.Trucks.FindAsync(new object[] { truck.Id }, TestContext.Current.CancellationToken);
         fetched.ShouldBeNull();
+
+        var verifyTelemetryStore = verifyScope.ServiceProvider.GetRequiredService<ITruckTelemetryStore>();
+        var soldTruckSnapshot = verifyTelemetryStore.GetAll().Single(s => s.TruckId == truck.Id);
+        soldTruckSnapshot.IsActive.ShouldBeFalse();
     }
 
     [Fact]

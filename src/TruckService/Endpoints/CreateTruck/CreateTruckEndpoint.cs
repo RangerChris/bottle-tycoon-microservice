@@ -4,7 +4,7 @@ using TruckService.Services;
 
 namespace TruckService.Endpoints.CreateTruck;
 
-public class CreateTruckEndpoint(ITruckService service, IHttpClientFactory httpClientFactory) : Endpoint<CreateTruckRequest, TruckDto>
+public class CreateTruckEndpoint(ITruckService service, IHttpClientFactory httpClientFactory, ITruckTelemetryStore telemetryStore) : Endpoint<CreateTruckRequest, TruckDto>
 {
     public override void Configure()
     {
@@ -24,6 +24,8 @@ public class CreateTruckEndpoint(ITruckService service, IHttpClientFactory httpC
 
         var dto = new TruckDto { Id = req.Id, Model = req.Model, IsActive = req.IsActive };
         var created = await service.CreateTruckAsync(dto);
+        telemetryStore.MarkActive(created.Id, created.Model);
+        telemetryStore.Set(created.Id, created.Model, 0, 0, "idle");
         await Send.ResultAsync(TypedResults.Created($"/truck/{created.Id}", created));
     }
 
