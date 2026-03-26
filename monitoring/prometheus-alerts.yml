@@ -1,0 +1,12 @@
+﻿groups:
+  - name: truck-load-alerts
+    rules:
+      - alert: AllTrucksHighLoad
+        expr: min(truck_current_load_bottles{job="truckservice"} / clamp_min(truck_capacity_bottles{job="truckservice"}, 1)) >= 0.75
+        for: 1m
+        labels:
+          severity: warning
+          service: truckservice
+        annotations:
+          summary: All active trucks are above 75% load
+          description: Every active truck has stayed at or above 75% load for at least 1 minute. Fleet minimum load is {{ humanizePercentage $value }}.
