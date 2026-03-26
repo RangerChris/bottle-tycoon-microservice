@@ -10,3 +10,15 @@
         annotations:
           summary: All active trucks are above 75% load
           description: Every active truck has stayed at or above 75% load for at least 1 minute. Fleet minimum load is {{ humanizePercentage $value }}.
+
+  - name: recycler-queue-alerts
+    rules:
+      - alert: RecyclerQueueDepthHigh
+        expr: recycler_queue_depth_customers{job="recyclerservice"} >= 7
+        for: 1m
+        labels:
+          severity: warning
+          service: recyclerservice
+        annotations:
+          summary: Recycler queue depth is high
+          description: Recycler {{ $labels.recycler_name }} has {{ printf "%.0f" $value }} waiting customers for at least 1 minute.
