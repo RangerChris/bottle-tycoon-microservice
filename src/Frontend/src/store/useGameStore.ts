@@ -88,6 +88,18 @@ function shouldLogTruckContactError(truckId: number | string): boolean {
   return false
 }
 
+const recyclerContactErrorTimestamps = new Map<number | string, number>()
+const unreachableRecyclers = new Set<number | string>()
+
+function shouldLogRecyclerContactError(recyclerId: number | string): boolean {
+  const last = recyclerContactErrorTimestamps.get(recyclerId) ?? 0
+  if (Date.now() - last > 30000) {
+    recyclerContactErrorTimestamps.set(recyclerId, Date.now())
+    return true
+  }
+  return false
+}
+
 
 export type GameState = {
   credits: number
@@ -117,6 +129,7 @@ export type GameState = {
   createVisitorForRecycler: (recyclerId: number | string) => void
   scheduleNextArrival: (recyclerId: number | string, minSec?: number, maxSec?: number) => void
   reportRecyclerTelemetry: () => Promise<void>
+  reportTruckTelemetry: () => Promise<void>
   reportGameTelemetry: () => Promise<void>
   // internal helpers for init
   init: () => Promise<void>
@@ -388,6 +401,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   deliverBottlesRandom: async (recyclerId: number | string) => {
     const picked = { glass: Math.floor(Math.random() * 20) + 5, metal: Math.floor(Math.random() * 15) + 5, plastic: Math.floor(Math.random() * 25) + 10 }
     const total = picked.glass + picked.metal + picked.plastic
+    const recyclerName = getRecyclerDisplayName(get().recyclers.find(r => r.id == recyclerId) ?? { id: recyclerId } as any)
 
     try {
       const { recyclerBase } = getApiBaseUrls()
@@ -402,17 +416,22 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       })
 
       if (!response.ok) {
-        set((draft: any) => {
-          draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to deliver bottles to recycler' })
-        })
+        unreachableRecyclers.add(recyclerId)
+        if (shouldLogRecyclerContactError(recyclerId)) {
+          get().addLog(`${recyclerName} cannot be contacted.`, 'error')
+        }
         return
       }
-    } catch (error) {
-      set((draft: any) => {
-        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to deliver bottles to recycler' })
-      })
+    } catch {
+      unreachableRecyclers.add(recyclerId)
+      if (shouldLogRecyclerContactError(recyclerId)) {
+        get().addLog(`${recyclerName} cannot be contacted.`, 'error')
+      }
       return
     }
+
+    unreachableRecyclers.delete(recyclerId)
+    recyclerContactErrorTimestamps.delete(recyclerId)
 
     set((draft: any) => {
       const r = draft.recyclers.find((x: any) => x.id == recyclerId)
@@ -715,6 +734,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
 
     set((draft: any) => {
       for (const recycler of draft.recyclers) {
+        if (unreachableRecyclers.has(recycler.id)) continue
         if (recycler.visitors.length > 0 && recycler.visitors[0].remaining > 0) {
           const currentLoad = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
           const hasSpace = currentLoad < recycler.capacity
@@ -779,10 +799,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     const glass = Math.floor(Math.random() * (totalBottles + 1))
     const metal = Math.floor(Math.random() * (totalBottles - glass + 1))
     const plastic = totalBottles - glass - metal
+    const recyclerName = getRecyclerDisplayName(recycler)
 
     try {
       const { recyclerBase } = getApiBaseUrls()
-      await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers/${recyclerId}/visitors`, {
+      const response = await fetch(`${recyclerBase.replace(/\/$/, '')}/recyclers/${recyclerId}/visitors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -792,9 +813,24 @@ const useGameStore = create(immer<GameState>((set, get) => ({
           VisitorType: 'Regular'
         })
       })
-    } catch (error) {
-      get().addLog('Failed to notify backend of visitor arrival.', 'error')
+
+      if (!response.ok) {
+        unreachableRecyclers.add(recyclerId)
+        if (shouldLogRecyclerContactError(recyclerId)) {
+          get().addLog(`${recyclerName} cannot be contacted.`, 'error')
+        }
+        return
+      }
+    } catch {
+      unreachableRecyclers.add(recyclerId)
+      if (shouldLogRecyclerContactError(recyclerId)) {
+        get().addLog(`${recyclerName} cannot be contacted.`, 'error')
+      }
+      return
     }
+
+    unreachableRecyclers.delete(recyclerId)
+    recyclerContactErrorTimestamps.delete(recyclerId)
 
     set((draft: any) => {
       const visitor = {
@@ -804,10 +840,9 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         bottles: { glass, metal, plastic },
         waiting: false
       }
-      const recycler = draft.recyclers.find((r: any) => r.id == recyclerId)
-      if (recycler) {
-        recycler.visitors.push(visitor)
-        const recyclerName = getRecyclerDisplayName(recycler)
+      const r = draft.recyclers.find((x: any) => x.id == recyclerId)
+      if (r) {
+        r.visitors.push(visitor)
         draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor arrived at ${recyclerName} with ${totalBottles} bottles` })
       }
     })
@@ -993,28 +1028,52 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     const { recyclerBase } = getApiBaseUrls()
     const baseUrl = recyclerBase.replace(/\/$/, '')
 
-    const requests = state.recyclers.map(r => {
+    if (state.recyclers.length === 0) return
+
+    await Promise.all(state.recyclers.map(async (r) => {
       const bottles = r.currentBottles || { glass: 0, metal: 0, plastic: 0 }
       const visitorCount = r.visitors?.length || 0
-      return fetch(`${baseUrl}/recyclers/${r.id}/telemetry`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bottleCounts: {
-            glass: bottles.glass,
-            metal: bottles.metal,
-            plastic: bottles.plastic
-          },
-          visitorCount: visitorCount,
-          queueDepth: visitorCount
+      try {
+        const response = await fetch(`${baseUrl}/recyclers/${r.id}/telemetry`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bottleCounts: { glass: bottles.glass, metal: bottles.metal, plastic: bottles.plastic },
+            visitorCount,
+            queueDepth: visitorCount
+          })
         })
-      })
-    })
+        if (!response.ok) throw new Error(`Recycler service returned ${response.status}`)
+        unreachableRecyclers.delete(r.id)
+        recyclerContactErrorTimestamps.delete(r.id)
+      } catch {
+        unreachableRecyclers.add(r.id)
+        if (shouldLogRecyclerContactError(r.id)) {
+          get().addLog(`${getRecyclerDisplayName(r)} cannot be contacted.`, 'error')
+        }
+      }
+    }))
+  },
 
+  reportTruckTelemetry: async () => {
+    const state = get()
+    if (state.trucks.length === 0) return
 
-    if (requests.length === 0) return
-
-    await Promise.allSettled(requests)
+    await Promise.all(state.trucks.map(async (truck) => {
+      try {
+        await callTruckTelemetry(
+          truck.id,
+          truck.currentLoad || 0,
+          truck.capacity || 45,
+          truck.status || 'idle'
+        )
+        truckContactErrorTimestamps.delete(truck.id)
+      } catch {
+        if (shouldLogTruckContactError(truck.id)) {
+          get().addLog(`${getTruckDisplayName(truck)} cannot be contacted.`, 'error')
+        }
+      }
+    }))
   },
 
   reportGameTelemetry: async () => {
