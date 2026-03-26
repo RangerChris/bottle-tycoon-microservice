@@ -64,6 +64,30 @@ async function postTruckTelemetry(truckId: number | string, currentLoad: number,
   }
 }
 
+async function callTruckTelemetry(truckId: number | string, currentLoad: number, capacity: number, status: string): Promise<void> {
+  const { truckBase } = getApiBaseUrls()
+  const baseUrl = truckBase.replace(/\/$/, '')
+  const response = await fetch(`${baseUrl}/trucks/${truckId}/telemetry`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentLoad, capacity, status })
+  })
+  if (!response.ok) {
+    throw new Error(`Truck service returned ${response.status}`)
+  }
+}
+
+const truckContactErrorTimestamps = new Map<number | string, number>()
+
+function shouldLogTruckContactError(truckId: number | string): boolean {
+  const last = truckContactErrorTimestamps.get(truckId) ?? 0
+  if (Date.now() - last > 30000) {
+    truckContactErrorTimestamps.set(truckId, Date.now())
+    return true
+  }
+  return false
+}
+
 
 export type GameState = {
   credits: number
@@ -492,94 +516,117 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   },
 
   attemptSmartDispatch: () => {
-    const state = get()
-    const mult = timeMultipliers[state.timeLevel] || 1
+    void (async () => {
+      const state = get()
+      const mult = timeMultipliers[state.timeLevel] || 1
 
-    const availableRecyclers = state.recyclers
-      .filter((recycler) => {
-        const totalBottles = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
-        const actualCapacity = calculateCapacity(100, recycler.level)
-        const fillPercentage = (totalBottles / actualCapacity) * 100
-        return fillPercentage >= 80 && !recycler.targetedByTruckId
-      })
-      .map((recycler) => {
-        const totalBottles = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
-        const actualCapacity = calculateCapacity(100, recycler.level)
-        const fillPercentage = (totalBottles / actualCapacity) * 100
-        return { recycler, totalBottles, fillPercentage }
-      })
-      .sort((a, b) => b.fillPercentage - a.fillPercentage)
+      const availableRecyclers = state.recyclers
+        .filter((recycler) => {
+          const totalBottles = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
+          const actualCapacity = calculateCapacity(100, recycler.level)
+          const fillPercentage = (totalBottles / actualCapacity) * 100
+          return fillPercentage >= 80 && !recycler.targetedByTruckId
+        })
+        .map((recycler) => {
+          const totalBottles = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
+          const actualCapacity = calculateCapacity(100, recycler.level)
+          const fillPercentage = (totalBottles / actualCapacity) * 100
+          return { recycler, totalBottles, fillPercentage }
+        })
+        .sort((a, b) => b.fillPercentage - a.fillPercentage)
 
-    const idleTrucks = state.trucks
-      .filter((truck) => truck.status === 'idle')
-      .map((truck) => {
-        const actualCapacity = calculateCapacity(45, truck.level)
-        return { truck, actualCapacity }
-      })
-      .sort((a, b) => b.actualCapacity - a.actualCapacity)
+      const idleTrucks = state.trucks
+        .filter((truck) => truck.status === 'idle')
+        .map((truck) => {
+          const actualCapacity = calculateCapacity(45, truck.level)
+          return { truck, actualCapacity }
+        })
+        .sort((a, b) => b.actualCapacity - a.actualCapacity)
 
-    const matches = Math.min(availableRecyclers.length, idleTrucks.length)
+      const matches = Math.min(availableRecyclers.length, idleTrucks.length)
+      if (matches === 0) return
 
-    for (let i = 0; i < matches; i++) {
-      const { recycler } = availableRecyclers[i]
-      const { truck, actualCapacity } = idleTrucks[i]
+      for (let i = 0; i < matches; i++) {
+        const { recycler } = availableRecyclers[i]
+        const { truck, actualCapacity } = idleTrucks[i]
+        const truckName = getTruckDisplayName(truck)
 
-      set((draft: any) => {
-        const updatedTruck = draft.trucks.find((t: any) => t.id == truck.id)
-        const updatedRecycler = draft.recyclers.find((r: any) => r.id == recycler.id)
-
-        if (updatedTruck && updatedRecycler) {
-          updatedTruck.status = 'en route'
-          updatedTruck.targetRecyclerId = updatedRecycler.id
-          updatedTruck.capacity = actualCapacity
-          updatedTruck.cargo = { glass: 0, metal: 0, plastic: 0 }
-          updatedRecycler.targetedByTruckId = updatedTruck.id
-
-          let remainingCapacity = actualCapacity
-
-          const glassToLoad = Math.min(remainingCapacity, updatedRecycler.currentBottles.glass)
-          updatedTruck.cargo.glass = glassToLoad
-          updatedRecycler.currentBottles.glass -= glassToLoad
-          remainingCapacity -= glassToLoad
-
-          const metalToLoad = Math.min(remainingCapacity, updatedRecycler.currentBottles.metal)
-          updatedTruck.cargo.metal = metalToLoad
-          updatedRecycler.currentBottles.metal -= metalToLoad
-          remainingCapacity -= metalToLoad
-
-          const plasticToLoad = Math.min(remainingCapacity, updatedRecycler.currentBottles.plastic)
-          updatedTruck.cargo.plastic = plasticToLoad
-          updatedRecycler.currentBottles.plastic -= plasticToLoad
-
-          updatedTruck.currentLoad = updatedTruck.cargo.glass + updatedTruck.cargo.metal + updatedTruck.cargo.plastic
-
-          const truckName = getTruckDisplayName(updatedTruck)
-          const recyclerName = getRecyclerDisplayName(updatedRecycler)
-          draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `${truckName} dispatched to ${recyclerName}` })
-
-          const currentLoad = updatedRecycler.currentBottles.glass + updatedRecycler.currentBottles.metal + updatedRecycler.currentBottles.plastic
-          const recyclerCapacity = calculateCapacity(100, updatedRecycler.level)
-          if (updatedRecycler.visitors.length > 0 && updatedRecycler.visitors[0].waiting && currentLoad < recyclerCapacity) {
-            updatedRecycler.visitors[0].waiting = false
-            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor resumed depositing at ${recyclerName}` })
+        try {
+          await callTruckTelemetry(truck.id, 0, actualCapacity, 'transporting')
+          truckContactErrorTimestamps.delete(truck.id)
+        } catch {
+          if (shouldLogTruckContactError(truck.id)) {
+            get().addLog(`${truckName} cannot be contacted.`, 'error')
           }
+          continue
         }
-      })
 
-      const telemetryTruck = get().trucks.find(t => t.id == truck.id)
-      if (telemetryTruck) {
-        void postTruckTelemetry(telemetryTruck.id, telemetryTruck.currentLoad || 0, telemetryTruck.capacity || 45, 'transporting')
+        set((draft: any) => {
+          const updatedTruck = draft.trucks.find((t: any) => t.id == truck.id)
+          const updatedRecycler = draft.recyclers.find((r: any) => r.id == recycler.id)
+
+          if (updatedTruck && updatedRecycler) {
+            updatedTruck.status = 'en route'
+            updatedTruck.targetRecyclerId = updatedRecycler.id
+            updatedTruck.capacity = actualCapacity
+            updatedTruck.cargo = { glass: 0, metal: 0, plastic: 0 }
+            updatedRecycler.targetedByTruckId = updatedTruck.id
+
+            let remainingCapacity = actualCapacity
+
+            const glassToLoad = Math.min(remainingCapacity, updatedRecycler.currentBottles.glass)
+            updatedTruck.cargo.glass = glassToLoad
+            updatedRecycler.currentBottles.glass -= glassToLoad
+            remainingCapacity -= glassToLoad
+
+            const metalToLoad = Math.min(remainingCapacity, updatedRecycler.currentBottles.metal)
+            updatedTruck.cargo.metal = metalToLoad
+            updatedRecycler.currentBottles.metal -= metalToLoad
+            remainingCapacity -= metalToLoad
+
+            const plasticToLoad = Math.min(remainingCapacity, updatedRecycler.currentBottles.plastic)
+            updatedTruck.cargo.plastic = plasticToLoad
+            updatedRecycler.currentBottles.plastic -= plasticToLoad
+
+            updatedTruck.currentLoad = updatedTruck.cargo.glass + updatedTruck.cargo.metal + updatedTruck.cargo.plastic
+
+            const recyclerName = getRecyclerDisplayName(updatedRecycler)
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `${truckName} dispatched to ${recyclerName}` })
+
+            const currentLoad = updatedRecycler.currentBottles.glass + updatedRecycler.currentBottles.metal + updatedRecycler.currentBottles.plastic
+            const recyclerCapacity = calculateCapacity(100, updatedRecycler.level)
+            if (updatedRecycler.visitors.length > 0 && updatedRecycler.visitors[0].waiting && currentLoad < recyclerCapacity) {
+              updatedRecycler.visitors[0].waiting = false
+              draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor resumed depositing at ${recyclerName}` })
+            }
+          }
+        })
+
+
+        const deliveryTime = Math.max(1000, 10000 / mult)
+        setTimeout(() => get().deliverToPlant(truck.id), deliveryTime)
       }
-
-      const deliveryTime = Math.max(1000, 10000 / mult)
-      setTimeout(() => get().deliverToPlant(truck.id), deliveryTime)
-    }
+    })()
   },
 
   deliverToPlant: async (truckId: number | string) => {
     const state = get()
     const truck = state.trucks.find((t) => t.id == truckId)
     if (!truck || !truck.cargo) return
+
+    const truckName = getTruckDisplayName(truck)
+
+    try {
+      await callTruckTelemetry(truckId, truck.currentLoad, truck.capacity, 'delivering')
+      truckContactErrorTimestamps.delete(truckId)
+    } catch {
+      if (shouldLogTruckContactError(truckId)) {
+        get().addLog(`${truckName} cannot be contacted.`, 'error')
+      }
+      setTimeout(() => get().deliverToPlant(truckId), 5000)
+      return
+    }
+
 
     const totalBottles = truck.cargo.glass + truck.cargo.metal + truck.cargo.plastic
 
