@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const apiBase = process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const tracesBase = process.env.JAEGER_COLLECTOR_URL || 'http://localhost:14268';
 client.collectDefaultMetrics();
 app.get('/metrics', async (_req, res) => {
     try {
@@ -19,8 +20,9 @@ app.get('/metrics', async (_req, res) => {
     }
 });
 app.use('/health', createProxyMiddleware({ target: apiBase, changeOrigin: true }));
+app.use('/api/traces', createProxyMiddleware({ target: tracesBase, changeOrigin: true }));
 app.use(express.static(path.join(__dirname, 'dist')));
-app.get('*', (_req, res) => {
+app.get('/{*path}', (_req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 app.listen(port, '0.0.0.0', () => {

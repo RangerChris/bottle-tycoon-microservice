@@ -1,6 +1,5 @@
-﻿@tailwind base;
-@tailwind components;
-@tailwind utilities;
+﻿@import "tailwindcss";
+@plugin "daisyui";
 
 :root {
   --primary-color: #10b981;
@@ -25,23 +24,26 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0,0,0,0.5);
+  background-color: rgba(0, 0, 0, 0.5);
   z-index: 50;
 }
 
 /* Capacity bar for recyclers/trucks */
 .capacity-bar {
   position: relative;
-  height: 0.75rem; /* 12px */
+  height: 0.75rem;
+  /* 12px */
   background: var(--bg-primary);
   border-radius: 6px;
   overflow: hidden;
 }
+
 .capacity-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--success-color), var(--primary-color));
   transition: width 0.3s ease;
 }
+
 .capacity-text {
   position: absolute;
   inset: 0;
@@ -61,6 +63,7 @@ body {
   max-height: 40rem;
   overflow-y: auto;
 }
+
 .log-entry {
   padding: 0.5rem;
   margin-bottom: 0.5rem;
@@ -69,19 +72,40 @@ body {
   gap: 0.5rem;
   font-size: 0.875rem;
 }
+
 .log-time {
   color: var(--text-secondary);
   font-family: monospace;
   white-space: nowrap;
 }
-.log-message { color: var(--text-primary); }
-.log-info { background: rgba(59,130,246,0.07); border-left: 3px solid var(--secondary-color); }
-.log-success { background: rgba(34,197,94,0.07); border-left: 3px solid var(--success-color); }
-.log-warning { background: rgba(245,158,11,0.07); border-left: 3px solid var(--warning-color); }
-.log-danger { background: rgba(239,68,68,0.07); border-left: 3px solid var(--danger-color); }
+
+.log-message {
+  color: var(--text-primary);
+}
+
+.log-info {
+  background: rgba(59, 130, 246, 0.07);
+  border-left: 3px solid var(--secondary-color);
+}
+
+.log-success {
+  background: rgba(34, 197, 94, 0.07);
+  border-left: 3px solid var(--success-color);
+}
+
+.log-warning {
+  background: rgba(245, 158, 11, 0.07);
+  border-left: 3px solid var(--warning-color);
+}
+
+.log-danger {
+  background: rgba(239, 68, 68, 0.07);
+  border-left: 3px solid var(--danger-color);
+}
 
 /* Button secondary override to match mockup */
-.btn-secondary, .btn.btn-secondary {
+.btn-secondary,
+.btn.btn-secondary {
   background-color: var(--secondary-color) !important;
   color: var(--text-primary) !important;
 }
@@ -92,6 +116,7 @@ body {
   box-shadow: none !important;
   outline: none !important;
 }
+
 .no-outline-btn:hover,
 .no-outline-btn:active,
 .no-outline-btn:focus,
@@ -103,6 +128,6 @@ body {
 
 /* subtle card styles used by components to approximate mockup */
 .card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border: 1px solid rgba(255,255,255,0.03);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }

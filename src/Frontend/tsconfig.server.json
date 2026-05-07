@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "outDir": "build",
     "strict": true,
     "esModuleInterop": true,
@@ -10,6 +10,10 @@
     "resolveJsonModule": true,
     "sourceMap": false
   },
-  "include": ["server.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "server.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
