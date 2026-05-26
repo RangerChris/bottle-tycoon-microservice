@@ -17,7 +17,7 @@ export default function App() {
 
   useEffect(() => {
     if ((import.meta as any).env?.MODE !== 'production') {
-      import('./components/DebugPanel').then(m => setDebugPanel(() => m.default)).catch(()=>{})
+      import('./components/DebugPanel').then(m => setDebugPanel(() => m.default)).catch(() => { })
     }
   }, [])
 
@@ -28,13 +28,13 @@ export default function App() {
   }, [init])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 to-gray-800 text-gray-100">
       <div className="max-w-7xl mx-auto p-6">
         <Header />
 
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <section className="lg:col-span-2 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <main className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <section className="space-y-6 min-w-0">
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <RecyclersSection />
               <TrucksSection />
             </div>
@@ -42,7 +42,7 @@ export default function App() {
             <EarningsChart />
           </section>
 
-          <aside className="space-y-6">
+          <aside className="space-y-6 lg:sticky lg:top-6">
             <ActivityLog />
 
             <div className="card bg-base-200 shadow-xl">
