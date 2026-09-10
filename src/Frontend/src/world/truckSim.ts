@@ -1,0 +1,105 @@
+// Truck movement over the road graph: traversal timing + lifecycle mapping.
+// Pure math only — Pixi repositions containers from these outputs.
+import type { TruckVisual, TruckPhase } from './types';
+import { bfsPath, type RoadGraph } from './roadGraph';
+
+export const BASE_SPEED_TILES_PER_SEC = 2;
+export const LOAD_SECONDS = 2.5;
+export const UNLOAD_SECONDS = 2.0;
+
+// Existing economy time multipliers (useGameStore): pause freezes trucks.
+export const TIME_MULTIPLIERS: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 4, 5: 5 };
+
+export function timeMultiplier(timeLevel: number): number {
+  return TIME_MULTIPLIERS[timeLevel] ?? 1;
+}
+
+// Builds a truck visual for a new journey: hqStop → targetStop on road tiles.
+export function startJourney(truckId: number | string, path: string[], phase: TruckPhase): TruckVisual {
+  return { truckId, path, legIndex: 0, legProgress: 0, phase };
+}
+
+// Per-leg seeded jitter (±15%) for visual variance; deterministic per leg.
+export function legJitter(seed: number, legIndex: number): number {
+  let a = (seed ^ (legIndex * 0x9e3779b9)) >>> 0;
+  a = (a + 0x6d2b79f5) | 0;
+  let t = Math.imul(a ^ (a >>> 15), 1 | a);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  const v = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  return 0.85 + v * 0.3; // 0.85..1.15
+}
+
+// Advance a truck along its path. Returns the (possibly new) visual plus
+// whether it arrived at the end of the path this tick.
+export type AdvanceResult = { visual: TruckVisual; arrived: boolean };
+
+export function advanceTruck(visual: TruckVisual, dtSeconds: number, speedMultiplier: number): AdvanceResult {
+  if (visual.path.length < 2 || speedMultiplier === 0) {
+    return { visual, arrived: false };
+  }
+  const segments = visual.path.length - 1;
+  let legIndex = visual.legIndex;
+  let legProgress = visual.legProgress;
+
+  let distance = BASE_SPEED_TILES_PER_SEC * speedMultiplier * dtSeconds;
+  // Note: jitter affects total journey feel, applied per segment by the
+  // renderer via legJitter(); here we advance by raw distance for simplicity.
+  while (distance > 0 && legIndex < segments) {
+    const remaining = 1 - legProgress;
+    if (distance < remaining) {
+      legProgress += distance;
+      distance = 0;
+    } else {
+      distance -= remaining;
+      legIndex++;
+      legProgress = 0;
+    }
+  }
+
+  const arrived = legIndex >= segments;
+  if (arrived) {
+    legIndex = segments - 1;
+    legProgress = 1;
+  }
+  return { visual: { ...visual, legIndex, legProgress }, arrived };
+}
+
+// Position along the path as a fractional tile coordinate (for rendering).
+export function positionOnPath(path: string[], legIndex: number, legProgress: number): { fx: number; fy: number } {
+  if (path.length === 0) return { fx: 0, fy: 0 };
+  const idx = Math.min(legIndex, path.length - 2);
+  const from = parseKey(path[idx]);
+  const to = parseKey(path[idx + 1] ?? path[idx]);
+  return {
+    fx: from.x + (to.x - from.x) * legProgress,
+    fy: from.y + (to.y - from.y) * legProgress,
+  };
+}
+
+function parseKey(key: string): { x: number; y: number } {
+  const idx = key.indexOf(',');
+  return { x: Number(key.slice(0, idx)), y: Number(key.slice(idx + 1)) };
+}
+
+// Maps an economy truck status to a visual phase (bridge uses this).
+export function phaseForStatus(status: string): TruckPhase {
+  switch (status) {
+    case 'en route':
+    case 'to_recycler':
+    case 'picking':
+      return 'toRecycler';
+    case 'loading':
+      return 'loading';
+    case 'to_plant':
+    case 'delivering':
+      return 'toPlant';
+    default:
+      return 'atHq';
+  }
+}
+
+// Convenience: route a truck from one building's stop to another's.
+export function routeBetween(graph: RoadGraph, fromStop: string, toStop: string): string[] {
+  const result = bfsPath(graph, fromStop, toStop);
+  return result.reachable ? result.path : [];
+}
