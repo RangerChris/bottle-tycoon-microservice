@@ -759,6 +759,10 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     set((draft: any) => {
       for (const recycler of draft.recyclers) {
         if (unreachableRecyclers.has(recycler.id)) continue
+        // Customers only visit recyclers that exist in the world. The
+        // /initialize seed recyclers (and bought-but-unplaced ones) stay
+        // dormant until the player places them next to a road.
+        if (!recycler.location) continue
 
         // Arrival countdown runs on the shared game clock (mult-aware), so
         // customers pause with the trucks instead of leaking through timeouts.
@@ -839,7 +843,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   createVisitorForRecycler: async (recyclerId: number | string) => {
     const state = get()
     const recycler = state.recyclers.find((r) => r.id == recyclerId)
-    if (!recycler) return
+    if (!recycler || !recycler.location) return
 
     const totalBottles = Math.floor(Math.random() * 21) + 5
     const glass = Math.floor(Math.random() * (totalBottles + 1))
