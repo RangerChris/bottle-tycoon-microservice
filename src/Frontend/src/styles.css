@@ -65,13 +65,12 @@ body {
   color: var(--text-primary);
 }
 
-/* Activity log styling */
+/* Activity log styling — scrolling lives with the wrapper (HUD card or
+   standalone card), never on both, or you get nested scrollbars. */
 .log-container {
   background: var(--bg-tertiary);
   padding: 0.5rem;
   border-radius: 0.5rem;
-  max-height: 40rem;
-  overflow-y: auto;
 }
 
 .log-entry {

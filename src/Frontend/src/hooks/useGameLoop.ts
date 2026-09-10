@@ -16,6 +16,8 @@ export default function useGameLoop() {
   useEffect(() => {
     // expose store for quick debugging in browser console
     ;(window as any).gameStore = useGameStore
+    ;(window as any).listScheduledArrivals = () =>
+      (useGameStore as any).getState().recyclers.map((r: any) => [r.id, Math.ceil(r.nextArrivalIn ?? 0)])
   }, [])
 
   useEffect(() => {

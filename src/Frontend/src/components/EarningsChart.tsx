@@ -2,7 +2,7 @@
 // Chart.js types may not be installed; import dynamically
 import useGameStore, { GameState } from '../store/useGameStore'
 
-export default function EarningsChart() {
+export default function EarningsChart({ embedded = false }: { embedded?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const chartRef = useRef<any>(null)
   const points = useGameStore((s: GameState) => s.chartPoints)
@@ -24,20 +24,28 @@ export default function EarningsChart() {
     chartRef.current.update()
   }, [points])
 
+  const chartBody = (
+    <>
+      <div className="flex items-center justify-between">
+        <h2 className="card-title text-emerald-500">📊 Bottles Processed</h2>
+        <div className="text-right">
+          <div className="text-sm text-gray-400">Total Earnings</div>
+          <div className="font-bold text-gray-100">{useGameStore.getState().totalEarnings.toLocaleString()}</div>
+        </div>
+      </div>
+
+      <div className="mt-4 bg-gray-800 rounded-lg p-6" style={{ height: 220 }}>
+        <canvas ref={canvasRef}></canvas>
+      </div>
+    </>
+  )
+
+  if (embedded) return chartBody
+
   return (
     <div className="card bg-base-200 shadow-xl">
       <div className="card-body">
-        <div className="flex items-center justify-between">
-          <h2 className="card-title text-emerald-500">📊 Bottles Processed</h2>
-          <div className="text-right">
-            <div className="text-sm text-gray-400">Total Earnings</div>
-            <div className="font-bold text-gray-100">{useGameStore.getState().totalEarnings.toLocaleString()}</div>
-          </div>
-        </div>
-
-        <div className="mt-4 bg-gray-800 rounded-lg p-6" style={{ height: 220 }}>
-          <canvas ref={canvasRef}></canvas>
-        </div>
+        {chartBody}
       </div>
     </div>
   )

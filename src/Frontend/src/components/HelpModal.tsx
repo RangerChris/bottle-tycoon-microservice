@@ -29,12 +29,23 @@ export default function HelpModal({ open, onClose }: { open: boolean; onClose: (
           <div>
             <h4 className="font-semibold mb-2">How to Play</h4>
             <ol className="list-decimal ml-6 text-gray-300 space-y-1">
+              <li>Buy a recycler, then click a grass tile <strong>next to a road</strong> to place it — trucks must be able to reach it</li>
+              <li>Buy trucks at the HQ; they park there until dispatched</li>
               <li>Visitors bring bottles to recyclers automatically</li>
-              <li>Trucks dispatch when recyclers have enough bottles</li>
-              <li>Trucks pick up bottles and deliver to plant</li>
-              <li>Earn credits from deliveries</li>
-              <li>Upgrade or buy new equipment</li>
+              <li>Trucks dispatch automatically when a recycler is ≥80% full</li>
+              <li>They drive across the map, load bottles, deliver to the recycling plant and earn credits</li>
+              <li>Upgrade or buy new equipment — the goal is to grow total earnings as high as you can</li>
             </ol>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-2">World Controls</h4>
+            <ul className="list-disc ml-6 text-gray-300 space-y-1">
+              <li><strong>Pan:</strong> drag anywhere on the map</li>
+              <li><strong>Zoom:</strong> mouse wheel (anchored on the cursor)</li>
+              <li><strong>Place:</strong> Build panel → Buy Recycler → click a highlighted tile (Esc cancels)</li>
+              <li><strong>Inspect:</strong> click a placed recycler to open its panel (upgrade, sell, add bottles)</li>
+            </ul>
           </div>
 
           <div>
