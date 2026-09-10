@@ -893,7 +893,9 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       const r = draft.recyclers.find((x: any) => x.id == recyclerId)
       if (r) {
         r.visitors.push(visitor)
-        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor arrived at ${recyclerName} with ${totalBottles} bottles` })
+        // The walker spawns at the map edge now; "arrived" is logged when it
+        // actually reaches the recycler (see markVisitorArrived).
+        draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Customer heading to ${recyclerName} with ${totalBottles} bottles` })
       }
     })
   },
@@ -916,7 +918,10 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     set((draft: any) => {
       const recycler = draft.recyclers.find((x: any) => x.id == recyclerId)
       const visitor = recycler?.visitors.find((v: any) => String(v.id) === String(visitorId))
-      if (visitor) visitor.arrived = true
+      if (!visitor || visitor.arrived) return
+      visitor.arrived = true
+      const recyclerName = recycler ? getRecyclerDisplayName(recycler) : 'recycler'
+      draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'info', message: `Visitor arrived at ${recyclerName} with ${visitor.total} bottles` })
     })
   },
 
