@@ -12,6 +12,8 @@ export type WorldLayers = {
   roads: Container;
   buildings: Container;
   units: Container;
+  status: Container; // capacity bars above buildings
+  fx: Container; // transient effects (plant unload pulse)
   overlays: Container;
 };
 
@@ -21,10 +23,12 @@ export function createLayers(): WorldLayers {
   const roads = new Container();
   const buildings = new Container();
   const units = new Container();
+  const status = new Container();
+  const fx = new Container();
   const overlays = new Container();
   buildings.sortableChildren = true; // zIndex = x + y
-  root.addChild(terrain, roads, buildings, units, overlays);
-  return { root, terrain, roads, buildings, units, overlays };
+  root.addChild(terrain, roads, buildings, units, status, fx, overlays);
+  return { root, terrain, roads, buildings, units, status, fx, overlays };
 }
 
 // Full redraw (called once on map init; later sessions add partial redraws).

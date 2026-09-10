@@ -16,7 +16,7 @@ export default function GameCanvas() {
   return (
     <div
       ref={containerRef}
-      className="relative h-[560px] w-full overflow-hidden rounded-xl border border-gray-700/60 bg-gray-950 shadow-xl"
+      className="absolute inset-0 overflow-hidden rounded-xl border border-gray-700/60 bg-gray-950 shadow-xl"
       data-testid="game-canvas"
       aria-label="Isometric world view"
     />

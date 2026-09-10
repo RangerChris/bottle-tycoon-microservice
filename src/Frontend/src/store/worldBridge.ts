@@ -3,6 +3,7 @@
 import useGameStore from './useGameStore';
 import useWorldStore from './useWorldStore';
 import { configureJourneys, ensureParked, hasJourney, removeTruck, startJourney } from '../game/journeys';
+import { configureVisitors, despawnVisitor, hasVisitor, spawnVisitor, visitorKeys } from '../game/visitors';
 import { timeMultiplier } from '../world/truckSim';
 import type { WorldBuilding } from '../world/types';
 
@@ -76,6 +77,24 @@ export function initWorldBridge(): () => void {
       if (!liveIds.has(key)) {
         prevTruckStatus.delete(key);
         removeTruck(key);
+      }
+    }
+
+    // --- visitors → walker visuals (cosmetic) ---
+    if (world.map) {
+      configureVisitors(useWorldStore.getState().map);
+      const seen = new Set<string>();
+      for (const r of game.recyclers) {
+        for (const v of r.visitors ?? []) {
+          const key = `${r.id}-${v.id}`;
+          seen.add(key);
+          if (!hasVisitor(key) && r.location) {
+            spawnVisitor(key, r.location);
+          }
+        }
+      }
+      for (const key of visitorKeys()) {
+        if (!seen.has(key)) despawnVisitor(key);
       }
     }
   };

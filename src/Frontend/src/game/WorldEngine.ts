@@ -1,7 +1,7 @@
 // PixiJS singleton: Application lifecycle, camera pan/zoom, tile picking,
 // placement + selection handling. Lives outside React — GameCanvas mounts it
 // into a div; per-frame state never flows through React re-renders.
-import { Application, Container } from 'pixi.js';
+import { Application, Container, Graphics } from 'pixi.js';
 import useWorldStore from '../store/useWorldStore';
 import useGameStore from '../store/useGameStore';
 import { toScreen, toTile } from '../world/iso';
@@ -12,9 +12,16 @@ import type { WorldLayers } from './WorldRenderer';
 import { createLayers, renderMap, addBuildingSprite, removeBuildingSprite } from './WorldRenderer';
 import { updateOverlays } from './draw/overlays';
 import { createTruckSprite, updateTruckSprite } from './draw/truckSprite';
+import { createVisitorSprite, updateVisitorSprite } from './draw/visitorSprite';
+import { updateStatusBars } from './draw/statusBars';
 import { tickJourneys, journeyRenderStates } from './journeys';
+import { configureVisitors, tickVisitors, visitorRenderStates } from './visitors';
 import { timeMultiplier } from '../world/truckSim';
 import { toScreen as toScreenPos } from '../world/iso';
+
+// Recycler capacity curve (matches the economy store's calculateCapacity).
+const RECYCLER_BASE_CAPACITY = 100;
+const CAPACITY_LEVEL_FACTOR = 1.25;
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2;
@@ -81,12 +88,17 @@ async function doInit(container: HTMLElement, gen: number): Promise<void> {
   unsubscribe = useWorldStore.subscribe(() => syncFromStore());
   syncFromStore();
 
-  // World clock: trucks, later visitors (per-frame state stays out of React).
+  // World clock: trucks, visitors (per-frame state stays out of React).
+  let elapsed = 0;
   a.ticker.add((tk) => {
     const dt = tk.deltaMS / 1000;
+    elapsed += dt;
     const mult = timeMultiplier(useGameStore.getState().timeLevel);
     tickJourneys(dt, mult);
+    tickVisitors(dt, mult);
     renderTrucks();
+    renderVisitors(elapsed);
+    renderPlantUnloadFx(elapsed);
   });
 
   // Debug/automation hook (DebugPanel uses this later too).
@@ -141,6 +153,23 @@ function syncFromStore(): void {
     hoveredTile: s.hoveredTile,
     selectedBuilding: selectedBuildingSprite(s),
   });
+  updateStatusBarsFor(s.buildings);
+}
+
+// Capacity bars above each placed recycler (data from the economy store).
+function updateStatusBarsFor(buildings: Record<string, WorldBuilding>): void {
+  if (!layers) return;
+  const game = useGameStore.getState();
+  const items = [];
+  for (const [id, b] of Object.entries(buildings)) {
+    if (b.kind !== 'recycler' || !b.entityId) continue;
+    const r = game.recyclers.find((x) => String(x.id) === String(b.entityId));
+    if (!r) continue;
+    const total = r.currentBottles.glass + r.currentBottles.metal + r.currentBottles.plastic;
+    const capacity = Math.floor(RECYCLER_BASE_CAPACITY * Math.pow(CAPACITY_LEVEL_FACTOR, r.level));
+    items.push({ key: id, x: b.x, y: b.y, fill: capacity > 0 ? total / capacity : 0 });
+  }
+  updateStatusBars(layers.status, items);
 }
 
 function selectedBuildingSprite(s: ReturnType<typeof useWorldStore.getState>): { id: string; x: number; y: number } | null {
@@ -190,6 +219,62 @@ function renderTrucks(): void {
     sprite.position.set(pos.sx, pos.sy + 16); // tile center
     updateTruckSprite(sprite, s.phase, s.dirX, s.dirY, s.loaded);
   }
+}
+
+// Visitor walkers (cosmetic) reconciled from the visitor runtime.
+function renderVisitors(time: number): void {
+  if (!layers) return;
+  const states = visitorRenderStates();
+  const wanted = new Set(states.keys());
+  for (const c of [...layers.units.children]) {
+    const label = (c as unknown as { label?: string }).label;
+    if (typeof label === 'string' && label.startsWith('visitor-') && !wanted.has(label.slice('visitor-'.length))) {
+      c.destroy({ children: true });
+    }
+  }
+  for (const [key, s] of states) {
+    let sprite = layers.units.children.find(
+      (c) => (c as unknown as { label?: string }).label === `visitor-${key}`,
+    );
+    if (!sprite) {
+      sprite = createVisitorSprite();
+      (sprite as unknown as { label: string }).label = `visitor-${key}`;
+      layers.units.addChild(sprite);
+    }
+    const pos = toScreenPos(s.fx, s.fy);
+    sprite.position.set(pos.sx, pos.sy + 16);
+    updateVisitorSprite(sprite, s.queued, time);
+  }
+}
+
+// Emerald pulse under the plant while a truck unloads there.
+let unloadFx: Graphics | null = null;
+function renderPlantUnloadFx(time: number): void {
+  if (!layers) return;
+  const anyUnloading = [...journeyRenderStates().values()].some((s) => s.phase === 'unloading');
+  if (!anyUnloading) {
+    if (unloadFx) {
+      unloadFx.destroy();
+      unloadFx = null;
+    }
+    return;
+  }
+  const map = useWorldStore.getState().map;
+  if (!map) return;
+  const pos = toScreenPos(map.plant.x, map.plant.y);
+  if (!unloadFx) {
+    unloadFx = new Graphics();
+    layers.fx.addChild(unloadFx);
+  }
+  const alpha = 0.35 + 0.35 * Math.sin(time * 6);
+  unloadFx.clear();
+  unloadFx.moveTo(pos.sx, pos.sy - 4);
+  unloadFx.lineTo(pos.sx + 32 + 4, pos.sy + 16);
+  unloadFx.lineTo(pos.sx, pos.sy + 36);
+  unloadFx.lineTo(pos.sx - 32 - 4, pos.sy + 16);
+  unloadFx.closePath();
+  unloadFx.setStrokeStyle({ width: 3, color: 0x10b981, alpha });
+  unloadFx.stroke();
 }
 
 // --- placement ---
