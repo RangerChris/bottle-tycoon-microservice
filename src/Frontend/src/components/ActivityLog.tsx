@@ -21,7 +21,7 @@ export default function ActivityLog({ embedded = false }: { embedded?: boolean }
     <div className="card bg-base-200 shadow-xl">
       <div className="card-body">
         <h3 className="card-title text-emerald-500">📜 Activity Log</h3>
-        <div className="mt-4">
+        <div className="mt-4 max-h-[40rem] overflow-y-auto">
           {logList}
         </div>
       </div>

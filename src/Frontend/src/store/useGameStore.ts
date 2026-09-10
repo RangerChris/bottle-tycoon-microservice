@@ -2,6 +2,7 @@
 import { immer } from 'zustand/middleware/immer'
 import { BottleCounts, Recycler, Truck, LogEntry } from '../types'
 import { operatingCostFor } from '../world/truckSim'
+import { arrivalDelaySeconds } from '../world/arrival'
 
 // helper for unique ids used in logs and other transient entries
 function uid() {
@@ -130,6 +131,7 @@ export type GameState = {
   depositTick: () => void
   createVisitorForRecycler: (recyclerId: number | string) => void
   scheduleNextArrival: (recyclerId: number | string, minSec?: number, maxSec?: number) => void
+  markVisitorArrived: (recyclerId: number | string, visitorId: number | string) => void
   reportRecyclerTelemetry: () => Promise<void>
   reportTruckTelemetry: () => Promise<void>
   reportGameTelemetry: () => Promise<void>
@@ -159,12 +161,6 @@ function parseLocation(location: unknown): { x: number; y: number } | null {
 
 // time multipliers mapping used by the frontend game loop
 const timeMultipliers: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 4, 5: 5 }
-
-// Track scheduled arrival timers to avoid duplicates per recycler
-const scheduledArrivalTimers = new Map<number | string, any>()
-
-// Watchdog interval id to ensure scheduling is active
-let arrivalsWatchdog: number | null = null
 
 // Telemetry reporting interval
 let telemetryReportingInterval: number | null = null
@@ -758,11 +754,31 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (!state.playerId) return // Wait for player to be initialized
 
     const mult = timeMultipliers[state.timeLevel] || 1
+    const toSpawn: (number | string)[] = []
 
     set((draft: any) => {
       for (const recycler of draft.recyclers) {
         if (unreachableRecyclers.has(recycler.id)) continue
-        if (recycler.visitors.length > 0 && recycler.visitors[0].remaining > 0) {
+
+        // Arrival countdown runs on the shared game clock (mult-aware), so
+        // customers pause with the trucks instead of leaking through timeouts.
+        if (recycler.nextArrivalIn === undefined) {
+          recycler.nextArrivalIn = arrivalDelaySeconds(recycler.visitors.length, recycler.arrivalMinSec ?? 2, recycler.arrivalMaxSec ?? 8)
+        } else {
+          recycler.nextArrivalIn -= mult
+        }
+        if (recycler.nextArrivalIn <= 0) {
+          toSpawn.push(recycler.id)
+          recycler.nextArrivalIn = arrivalDelaySeconds(recycler.visitors.length, recycler.arrivalMinSec ?? 2, recycler.arrivalMaxSec ?? 8)
+        }
+
+        // Release a visitor whose walker never showed up (30s real-time backstop).
+        const head = recycler.visitors[0]
+        if (head && head.arrived === false && Date.now() - (head.arrivedPendingSince ?? Date.now()) > 30000) {
+          head.arrived = true
+        }
+
+        if (recycler.visitors.length > 0 && recycler.visitors[0].arrived !== false && recycler.visitors[0].remaining > 0) {
           const currentLoad = recycler.currentBottles.glass + recycler.currentBottles.metal + recycler.currentBottles.plastic
           const hasSpace = currentLoad < recycler.capacity
 
@@ -815,6 +831,9 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         }
       }
     })
+
+    // Spawn after the state update so the visitors array is settled.
+    for (const id of toSpawn) void get().createVisitorForRecycler(id)
   },
 
   createVisitorForRecycler: async (recyclerId: number | string) => {
@@ -865,7 +884,11 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         total: totalBottles,
         remaining: totalBottles,
         bottles: { glass, metal, plastic },
-        waiting: false
+        waiting: false,
+        // Deposits only start once the walker visually reaches the recycler
+        // (world bridge calls markVisitorArrived) — or the 30s watchdog fires.
+        arrived: false,
+        arrivedPendingSince: Date.now()
       }
       const r = draft.recyclers.find((x: any) => x.id == recyclerId)
       if (r) {
@@ -875,53 +898,26 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     })
   },
 
+  // Resets the arrival countdown for a recycler. depositTick decrements it on
+  // the shared clock (pause/speed), so no setTimeout chains are needed.
   scheduleNextArrival: (recyclerId: number | string, minSec: number = 2, maxSec: number = 8) => {
-    const existing = scheduledArrivalTimers.get(recyclerId)
-    if (existing) {
-      clearTimeout(existing)
-      scheduledArrivalTimers.delete(recyclerId)
-    }
+    set((draft: any) => {
+      const recycler = draft.recyclers.find((x: any) => x.id == recyclerId)
+      if (!recycler) return
+      recycler.arrivalMinSec = minSec
+      recycler.arrivalMaxSec = maxSec
+      recycler.nextArrivalIn = arrivalDelaySeconds(recycler.visitors.length, minSec, maxSec)
+    })
+  },
 
-    const state = get()
-    const mult = timeMultipliers[state.timeLevel] || 1
-
-    // If game is paused, don't schedule arrivals
-    if (mult === 0) {
-      // Still keep track that we attempted to schedule, so we reschedule when unpaused
-      const timer = setTimeout(() => {
-        get().scheduleNextArrival(recyclerId, minSec, maxSec)
-      }, 5000) // Check every 5 seconds if still paused
-      scheduledArrivalTimers.set(recyclerId, timer)
-      return
-    }
-
-    // Get current recycler queue depth
-    const recycler = state.recyclers.find(r => r.id === recyclerId)
-    const queueDepth = recycler?.visitors?.length || 0
-
-    // If queue is too long (> 4), customers go elsewhere - increase delay significantly
-    let adjustedMinSec = minSec
-    let adjustedMaxSec = maxSec
-    if (queueDepth > 4) {
-      // Multiply delay by 2-3x based on how long the queue is
-      const delayMultiplier = Math.min(3, 1 + (queueDepth - 4) * 0.5)
-      adjustedMinSec = Math.ceil(minSec * delayMultiplier)
-      adjustedMaxSec = Math.ceil(maxSec * delayMultiplier)
-    }
-
-    const clampedMin = Math.max(1, adjustedMinSec)
-    const clampedMax = Math.max(clampedMin, adjustedMaxSec)
-    // Calculate delay in seconds, then divide by time multiplier to speed up arrivals
-    const delaySeconds = Math.floor(Math.random() * (clampedMax - clampedMin + 1)) + clampedMin
-    const delayMs = Math.max(100, (delaySeconds * 1000) / mult)
-
-    const timer = setTimeout(() => {
-      scheduledArrivalTimers.delete(recyclerId)
-      get().createVisitorForRecycler(recyclerId)
-      get().scheduleNextArrival(recyclerId, minSec, maxSec)
-    }, delayMs)
-
-    scheduledArrivalTimers.set(recyclerId, timer)
+  // Called by the world bridge when a visitor walker physically reaches its
+  // recycler stop — deposits for that visitor start from the next tick.
+  markVisitorArrived: (recyclerId: number | string, visitorId: number | string) => {
+    set((draft: any) => {
+      const recycler = draft.recyclers.find((x: any) => x.id == recyclerId)
+      const visitor = recycler?.visitors.find((v: any) => String(v.id) === String(visitorId))
+      if (visitor) visitor.arrived = true
+    })
   },
 
   fetchPlayer: async () => {
@@ -975,9 +971,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         }))
       })
 
-      for (const recycler of recyclers) {
-        get().scheduleNextArrival(recycler.id)
-      }
+      // Arrival countdowns initialize lazily in depositTick — no timers needed.
     } catch (error) {
       get().addLog('Failed to fetch recyclers.', 'error')
     }
@@ -1031,17 +1025,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     await get().fetchTrucks()
     await get().reportRecyclerTelemetry()
     await get().reportGameTelemetry()
-
-    if (arrivalsWatchdog === null) {
-      arrivalsWatchdog = window.setInterval(() => {
-        const state = get()
-        for (const recycler of state.recyclers) {
-          if (!scheduledArrivalTimers.has(recycler.id)) {
-            get().scheduleNextArrival(recycler.id)
-          }
-        }
-      }, 10000)
-    }
 
     if (telemetryReportingInterval === null) {
       telemetryReportingInterval = window.setInterval(() => {

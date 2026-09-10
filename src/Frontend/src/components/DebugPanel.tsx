@@ -85,7 +85,7 @@ export default function DebugPanel() {
                 <div className="mt-1 text-xs">
                   {scheduled.length === 0 ? <div className="italic text-gray-400">none</div> : (
                     <ul className="list-disc list-inside">
-                      {scheduled.map(([rid, tid]) => <li key={rid}>Recycler #{rid} • timerId={tid}</li>)}
+                      {scheduled.map(([rid, secs]) => <li key={rid}>#{String(rid).slice(0, 8)} • next visitor in {secs}s</li>)}
                     </ul>
                   )}
                 </div>

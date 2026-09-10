@@ -20,6 +20,13 @@ const entries = new Map<string, VisitorEntry>(); // key: `${recyclerId}-${visito
 let map: WorldMap | null = null;
 let graph: RoadGraph | null = null;
 let edgeRoads: string[] = [];
+// Fired when a walker physically reaches its recycler stop; the store uses
+// this to start that visitor's deposits.
+let onArriveStop: ((key: string) => void) | null = null;
+
+export function setVisitorArrivalCallback(cb: ((key: string) => void) | null): void {
+  onArriveStop = cb;
+}
 
 export function configureVisitors(worldMap: WorldMap | null): void {
   if (!worldMap || (map && map.seed === worldMap.seed)) return;
@@ -47,10 +54,12 @@ export function visitorKeys(): string[] {
 }
 
 // Spawns a walker from a random map-edge road tile to the recycler stop.
-export function spawnVisitor(key: string, recyclerTile: TilePos): void {
-  if (!map || !graph) return;
+// Returns false when the world can't represent the walk (no map/route) —
+// the caller should release the visitor's deposits immediately.
+export function spawnVisitor(key: string, recyclerTile: TilePos): boolean {
+  if (!map || !graph) return false;
   const stopKey = roadStopFor(map, recyclerTile.x, recyclerTile.y);
-  if (!stopKey) return;
+  if (!stopKey) return false;
   const stop = parseKey(stopKey);
   const start = edgeRoads.length > 0 ? edgeRoads[Math.floor(Math.random() * edgeRoads.length)] : null;
   let path: string[] = [];
@@ -60,6 +69,7 @@ export function spawnVisitor(key: string, recyclerTile: TilePos): void {
   }
   const queueIndex = [...entries.values()].filter((e) => e.stop.x === stop.x && e.stop.y === stop.y).length;
   entries.set(key, { path, legIndex: 0, legProgress: 0, state: 'walking', stop, queueIndex });
+  return true;
 }
 
 export function despawnVisitor(key: string): void {
@@ -67,7 +77,7 @@ export function despawnVisitor(key: string): void {
 }
 
 export function tickVisitors(dtSeconds: number, speedMultiplier: number): void {
-  for (const e of entries.values()) {
+  for (const [key, e] of entries) {
     if (e.state !== 'walking') continue;
     let distance = WALK_SPEED_TILES_PER_SEC * speedMultiplier * dtSeconds;
     const segments = e.path.length - 1;
@@ -84,6 +94,7 @@ export function tickVisitors(dtSeconds: number, speedMultiplier: number): void {
     }
     if (e.legIndex >= segments) {
       e.state = 'queueing';
+      onArriveStop?.(key);
     }
   }
 }

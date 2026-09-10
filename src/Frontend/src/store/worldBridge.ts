@@ -3,12 +3,22 @@
 import useGameStore from './useGameStore';
 import useWorldStore from './useWorldStore';
 import { configureJourneys, ensureParked, hasJourney, removeTruck, startJourney } from '../game/journeys';
-import { configureVisitors, despawnVisitor, hasVisitor, spawnVisitor, visitorKeys } from '../game/visitors';
+import { configureVisitors, despawnVisitor, hasVisitor, setVisitorArrivalCallback, spawnVisitor, visitorKeys } from '../game/visitors';
 import { timeMultiplier } from '../world/truckSim';
 import type { WorldBuilding } from '../world/types';
 
 export function initWorldBridge(): () => void {
   const prevTruckStatus = new Map<string, string>();
+  // Walker key → the economy (recycler, visitor) it belongs to, so the
+  // walker-arrival callback can release that visitor's deposits.
+  const walkerOwners = new Map<string, { recyclerId: number | string; visitorId: number | string }>();
+
+  setVisitorArrivalCallback((key) => {
+    const owner = walkerOwners.get(key);
+    if (owner) {
+      useGameStore.getState().markVisitorArrived(owner.recyclerId, owner.visitorId);
+    }
+  });
 
   const sync = () => {
     const world = useWorldStore.getState();
@@ -89,12 +99,21 @@ export function initWorldBridge(): () => void {
           const key = `${r.id}-${v.id}`;
           seen.add(key);
           if (!hasVisitor(key) && r.location) {
-            spawnVisitor(key, r.location);
+            const spawned = spawnVisitor(key, r.location);
+            if (spawned) {
+              walkerOwners.set(key, { recyclerId: r.id, visitorId: v.id });
+            } else {
+              // No walkable route: deposits start right away.
+              useGameStore.getState().markVisitorArrived(r.id, v.id);
+            }
           }
         }
       }
       for (const key of visitorKeys()) {
-        if (!seen.has(key)) despawnVisitor(key);
+        if (!seen.has(key)) {
+          despawnVisitor(key);
+          walkerOwners.delete(key);
+        }
       }
     }
   };
