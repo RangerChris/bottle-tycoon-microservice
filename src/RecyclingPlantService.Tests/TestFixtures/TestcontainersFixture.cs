@@ -15,7 +15,7 @@ using Serilog;
 using Testcontainers.PostgreSql;
 using Xunit;
 
-[assembly: CollectionBehavior(MaxParallelThreads = 0)]
+[assembly: Parallelization(MaxThreads = 0)]
 
 namespace RecyclingPlantService.Tests.TestFixtures;
 

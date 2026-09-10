@@ -17,7 +17,7 @@ using TruckService.Data;
 using TruckService.Services;
 using Xunit;
 
-[assembly: CollectionBehavior(MaxParallelThreads = 0)]
+[assembly: Parallelization(MaxThreads = 0)]
 
 namespace TruckService.Tests.TestFixtures;
 

@@ -16,7 +16,7 @@ using Serilog;
 using Testcontainers.PostgreSql;
 using Xunit;
 
-[assembly: CollectionBehavior(MaxParallelThreads = 0)]
+[assembly: Parallelization(MaxThreads = 0)]
 
 namespace GameService.Tests.TestFixtures;
 
@@ -38,6 +38,8 @@ public class TestcontainersFixture : IAsyncLifetime
             .WithCleanUp(true)
             .Build();
     }
+
+    public int MaxParallelThreads { get; set; }
 
     public PostgreSqlContainer Postgres { get; }
 
