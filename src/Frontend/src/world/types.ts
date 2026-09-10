@@ -43,14 +43,6 @@ export type TruckVisual = {
   phase: TruckPhase;
 };
 
-export type VisitorVisual = {
-  recyclerId: number | string;
-  path: string[];
-  legIndex: number;
-  legProgress: number;
-  state: 'walking' | 'queueing' | 'depositing';
-};
-
 export type BuildMode = 'none' | 'recycler';
 
 // "x,y" tile key helpers — used across map, pathfinding and persistence.

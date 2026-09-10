@@ -5,7 +5,6 @@ import {
   positionOnPath,
   legJitter,
   timeMultiplier,
-  phaseForStatus,
   routeBetween,
   createJourney,
   stepJourney,
@@ -104,17 +103,6 @@ describe('positionOnPath', () => {
     const p = positionOnPath([], 0, 0);
     expect(p.fx).toBe(0);
     expect(p.fy).toBe(0);
-  });
-});
-
-describe('phaseForStatus', () => {
-  it('maps economy statuses to visual phases', () => {
-    expect(phaseForStatus('idle')).toBe('atHq');
-    expect(phaseForStatus('en route')).toBe('toRecycler');
-    expect(phaseForStatus('loading')).toBe('loading');
-    expect(phaseForStatus('to_plant')).toBe('toPlant');
-    expect(phaseForStatus('delivering')).toBe('toPlant');
-    expect(phaseForStatus('unknown-thing')).toBe('atHq');
   });
 });
 

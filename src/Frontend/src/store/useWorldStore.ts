@@ -3,7 +3,7 @@
 // React components must only subscribe to coarse state.
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { WorldMap, WorldBuilding, BuildMode, TilePos, VisitorVisual } from '../world/types';
+import type { WorldMap, WorldBuilding, BuildMode, TilePos } from '../world/types';
 import { generateMap } from '../world/mapgen';
 
 export type SelectedEntity = { kind: 'recycler' | 'truck'; id: number | string } | null;
@@ -40,8 +40,6 @@ export type WorldState = {
   selectedEntity: SelectedEntity;
   hoveredTile: TilePos | null;
   camera: { x: number; y: number; zoom: number };
-  visitorVisuals: VisitorVisual[];
-  mapReady: boolean;
 
   initMap: (seed?: number) => void;
   setBuildMode: (mode: BuildMode) => void;
@@ -60,8 +58,6 @@ const useWorldStore = create<WorldState>()(
     selectedEntity: null,
     hoveredTile: null,
     camera: { x: 0, y: 0, zoom: 1 },
-    visitorVisuals: [],
-    mapReady: false,
 
     initMap: (seed) => {
       // Persist the seed so a reload restores the same map (session 6 keeps this).
@@ -89,7 +85,6 @@ const useWorldStore = create<WorldState>()(
         // Register the buildings onto tiles so placement/selection see them.
         draft.map.tiles[map.hq.y * map.width + map.hq.x].buildingId = 'hq';
         draft.map.tiles[map.plant.y * map.width + map.plant.x].buildingId = 'plant';
-        draft.mapReady = true;
         // Restore the saved camera (or default view) on reload.
         draft.camera = loadCamera();
       });

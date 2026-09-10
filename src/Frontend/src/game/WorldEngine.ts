@@ -111,6 +111,12 @@ async function doInit(container: HTMLElement, gen: number): Promise<void> {
     get map() {
       return useWorldStore.getState().map;
     },
+    get buildings() {
+      return { ...useWorldStore.getState().buildings };
+    },
+    get buildMode() {
+      return useWorldStore.getState().buildMode;
+    },
     get trucks() {
       return Object.fromEntries(journeyRenderStates());
     },

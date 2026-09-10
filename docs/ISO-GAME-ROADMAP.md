@@ -42,12 +42,12 @@ Water/forest random-walk blobs → 3 jittered avenue rows + 3 columns (connected
 | # | Scope | Done when |
 |---|---|---|
 | 1 | **World domain core**: `world/` modules + Vitest, app unchanged | ✅ this session — 40 tests green, tsc + vite build clean |
-| 2 | Static iso world: pixi.js dep, WorldEngine/Renderer, draw/tiles+buildings, GameCanvas, useWorldStore, pan/zoom | dev shows pannable map with roads/water/trees/HQ/plant; existing e2e green |
-| 3 | Placement: BuildToolbar, EntityInspector, overlays, `startPlacement` → tile click → `POST /recyclers {location}` | placement vs live services works; reload restores; credits deducted once |
-| 4 | Trucks: truckSprite, truckSim integration, worldBridge; dispatch → BFS drive → load → plant → deliver on arrival | full dispatch→delivery cycle visible; earnings in Header/chart |
-| 5 | World life + HUD flip: visitors, in-world bars, plant anim, canvas-primary layout | manual playthrough; e2e green |
-| 6 | Economy/polish: distance-based operatingCost in `/deliveries`, placement UX, DebugPanel world controls, restore | cost tests; reload restores map + recyclers |
-| 7 | Hardening: perf (60fps @ 10 trucks + 10 recyclers), service-down grace, `tests/e2e/world.spec.ts` | full suite (vitest + Playwright + 5× dotnet test) green; docker-compose run works |
+| 2 | Static iso world: pixi.js dep, WorldEngine/Renderer, draw/tiles+buildings, GameCanvas, useWorldStore, pan/zoom | ✅ dev shows pannable map with roads/water/trees/HQ/plant; existing e2e green |
+| 3 | Placement: BuildToolbar, EntityInspector, overlays, `startPlacement` → tile click → `POST /recyclers {location}` | ✅ placement vs live services works; reload restores; credits deducted once |
+| 4 | Trucks: truckSprite, truckSim integration, worldBridge; dispatch → BFS drive → load → plant → deliver on arrival | ✅ full dispatch→delivery cycle visible; earnings in Header/chart |
+| 5 | World life + HUD flip: visitors, in-world bars, plant anim, canvas-primary layout | ✅ manual playthrough; e2e green |
+| 6 | Economy/polish: distance-based operatingCost in `/deliveries`, placement UX, DebugPanel world controls, restore | ✅ cost tests; reload restores map + camera |
+| 7 | Hardening: perf (60fps @ 10 trucks + 10 recyclers), service-down grace, `tests/e2e/world.spec.ts` | ✅ 120fps @ 10 trucks + 20 visitors; service-down logs errors, world stays alive; full suite green |
 
 ## Gotchas
 

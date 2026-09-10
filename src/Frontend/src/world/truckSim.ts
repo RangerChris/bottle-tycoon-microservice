@@ -91,23 +91,6 @@ function parseKey(key: string): { x: number; y: number } {
   return { x: Number(key.slice(0, idx)), y: Number(key.slice(idx + 1)) };
 }
 
-// Maps an economy truck status to a visual phase (bridge uses this).
-export function phaseForStatus(status: string): TruckPhase {
-  switch (status) {
-    case 'en route':
-    case 'to_recycler':
-    case 'picking':
-      return 'toRecycler';
-    case 'loading':
-      return 'loading';
-    case 'to_plant':
-    case 'delivering':
-      return 'toPlant';
-    default:
-      return 'atHq';
-  }
-}
-
 // Convenience: route a truck from one building's stop to another's.
 export function routeBetween(graph: RoadGraph, fromStop: string, toStop: string): string[] {
   const result = bfsPath(graph, fromStop, toStop);
