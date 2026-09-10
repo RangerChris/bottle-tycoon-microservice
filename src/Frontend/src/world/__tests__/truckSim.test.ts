@@ -7,6 +7,8 @@ import {
   timeMultiplier,
   phaseForStatus,
   routeBetween,
+  createJourney,
+  stepJourney,
 } from '../truckSim';
 import { generateMap } from '../mapgen';
 import { buildRoadGraph, roadStopFor } from '../roadGraph';
@@ -106,12 +108,95 @@ describe('routeBetween (integration with mapgen)', () => {
     // using the plant's own stop for route sanity (no extra roads needed).
     const hqStop = roadStopFor(map, map.hq.x, map.hq.y) as string;
     const plantStop = roadStopFor(map, map.plant.x, map.plant.y) as string;
-    // routeBetween is imported lazily to keep the module graph simple here.
-    return import('../truckSim').then(({ routeBetween }) => {
-      const path = routeBetween(graph, hqStop, plantStop);
-      expect(path.length).toBeGreaterThan(1);
-      expect(path[0]).toBe(hqStop);
-      expect(path[path.length - 1]).toBe(plantStop);
-    });
+    const path = routeBetween(graph, hqStop, plantStop);
+    expect(path.length).toBeGreaterThan(1);
+    expect(path[0]).toBe(hqStop);
+    expect(path[path.length - 1]).toBe(plantStop);
+  });
+});
+
+describe('stepJourney (full delivery state machine)', () => {
+  const paths = {
+    toRecycler: ['0,0', '1,0', '2,0'], // 2 segments
+    toPlant: ['2,0', '2,1', '2,2'], // 2 segments
+    toHq: ['2,2', '1,2'], // 1 segment
+  };
+
+  function drive(journey: ReturnType<typeof createJourney>, dt: number, mult: number, maxSteps = 5000) {
+    const events: string[] = [];
+    let state = journey;
+    for (let i = 0; i < maxSteps; i++) {
+      const r = stepJourney(state, dt, mult);
+      state = r.journey;
+      if (r.arrivedAtPlant) events.push('arrivedAtPlant');
+      if (r.parked) {
+        events.push('parked');
+        break;
+      }
+    }
+    return { state, events };
+  }
+
+  it('runs drive → load → drive → unload → return and parks', () => {
+    const j = createJourney(1, paths);
+    const { state, events } = drive(j, 0.1, 1);
+    expect(events).toEqual(['arrivedAtPlant', 'parked']);
+    expect(state.phase).toBe('atHq');
+    expect(state.path).toEqual([]);
+  });
+
+  it('fires arrivedAtPlant exactly once', () => {
+    const j = createJourney(1, paths);
+    // Drive past the plant arrival with extra steps.
+    const { state, events } = drive(j, 0.1, 1);
+    expect(state.phase).toBe('atHq');
+    expect(events.filter((e) => e === 'arrivedAtPlant').length).toBe(1);
+  });
+
+  it('freezes entirely while paused (multiplier 0)', () => {
+    const j = createJourney(1, paths);
+    const r = stepJourney(j, 10, 0);
+    expect(r.journey.phase).toBe('toRecycler');
+    expect(r.journey.legIndex).toBe(0);
+    expect(r.journey.legProgress).toBe(0);
+    expect(r.arrivedAtPlant).toBe(false);
+  });
+
+  it('loading timer waits through multiple ticks while loading', () => {
+    const j = createJourney(1, paths);
+    let state = j;
+    // Drive to the recycler (2 segments = 1s at 2 tiles/s), small steps.
+    for (let i = 0; i < 40; i++) {
+      const r = stepJourney(state, 0.05, 1);
+      state = r.journey;
+    }
+    expect(state.phase).toBe('loading');
+    expect(state.timer).toBeGreaterThan(0);
+    // Loading had 1.5s left at the 2.0s mark; 1.4s more keeps it loading.
+    for (let i = 0; i < 28; i++) {
+      const r = stepJourney(state, 0.05, 1);
+      state = r.journey;
+    }
+    expect(state.phase).toBe('loading');
+    for (let i = 0; i < 4; i++) {
+      const r = stepJourney(state, 0.05, 1);
+      state = r.journey;
+    }
+    expect(state.phase).toBe('toPlant');
+  });
+
+  it('handles degenerate empty paths without hanging', () => {
+    const j = createJourney(1, { toRecycler: [], toPlant: [], toHq: [] });
+    let state = j;
+    let plantEvents = 0;
+    // Empty drives are instant, but load+unload timers still run: 2.5+2.0s.
+    for (let i = 0; i < 60; i++) {
+      const r = stepJourney(state, 0.1, 1);
+      state = r.journey;
+      if (r.arrivedAtPlant) plantEvents++;
+      if (r.parked) break;
+    }
+    expect(state.phase).toBe('atHq');
+    expect(plantEvents).toBe(1);
   });
 });

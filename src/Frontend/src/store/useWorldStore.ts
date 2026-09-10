@@ -3,7 +3,7 @@
 // React components must only subscribe to coarse state.
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { WorldMap, WorldBuilding, BuildMode, TilePos, TruckVisual, VisitorVisual } from '../world/types';
+import type { WorldMap, WorldBuilding, BuildMode, TilePos, VisitorVisual } from '../world/types';
 import { generateMap } from '../world/mapgen';
 
 export type SelectedEntity = { kind: 'recycler' | 'truck'; id: number | string } | null;
@@ -15,7 +15,6 @@ export type WorldState = {
   selectedEntity: SelectedEntity;
   hoveredTile: TilePos | null;
   camera: { x: number; y: number; zoom: number };
-  truckVisuals: Record<string, TruckVisual>;
   visitorVisuals: VisitorVisual[];
   mapReady: boolean;
 
@@ -36,7 +35,6 @@ const useWorldStore = create<WorldState>()(
     selectedEntity: null,
     hoveredTile: null,
     camera: { x: 0, y: 0, zoom: 1 },
-    truckVisuals: {},
     visitorVisuals: [],
     mapReady: false,
 

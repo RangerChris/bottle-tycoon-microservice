@@ -11,6 +11,10 @@ import type { WorldBuilding } from '../world/types';
 import type { WorldLayers } from './WorldRenderer';
 import { createLayers, renderMap, addBuildingSprite, removeBuildingSprite } from './WorldRenderer';
 import { updateOverlays } from './draw/overlays';
+import { createTruckSprite, updateTruckSprite } from './draw/truckSprite';
+import { tickJourneys, journeyRenderStates } from './journeys';
+import { timeMultiplier } from '../world/truckSim';
+import { toScreen as toScreenPos } from '../world/iso';
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2;
@@ -77,6 +81,14 @@ async function doInit(container: HTMLElement, gen: number): Promise<void> {
   unsubscribe = useWorldStore.subscribe(() => syncFromStore());
   syncFromStore();
 
+  // World clock: trucks, later visitors (per-frame state stays out of React).
+  a.ticker.add((tk) => {
+    const dt = tk.deltaMS / 1000;
+    const mult = timeMultiplier(useGameStore.getState().timeLevel);
+    tickJourneys(dt, mult);
+    renderTrucks();
+  });
+
   // Debug/automation hook (DebugPanel uses this later too).
   (window as unknown as Record<string, unknown>).__world = {
     get camera() {
@@ -84,6 +96,9 @@ async function doInit(container: HTMLElement, gen: number): Promise<void> {
     },
     get map() {
       return useWorldStore.getState().map;
+    },
+    get trucks() {
+      return Object.fromEntries(journeyRenderStates());
     },
     zoomBy: (factor: number) => {
       const cam = useWorldStore.getState().camera;
@@ -148,6 +163,32 @@ function syncBuildings(buildings: Record<string, WorldBuilding>): void {
   }
   for (const [id, b] of Object.entries(buildings)) {
     addBuildingSprite(layers, b.kind, b.x, b.y, id);
+  }
+}
+
+// Reconcile + reposition truck sprites from the journey runtime each frame.
+function renderTrucks(): void {
+  if (!layers) return;
+  const states = journeyRenderStates();
+  const wanted = new Set(states.keys());
+  for (const c of [...layers.units.children]) {
+    const label = (c as unknown as { label?: string }).label;
+    if (typeof label === 'string' && label.startsWith('truck-') && !wanted.has(label)) {
+      c.destroy({ children: true });
+    }
+  }
+  for (const [key, s] of states) {
+    let sprite = layers.units.children.find(
+      (c) => (c as unknown as { label?: string }).label === `truck-${key}`,
+    );
+    if (!sprite) {
+      sprite = createTruckSprite();
+      (sprite as unknown as { label: string }).label = `truck-${key}`;
+      layers.units.addChild(sprite);
+    }
+    const pos = toScreenPos(s.fx, s.fy);
+    sprite.position.set(pos.sx, pos.sy + 16); // tile center
+    updateTruckSprite(sprite, s.phase, s.dirX, s.dirY, s.loaded);
   }
 }
 

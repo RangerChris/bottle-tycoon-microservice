@@ -33,7 +33,7 @@ export type WorldMap = {
   plant: TilePos;
 };
 
-export type TruckPhase = 'atHq' | 'toRecycler' | 'loading' | 'toPlant' | 'unloading';
+export type TruckPhase = 'atHq' | 'toRecycler' | 'loading' | 'toPlant' | 'unloading' | 'toHq';
 
 export type TruckVisual = {
   truckId: number | string;

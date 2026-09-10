@@ -556,7 +556,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   attemptSmartDispatch: () => {
     void (async () => {
       const state = get()
-      const mult = timeMultipliers[state.timeLevel] || 1
 
       const availableRecyclers = state.recyclers
         .filter((recycler) => {
@@ -641,8 +640,13 @@ const useGameStore = create(immer<GameState>((set, get) => ({
         })
 
 
-        const deliveryTime = Math.max(1000, 10000 / mult)
-        setTimeout(() => get().deliverToPlant(truck.id), deliveryTime)
+        // The world journey fires deliverToPlant on visual arrival at the
+        // plant (see store/worldBridge). This watchdog only backstops if the
+        // world layer never starts a journey (e.g. unroutable recycler).
+        setTimeout(() => {
+          const t = get().trucks.find((x: any) => x.id == truck.id)
+          if (t && t.cargo) get().deliverToPlant(truck.id)
+        }, 30000)
       }
     })()
   },

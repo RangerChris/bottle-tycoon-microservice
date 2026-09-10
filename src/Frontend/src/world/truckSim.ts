@@ -103,3 +103,118 @@ export function routeBetween(graph: RoadGraph, fromStop: string, toStop: string)
   const result = bfsPath(graph, fromStop, toStop);
   return result.reachable ? result.path : [];
 }
+
+// --- full delivery journey state machine ---
+// HQ → recycler (drive) → load (timer) → plant (drive) → unload (timer,
+// fires the plant delivery) → HQ (drive) → parked.
+
+export type JourneyPaths = {
+  toRecycler: string[];
+  toPlant: string[];
+  toHq: string[];
+};
+
+export type JourneyState = {
+  truckId: number | string;
+  phase: TruckPhase | 'toHq';
+  paths: JourneyPaths;
+  path: string[]; // active path
+  legIndex: number;
+  legProgress: number;
+  timer: number; // countdown for loading/unloading phases
+};
+
+export type JourneyStepResult = {
+  journey: JourneyState;
+  arrivedAtPlant: boolean; // true on exactly one tick
+  parked: boolean; // true once back at HQ
+};
+
+export function createJourney(truckId: number | string, paths: JourneyPaths): JourneyState {
+  return {
+    truckId,
+    phase: 'toRecycler',
+    paths,
+    path: paths.toRecycler,
+    legIndex: 0,
+    legProgress: 0,
+    timer: 0,
+  };
+}
+
+export function stepJourney(journey: JourneyState, dtSeconds: number, speedMultiplier: number): JourneyStepResult {
+  let { phase, path, legIndex, legProgress, timer } = journey;
+  let arrivedAtPlant = false;
+  let parked = false;
+
+  const advance = (): boolean => {
+    // Returns true when the active path is completed this tick.
+    if (path.length < 2) return true;
+    const segments = path.length - 1;
+    let distance = BASE_SPEED_TILES_PER_SEC * speedMultiplier * dtSeconds;
+    while (distance > 0 && legIndex < segments) {
+      const remaining = 1 - legProgress;
+      if (distance < remaining) {
+        legProgress += distance;
+        distance = 0;
+      } else {
+        distance -= remaining;
+        legIndex++;
+        legProgress = 0;
+      }
+    }
+    if (legIndex >= segments) {
+      legIndex = segments - 1;
+      legProgress = 1;
+      return true;
+    }
+    return false;
+  };
+
+  switch (phase) {
+    case 'toRecycler':
+      if (advance()) {
+        phase = 'loading';
+        timer = LOAD_SECONDS;
+      }
+      break;
+    case 'loading':
+      timer -= dtSeconds * speedMultiplier;
+      if (timer <= 0) {
+        phase = 'toPlant';
+        path = journey.paths.toPlant;
+        legIndex = 0;
+        legProgress = 0;
+      }
+      break;
+    case 'toPlant':
+      if (advance()) {
+        arrivedAtPlant = true;
+        phase = 'unloading';
+        timer = UNLOAD_SECONDS;
+      }
+      break;
+    case 'unloading':
+      timer -= dtSeconds * speedMultiplier;
+      if (timer <= 0) {
+        phase = 'toHq';
+        path = journey.paths.toHq;
+        legIndex = 0;
+        legProgress = 0;
+      }
+      break;
+    case 'toHq':
+      if (advance()) {
+        phase = 'atHq';
+        path = [];
+        legIndex = 0;
+        legProgress = 0;
+        parked = true;
+      }
+      break;
+    default:
+      break; // atHq: parked, nothing to do
+  }
+
+  return { journey: { ...journey, phase, path, legIndex, legProgress, timer }, arrivedAtPlant, parked };
+}
