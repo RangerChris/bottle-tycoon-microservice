@@ -81,7 +81,11 @@ function paintBlobs(rnd: Rnd, tiles: Tile[], terrain: TileTerrain, blobCount: nu
     let y = intBetween(rnd, 1, MAP_H - 2);
     for (let step = 0; step < size; step++) {
       const tile = tiles[y * MAP_W + x];
-      if (tile.terrain === 'grass' && !tile.road) tile.terrain = terrain;
+      if (tile.terrain === 'grass' && !tile.road) {
+        tile.terrain = terrain;
+        // Scatter trees across forest blobs; a few clearings stay buildable.
+        if (terrain === 'forest' && rnd() < 0.6) tile.decoration = 'tree';
+      }
       const dir = intBetween(rnd, 0, 3);
       if (dir === 0 && x < MAP_W - 1) x++;
       else if (dir === 1 && x > 0) x--;

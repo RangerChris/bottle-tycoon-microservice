@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from 'react'
 import Header from './components/Header'
+import GameCanvas from './components/world/GameCanvas'
 import RecyclersSection from './components/RecyclersSection'
 import TrucksSection from './components/TrucksSection'
 import EarningsChart from './components/EarningsChart'
@@ -31,6 +32,10 @@ export default function App() {
     <div className="min-h-screen bg-linear-to-br from-gray-900 to-gray-800 text-gray-100">
       <div className="max-w-7xl mx-auto p-6">
         <Header />
+
+        <section className="mb-6">
+          <GameCanvas />
+        </section>
 
         <main className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <section className="space-y-6 min-w-0">
