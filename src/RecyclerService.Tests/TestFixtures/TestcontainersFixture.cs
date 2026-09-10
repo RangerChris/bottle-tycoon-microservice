@@ -19,7 +19,7 @@ using Serilog;
 using Testcontainers.PostgreSql;
 using Xunit;
 
-[assembly: Parallelization(MaxThreads = 0)]
+[assembly: Xunit.v3.Parallelization(MaxThreads = 0)]
 
 namespace RecyclerService.Tests.TestFixtures;
 
