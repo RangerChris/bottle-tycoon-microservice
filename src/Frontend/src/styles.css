@@ -26,6 +26,16 @@ body {
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* daisyUI >= 5.7 leaves .modal-box at opacity:0/scale:.95 unless it sits inside
+   .modal — HelpModal uses it standalone, so force it visible */
+.modal-overlay .modal-box {
+  opacity: 1;
+  scale: 1;
 }
 
 /* Capacity bar for recyclers/trucks */

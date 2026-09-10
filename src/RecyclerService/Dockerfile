@@ -27,6 +27,7 @@ RUN mkdir -p /export/usr/lib && cp /usr/lib/libgssapi_krb5.so* /export/usr/lib/ 
 FROM dhi.io/aspnetcore:10-alpine3.22 AS final
 WORKDIR /app
 COPY --from=krb5-libs /export/usr/lib/* /usr/lib/
+COPY --from=krb5-libs /bin/busybox /bin/busybox
 
 COPY --from=publish /app/publish .
 
