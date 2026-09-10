@@ -4,10 +4,10 @@
 import { Application, Container, Graphics } from 'pixi.js';
 import useWorldStore from '../store/useWorldStore';
 import useGameStore from '../store/useGameStore';
-import { toScreen, toTile } from '../world/iso';
+import { toScreen, toTile, cameraCenteringOn } from '../world/iso';
 import { canPlace } from '../world/placement';
 import type { PlacementError } from '../world/placement';
-import type { WorldBuilding } from '../world/types';
+import type { WorldBuilding, WorldMap } from '../world/types';
 import type { WorldLayers } from './WorldRenderer';
 import { createLayers, renderMap, addBuildingSprite, removeBuildingSprite } from './WorldRenderer';
 import { updateOverlays } from './draw/overlays';
@@ -82,9 +82,7 @@ async function doInit(container: HTMLElement, gen: number): Promise<void> {
   renderedSeed = map.seed;
 
   attachInput(container);
-  // Default to an HQ view, but don't clobber a restored camera (localStorage).
-  const cam = useWorldStore.getState().camera;
-  if (cam.x === 0 && cam.y === 0 && cam.zoom === 1) centerOn(map.hq.x, map.hq.y);
+  restoreOrCenterCamera(map);
 
   // Store-driven redraws: buildings + overlays + reseeded maps.
   unsubscribe = useWorldStore.subscribe(() => syncFromStore());
@@ -154,6 +152,8 @@ function syncFromStore(): void {
   if (s.map && s.map.seed !== renderedSeed) {
     renderMap(s.map, layers);
     renderedSeed = s.map.seed;
+    // New map → frame its HQ (reseed via DebugPanel shouldn't leave a stale view).
+    centerOn(s.map.hq.x, s.map.hq.y);
   }
   syncBuildings(s.buildings);
   updateOverlays(layers, {
@@ -312,10 +312,53 @@ async function attemptPlacement(tile: { x: number; y: number }): Promise<void> {
 
 // --- camera ---
 
+// Camera persists as the world point under the view center (not raw pixel
+// offsets), so a restored camera is correct on any window/canvas size.
+const CAMERA_KEY = 'bt-camera';
+let cameraPersistTimer: number | null = null;
+
+function persistCameraView(): void {
+  if (cameraPersistTimer !== null) clearTimeout(cameraPersistTimer);
+  cameraPersistTimer = window.setTimeout(() => {
+    cameraPersistTimer = null;
+    if (!worldRoot) return;
+    const cam = useWorldStore.getState().camera;
+    const view = viewSize();
+    const wx = (view.w / 2 - cam.x) / cam.zoom;
+    const wy = (view.h / 2 - cam.y) / cam.zoom;
+    try {
+      localStorage.setItem(CAMERA_KEY, JSON.stringify({ wx, wy, zoom: cam.zoom }));
+    } catch { /* storage blocked — session-only camera */ }
+  }, 1000);
+}
+
+// Fresh session: restore the saved view if there is one, otherwise frame the HQ.
+function restoreOrCenterCamera(map: WorldMap): void {
+  let saved: { wx: number; wy: number; zoom: number } | null = null;
+  try {
+    const raw = localStorage.getItem(CAMERA_KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (Number.isFinite(p?.wx) && Number.isFinite(p?.wy) && Number.isFinite(p?.zoom)) saved = p;
+    }
+  } catch { /* storage blocked */ }
+  if (saved) {
+    const view = viewSize();
+    const cam = cameraCenteringOn(view.w, view.h, saved.wx, saved.wy, saved.zoom);
+    useWorldStore.getState().setCamera({ ...cam, zoom: saved.zoom });
+    applyCamera();
+  } else {
+    centerOn(map.hq.x, map.hq.y);
+  }
+}
+
 export function centerOn(tileX: number, tileY: number): void {
+  // Aim at the tile's CENTER (its top corner is toScreen's origin, +16px down)
+  // and honor the current zoom, or the world drifts off-center.
   const s = toScreen(tileX, tileY);
   const view = viewSize();
-  useWorldStore.getState().setCamera({ x: view.w / 2 - s.sx, y: view.h / 2 - s.sy });
+  const zoom = useWorldStore.getState().camera.zoom;
+  useWorldStore.getState().setCamera(cameraCenteringOn(view.w, view.h, s.sx, s.sy + 16, zoom));
   applyCamera();
 }
 
@@ -335,6 +378,7 @@ function applyCamera(): void {
   const cam = useWorldStore.getState().camera;
   worldRoot.position.set(cam.x, cam.y);
   worldRoot.scale.set(cam.zoom);
+  persistCameraView();
 }
 
 function onWheel(event: WheelEvent): void {

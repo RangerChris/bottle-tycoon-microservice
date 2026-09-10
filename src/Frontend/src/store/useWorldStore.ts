@@ -8,30 +8,8 @@ import { generateMap } from '../world/mapgen';
 
 export type SelectedEntity = { kind: 'recycler' | 'truck'; id: number | string } | null;
 
-// Camera persists to localStorage (debounced — pan drags fire per mousemove).
-const CAMERA_KEY = 'bt-camera';
-let cameraWriteTimer: number | null = null;
-function persistCamera(cam: { x: number; y: number; zoom: number }): void {
-  if (cameraWriteTimer !== null) clearTimeout(cameraWriteTimer);
-  cameraWriteTimer = window.setTimeout(() => {
-    cameraWriteTimer = null;
-    try {
-      localStorage.setItem(CAMERA_KEY, JSON.stringify(cam));
-    } catch { /* storage blocked — session-only camera */ }
-  }, 1000);
-}
-function loadCamera(): { x: number; y: number; zoom: number } {
-  try {
-    const stored = localStorage.getItem(CAMERA_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Number.isFinite(parsed?.x) && Number.isFinite(parsed?.y) && Number.isFinite(parsed?.zoom)) {
-        return { x: parsed.x, y: parsed.y, zoom: parsed.zoom };
-      }
-    }
-  } catch { /* private mode / blocked storage — default camera is fine */ }
-  return { x: 0, y: 0, zoom: 1 };
-}
+// Camera persistence lives in WorldEngine (it stores the world point under
+// the view center — the store doesn't know the viewport size).
 
 export type WorldState = {
   map: WorldMap | null;
@@ -85,8 +63,8 @@ const useWorldStore = create<WorldState>()(
         // Register the buildings onto tiles so placement/selection see them.
         draft.map.tiles[map.hq.y * map.width + map.hq.x].buildingId = 'hq';
         draft.map.tiles[map.plant.y * map.width + map.plant.x].buildingId = 'plant';
-        // Restore the saved camera (or default view) on reload.
-        draft.camera = loadCamera();
+        // Default view; WorldEngine restores the saved view or frames the HQ.
+        draft.camera = { x: 0, y: 0, zoom: 1 };
       });
     },
 
@@ -110,7 +88,6 @@ const useWorldStore = create<WorldState>()(
         if (cam.x !== undefined) draft.camera.x = cam.x;
         if (cam.y !== undefined) draft.camera.y = cam.y;
         if (cam.zoom !== undefined) draft.camera.zoom = cam.zoom;
-        persistCamera({ x: draft.camera.x, y: draft.camera.y, zoom: draft.camera.zoom });
       }),
 
     addBuilding: (building) =>

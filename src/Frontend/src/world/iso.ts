@@ -24,3 +24,16 @@ export function toTile(sx: number, sy: number): { x: number; y: number } {
   const y = (fy - fx) / 2;
   return { x: Math.floor(x), y: Math.floor(y) };
 }
+
+// Camera offset that puts the world point (wx, wy) at the center of a
+// viewW × viewH viewport at the given zoom. Used for startup centering and
+// camera restore — both must honor zoom or the world drifts off-center.
+export function cameraCenteringOn(
+  viewW: number,
+  viewH: number,
+  wx: number,
+  wy: number,
+  zoom: number,
+): { x: number; y: number } {
+  return { x: viewW / 2 - wx * zoom, y: viewH / 2 - wy * zoom };
+}

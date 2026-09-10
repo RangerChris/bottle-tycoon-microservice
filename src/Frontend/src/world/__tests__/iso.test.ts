@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toScreen, toTile, TILE_W, TILE_H } from '../iso';
+import { toScreen, toTile, TILE_W, TILE_H, cameraCenteringOn } from '../iso';
 
 describe('iso projection', () => {
   it('maps (0,0) to origin', () => {
@@ -26,5 +26,19 @@ describe('iso projection', () => {
         expect(t.y).toBe(y);
       }
     }
+  });
+});
+
+describe('cameraCenteringOn', () => {
+  it('puts the target world point at the view center', () => {
+    const cam = cameraCenteringOn(1230, 658, 100, 200, 1);
+    expect(1230 / 2 - cam.x).toBe(100);
+    expect(658 / 2 - cam.y).toBe(200);
+  });
+
+  it('honors zoom — a zoomed target still lands dead center', () => {
+    const cam = cameraCenteringOn(800, 600, 100, 200, 0.8);
+    expect(400 - cam.x).toBeCloseTo(100 * 0.8, 10);
+    expect(300 - cam.y).toBeCloseTo(200 * 0.8, 10);
   });
 });
