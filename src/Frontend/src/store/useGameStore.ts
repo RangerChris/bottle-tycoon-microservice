@@ -118,8 +118,7 @@ export type GameState = {
   // actions
   setTimeLevel: (level: number) => void
   addLog: (message: string, type?: LogEntry['type']) => void
-  buyRecycler: () => void
-  buyRecyclerAt: (tile: { x: number; y: number } | null) => Promise<boolean>
+  buyRecyclerAt: (tile: { x: number; y: number }) => Promise<boolean>
   buyTruck: () => void
   sellRecycler: (recyclerId: number | string) => void
   sellTruck: (truckId: number | string) => void
@@ -189,10 +188,6 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     if (draft.logs.length > 50) draft.logs.pop()
   }),
 
-  buyRecycler: async () => {
-    await get().buyRecyclerAt(null)
-  },
-
   buyRecyclerAt: async (tile) => {
     const state = get()
     if (state.buyingRecycler) return false
@@ -212,7 +207,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 playerId: state.playerId,
                 name: `Recycler ${state.recyclers.length + 1}`,
                 capacity: 100,
-                location: tile ? `${tile.x},${tile.y}` : 'Default'
+                location: `${tile.x},${tile.y}`
             })
         })
 
@@ -968,7 +963,9 @@ const useGameStore = create(immer<GameState>((set, get) => ({
       if (!Array.isArray(recyclers)) return
 
       set((draft: any) => {
-        draft.recyclers = recyclers.map((r: any) => ({
+        // Only recyclers placed in the world participate in the game. The
+        // /initialize seed recycler has no location and stays invisible.
+        draft.recyclers = recyclers.filter((r: any) => r.location).map((r: any) => ({
           id: r.id,
           name: r.name,
           level: r.capacityLevel ?? 0,
