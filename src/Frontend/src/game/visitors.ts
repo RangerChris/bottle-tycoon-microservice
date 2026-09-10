@@ -26,6 +26,8 @@ export function configureVisitors(worldMap: WorldMap | null): void {
   map = worldMap;
   graph = buildRoadGraph(map);
   edgeRoads = [];
+  // Map changed (reseed): stale walker paths point at the old map.
+  entries.clear();
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
       if (!map.tiles[y * map.width + x].road) continue;

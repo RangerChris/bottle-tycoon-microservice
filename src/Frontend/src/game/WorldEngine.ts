@@ -82,7 +82,9 @@ async function doInit(container: HTMLElement, gen: number): Promise<void> {
   renderedSeed = map.seed;
 
   attachInput(container);
-  centerOn(map.hq.x, map.hq.y);
+  // Default to an HQ view, but don't clobber a restored camera (localStorage).
+  const cam = useWorldStore.getState().camera;
+  if (cam.x === 0 && cam.y === 0 && cam.zoom === 1) centerOn(map.hq.x, map.hq.y);
 
   // Store-driven redraws: buildings + overlays + reseeded maps.
   unsubscribe = useWorldStore.subscribe(() => syncFromStore());
@@ -117,6 +119,7 @@ async function doInit(container: HTMLElement, gen: number): Promise<void> {
       useWorldStore.getState().setCamera({ zoom: clampZoom(cam.zoom * factor) });
       applyCamera();
     },
+    centerOn: (tileX: number, tileY: number) => centerOn(tileX, tileY),
   };
 }
 

@@ -9,19 +9,23 @@ import { parseTileKey } from '../world/types';
 type Entry = {
   journey: JourneyState | null; // null = parked
   parkedAt: TilePos | null;
+  distanceTiles: number; // hq→recycler→plant road distance, for operating cost
 };
 
 const entries = new Map<string, Entry>(); // key: String(truckId)
 let map: WorldMap | null = null;
 let graph: RoadGraph | null = null;
-let onArrivePlant: ((truckId: number | string) => void) | null = null;
+let onArrivePlant: ((truckId: number | string, distanceTiles: number) => void) | null = null;
 
 // Call whenever the map may have changed; rebuilds the road graph.
-export function configureJourneys(worldMap: WorldMap | null, arrivePlant: (truckId: number | string) => void): void {
+export function configureJourneys(worldMap: WorldMap | null, arrivePlant: (truckId: number | string, distanceTiles: number) => void): void {
   onArrivePlant = arrivePlant;
   if (worldMap && (!map || map.seed !== worldMap.seed)) {
     map = worldMap;
     graph = buildRoadGraph(map);
+    // Map changed (reseed): drop stale entries so parked trucks re-park at
+    // the new HQ. In-flight journeys fall back to the economy watchdog.
+    entries.clear();
   }
 }
 
@@ -33,7 +37,7 @@ export function hasJourney(truckId: number | string): boolean {
 export function ensureParked(truckId: number | string): void {
   const key = String(truckId);
   if (entries.has(key) || !map) return;
-  entries.set(key, { journey: null, parkedAt: { x: map.hq.x, y: map.hq.y } });
+  entries.set(key, { journey: null, parkedAt: { x: map.hq.x, y: map.hq.y }, distanceTiles: 0 });
 }
 
 export function removeTruck(truckId: number | string): void {
@@ -55,7 +59,8 @@ export function startJourney(truckId: number | string, recyclerTile: TilePos): b
   if (toRecycler.length === 0 || toPlant.length === 0 || toHq.length === 0) return false;
 
   const paths: JourneyPaths = { toRecycler, toPlant, toHq };
-  entries.set(String(truckId), { journey: createJourney(truckId, paths), parkedAt: null });
+  const distanceTiles = toRecycler.length + toPlant.length;
+  entries.set(String(truckId), { journey: createJourney(truckId, paths), parkedAt: null, distanceTiles });
   return true;
 }
 
@@ -66,10 +71,10 @@ export function tickJourneys(dtSeconds: number, speedMultiplier: number): void {
     const result = stepJourney(entry.journey, dtSeconds, speedMultiplier);
     entry.journey = result.journey;
     if (result.arrivedAtPlant) {
-      onArrivePlant?.(entry.journey.truckId);
+      onArrivePlant?.(entry.journey.truckId, entry.distanceTiles);
     }
     if (result.parked && map) {
-      entries.set(key, { journey: null, parkedAt: { x: map.hq.x, y: map.hq.y } });
+      entries.set(key, { journey: null, parkedAt: { x: map.hq.x, y: map.hq.y }, distanceTiles: entry.distanceTiles });
     }
   }
 }

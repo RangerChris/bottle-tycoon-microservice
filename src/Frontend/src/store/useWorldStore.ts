@@ -8,6 +8,31 @@ import { generateMap } from '../world/mapgen';
 
 export type SelectedEntity = { kind: 'recycler' | 'truck'; id: number | string } | null;
 
+// Camera persists to localStorage (debounced — pan drags fire per mousemove).
+const CAMERA_KEY = 'bt-camera';
+let cameraWriteTimer: number | null = null;
+function persistCamera(cam: { x: number; y: number; zoom: number }): void {
+  if (cameraWriteTimer !== null) clearTimeout(cameraWriteTimer);
+  cameraWriteTimer = window.setTimeout(() => {
+    cameraWriteTimer = null;
+    try {
+      localStorage.setItem(CAMERA_KEY, JSON.stringify(cam));
+    } catch { /* storage blocked — session-only camera */ }
+  }, 1000);
+}
+function loadCamera(): { x: number; y: number; zoom: number } {
+  try {
+    const stored = localStorage.getItem(CAMERA_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Number.isFinite(parsed?.x) && Number.isFinite(parsed?.y) && Number.isFinite(parsed?.zoom)) {
+        return { x: parsed.x, y: parsed.y, zoom: parsed.zoom };
+      }
+    }
+  } catch { /* private mode / blocked storage — default camera is fine */ }
+  return { x: 0, y: 0, zoom: 1 };
+}
+
 export type WorldState = {
   map: WorldMap | null;
   buildings: Record<string, import('../world/types').WorldBuilding>; // id → building
@@ -65,8 +90,8 @@ const useWorldStore = create<WorldState>()(
         draft.map.tiles[map.hq.y * map.width + map.hq.x].buildingId = 'hq';
         draft.map.tiles[map.plant.y * map.width + map.plant.x].buildingId = 'plant';
         draft.mapReady = true;
-        // Center the camera on the HQ tile.
-        draft.camera = { x: 0, y: 0, zoom: 1 };
+        // Restore the saved camera (or default view) on reload.
+        draft.camera = loadCamera();
       });
     },
 
@@ -90,6 +115,7 @@ const useWorldStore = create<WorldState>()(
         if (cam.x !== undefined) draft.camera.x = cam.x;
         if (cam.y !== undefined) draft.camera.y = cam.y;
         if (cam.zoom !== undefined) draft.camera.zoom = cam.zoom;
+        persistCamera({ x: draft.camera.x, y: draft.camera.y, zoom: draft.camera.zoom });
       }),
 
     addBuilding: (building) =>

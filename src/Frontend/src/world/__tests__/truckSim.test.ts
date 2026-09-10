@@ -9,6 +9,7 @@ import {
   routeBetween,
   createJourney,
   stepJourney,
+  operatingCostFor,
 } from '../truckSim';
 import { generateMap } from '../mapgen';
 import { buildRoadGraph, roadStopFor } from '../roadGraph';
@@ -24,6 +25,23 @@ describe('timeMultiplier', () => {
 
   it('falls back to 1x for unknown levels', () => {
     expect(timeMultiplier(99)).toBe(1);
+  });
+});
+
+describe('operatingCostFor', () => {
+  it('is distance × 0.5 × 1.25^level, rounded to 2 decimals', () => {
+    expect(operatingCostFor(10, 0)).toBe(5);
+    expect(operatingCostFor(10, 2)).toBe(7.81);
+    expect(operatingCostFor(24, 3)).toBe(23.44);
+  });
+
+  it('is free at zero distance (degenerate routes)', () => {
+    expect(operatingCostFor(0, 3)).toBe(0);
+  });
+
+  it('rounds to 2 decimals to keep payloads tidy', () => {
+    expect(operatingCostFor(7, 1)).toBeCloseTo(4.38, 5);
+    expect(Number(operatingCostFor(7, 1).toFixed(2))).toBe(operatingCostFor(7, 1));
   });
 });
 

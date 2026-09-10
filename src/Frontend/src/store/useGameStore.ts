@@ -1,6 +1,7 @@
 ﻿import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { BottleCounts, Recycler, Truck, LogEntry } from '../types'
+import { operatingCostFor } from '../world/truckSim'
 
 // helper for unique ids used in logs and other transient entries
 function uid() {
@@ -125,7 +126,7 @@ export type GameState = {
   upgradeRecycler: (recyclerId: number | string) => void
   upgradeTruck: (truckId: number | string) => void
   attemptSmartDispatch: () => void
-  deliverToPlant: (truckId: number | string) => void
+  deliverToPlant: (truckId: number | string, distanceTiles?: number) => void
   depositTick: () => void
   createVisitorForRecycler: (recyclerId: number | string) => void
   scheduleNextArrival: (recyclerId: number | string, minSec?: number, maxSec?: number) => void
@@ -651,7 +652,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
     })()
   },
 
-  deliverToPlant: async (truckId: number | string) => {
+  deliverToPlant: async (truckId: number | string, distanceTiles?: number) => {
     const state = get()
     const truck = state.trucks.find((t) => t.id == truckId)
     if (!truck || !truck.cargo) return
@@ -688,7 +689,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                     metal: truck.cargo.metal,
                     plastic: truck.cargo.plastic
                 },
-                operatingCost: 0
+                // Distance the world journey actually drove (0 on fallback timers).
+                operatingCost: operatingCostFor(distanceTiles ?? 0, truck.level ?? 0)
             })
         })
 
@@ -733,7 +735,9 @@ const useGameStore = create(immer<GameState>((set, get) => ({
             draft.chartPoints.push({ time: Date.now(), bottles: truck.cargo })
 
             const truckName = getTruckDisplayName(updatedTruck)
-            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `${truckName} delivered ${totalBottles} bottles to the recycling plant and earned ${earnings} credits.` })
+            const cost = operatingCostFor(distanceTiles ?? 0, truck.level ?? 0)
+            const costNote = cost > 0 ? ` (−${cost} operating cost)` : ''
+            draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `${truckName} delivered ${totalBottles} bottles to the recycling plant and earned ${earnings} credits${costNote}.` })
           }
         })
 

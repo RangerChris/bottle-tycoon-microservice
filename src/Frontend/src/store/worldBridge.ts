@@ -16,8 +16,8 @@ export function initWorldBridge(): () => void {
 
     // --- recyclers → world buildings ---
     if (world.map) {
-      configureJourneys(world.map, (truckId) => {
-        void useGameStore.getState().deliverToPlant(truckId);
+      configureJourneys(world.map, (truckId, distanceTiles) => {
+        void useGameStore.getState().deliverToPlant(truckId, distanceTiles);
       });
 
       const wanted = new Map<string, WorldBuilding>();

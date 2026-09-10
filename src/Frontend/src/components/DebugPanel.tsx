@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react'
 import useGameStore from '../store/useGameStore'
+import useWorldStore from '../store/useWorldStore'
 
 export default function DebugPanel() {
   const [open, setOpen] = useState(false)
@@ -37,6 +38,14 @@ export default function DebugPanel() {
       ;(window as any).scheduleVisitor?.(rid, 1, 3)
     } catch (e) {}
   }
+
+  const world = () => (window as any).__world
+  const centerOn = (spot: 'hq' | 'plant') => {
+    const w = world()
+    if (w?.map) w.centerOn?.(w.map[spot].x, w.map[spot].y)
+  }
+  const zoomBy = (f: number) => world()?.zoomBy?.(f)
+  const reseedMap = () => useWorldStore.getState().initMap(Math.floor(Math.random() * 0xffffffff))
 
   return (
     <div className={`fixed right-4 bottom-4 z-50 ${open ? '' : 'h-8'} `}>
@@ -86,6 +95,17 @@ export default function DebugPanel() {
                 <button className="btn btn-sm btn-success" onClick={() => (window as any).startAutoVisitors?.(2000)}>Start Auto</button>
                 <button className="btn btn-sm btn-warning" onClick={() => (window as any).stopAutoVisitors?.()}>Stop Auto</button>
                 <button className="btn btn-sm btn-outline" onClick={() => (window as any).clearArrivalWatchdog?.()}>Clear WD</button>
+              </div>
+
+              <div>
+                <div className="font-semibold">World</div>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  <button className="btn btn-xs" onClick={() => centerOn('hq')}>HQ</button>
+                  <button className="btn btn-xs" onClick={() => centerOn('plant')}>Plant</button>
+                  <button className="btn btn-xs" onClick={() => zoomBy(1.25)}>Zoom +</button>
+                  <button className="btn btn-xs" onClick={() => zoomBy(0.8)}>Zoom −</button>
+                  <button className="btn btn-xs btn-error" onClick={reseedMap}>Reseed map</button>
+                </div>
               </div>
 
             </div>

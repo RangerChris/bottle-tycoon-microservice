@@ -14,6 +14,16 @@ export function timeMultiplier(timeLevel: number): number {
   return TIME_MULTIPLIERS[timeLevel] ?? 1;
 }
 
+// Distance-based operating cost for a delivery: each road tile costs 0.5
+// credits at level 0, +25% per truck upgrade level (mirrors capacity math).
+export const COST_PER_TILE = 0.5;
+export const COST_LEVEL_FACTOR = 1.25;
+
+export function operatingCostFor(distanceTiles: number, level: number): number {
+  const cost = distanceTiles * COST_PER_TILE * Math.pow(COST_LEVEL_FACTOR, level);
+  return Math.round(cost * 100) / 100;
+}
+
 // Builds a truck visual for a new journey: hqStop → targetStop on road tiles.
 export function startJourney(truckId: number | string, path: string[], phase: TruckPhase): TruckVisual {
   return { truckId, path, legIndex: 0, legProgress: 0, phase };
