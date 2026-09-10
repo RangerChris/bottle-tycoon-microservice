@@ -17,6 +17,7 @@ export type Recycler = {
   visitors: Visitor[];
   targetedByTruckId?: string | number | null;
   isBlockedForSale?: boolean;
+  location?: { x: number; y: number } | null; // world tile ("x,y" from the service)
 };
 
 export type TruckStatus = 'idle' | 'en route' | 'to_recycler' | 'loading' | 'to_plant' | 'delivering' | 'picking';

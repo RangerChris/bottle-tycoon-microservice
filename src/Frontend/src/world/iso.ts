@@ -13,12 +13,14 @@ export function toScreen(x: number, y: number): ScreenPos {
   return { sx: (x - y) * HALF_W, sy: (x + y) * HALF_H };
 }
 
-// Inverse projection; rounds to the nearest tile center-less top-corner grid.
+// Inverse projection. Continuous corner-space coords: a tile's diamond
+// interior maps to (x..x+1, y..y+1) — floor() picks the tile under any
+// point, including its center (which lands exactly on the .5 boundary).
 export function toTile(sx: number, sy: number): { x: number; y: number } {
   const fx = sx / HALF_W;
   const fy = sy / HALF_H;
   // sx = (x - y) * HALF_W, sy = (x + y) * HALF_H  →  solve for x, y
   const x = (fx + fy) / 2;
   const y = (fy - fx) / 2;
-  return { x: Math.round(x), y: Math.round(y) };
+  return { x: Math.floor(x), y: Math.floor(y) };
 }

@@ -117,6 +117,7 @@ export type GameState = {
   setTimeLevel: (level: number) => void
   addLog: (message: string, type?: LogEntry['type']) => void
   buyRecycler: () => void
+  buyRecyclerAt: (tile: { x: number; y: number } | null) => Promise<boolean>
   buyTruck: () => void
   sellRecycler: (recyclerId: number | string) => void
   sellTruck: (truckId: number | string) => void
@@ -142,6 +143,17 @@ export type GameState = {
 // helper: calculate capacity based on level
 function calculateCapacity(base: number, level: number) {
   return Math.floor(base * Math.pow(1.25, level))
+}
+
+// helper: parse the service's "x,y" location string into tile coords
+function parseLocation(location: unknown): { x: number; y: number } | null {
+  if (typeof location !== 'string') return null
+  const idx = location.indexOf(',')
+  if (idx <= 0) return null
+  const x = Number(location.slice(0, idx))
+  const y = Number(location.slice(idx + 1))
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null
+  return { x, y }
 }
 
 // time multipliers mapping used by the frontend game loop
@@ -181,13 +193,17 @@ const useGameStore = create(immer<GameState>((set, get) => ({
   }),
 
   buyRecycler: async () => {
+    await get().buyRecyclerAt(null)
+  },
+
+  buyRecyclerAt: async (tile) => {
     const state = get()
-    if (state.buyingRecycler) return
+    if (state.buyingRecycler) return false
     set((draft: any) => { draft.buyingRecycler = true })
     const cost = 500
 
-    if (state.recyclers.length >= 10) { set((draft: any) => { draft.buyingRecycler = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Cannot purchase more recyclers.' }) }); return }
-    if (state.credits < cost) { set((draft: any) => { draft.buyingRecycler = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits to buy recycler!' }) }); return }
+    if (state.recyclers.length >= 10) { set((draft: any) => { draft.buyingRecycler = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Cannot purchase more recyclers.' }) }); return false }
+    if (state.credits < cost) { set((draft: any) => { draft.buyingRecycler = false; draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'warning', message: 'Not enough credits to buy recycler!' }) }); return false }
 
     try {
         const { recyclerBase } = getApiBaseUrls()
@@ -199,7 +215,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 playerId: state.playerId,
                 name: `Recycler ${state.recyclers.length + 1}`,
                 capacity: 100,
-                location: 'Default'
+                location: tile ? `${tile.x},${tile.y}` : 'Default'
             })
         })
 
@@ -208,7 +224,7 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 draft.buyingRecycler = false
                 draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to purchase recycler.' })
             })
-            return
+            return false
         }
 
         const newRecycler = await response.json()
@@ -222,19 +238,22 @@ const useGameStore = create(immer<GameState>((set, get) => ({
                 capacity: newRecycler.capacity,
                 currentBottles: { glass: 0, metal: 0, plastic: 0 },
                 visitors: [],
-                targetedByTruckId: null
+                targetedByTruckId: null,
+                location: tile
             })
             draft.buyingRecycler = false
             draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'success', message: `Purchased ${newRecycler.name}` })
         })
 
         get().scheduleNextArrival(newRecycler.id, 1, 8)
+        return true
 
     } catch (error) {
         set((draft: any) => {
             draft.buyingRecycler = false;
             draft.logs.unshift({ id: uid(), time: new Date().toLocaleTimeString(), type: 'error', message: 'Failed to purchase recycler.' })
         });
+        return false
     }
   },
 
@@ -943,7 +962,8 @@ const useGameStore = create(immer<GameState>((set, get) => ({
           capacity: r.capacity ?? 100,
           currentBottles: { glass: 0, metal: 0, plastic: 0 },
           visitors: [],
-          targetedByTruckId: null
+          targetedByTruckId: null,
+          location: parseLocation(r.location)
         }))
       })
 

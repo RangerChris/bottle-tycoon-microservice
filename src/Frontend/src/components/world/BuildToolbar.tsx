@@ -14,6 +14,7 @@ export default function BuildToolbar() {
   const credits = useGameStore((s: { credits: number }) => s.credits);
   const recyclers = useGameStore((s: { recyclers: unknown[] }) => s.recyclers);
   const trucks = useGameStore((s: { trucks: unknown[] }) => s.trucks);
+  const buyTruck = useGameStore((s: { buyTruck: () => void }) => s.buyTruck);
 
   const recyclerFull = recyclers.length >= MAX_RECYCLERS;
   const truckFull = trucks.length >= MAX_TRUCKS;
@@ -34,6 +35,7 @@ export default function BuildToolbar() {
           <button
             className="btn btn-sm w-full bg-blue-600 text-white hover:bg-blue-700 no-outline-btn"
             disabled={truckFull || credits < TRUCK_COST}
+            onClick={() => buyTruck()}
           >
             + Buy Truck ({TRUCK_COST})
           </button>

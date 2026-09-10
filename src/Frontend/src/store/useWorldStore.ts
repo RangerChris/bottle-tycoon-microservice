@@ -41,7 +41,22 @@ const useWorldStore = create<WorldState>()(
     mapReady: false,
 
     initMap: (seed) => {
-      const s = seed ?? Math.floor(Math.random() * 0xffffffff);
+      // Persist the seed so a reload restores the same map (session 6 keeps this).
+      let s = seed;
+      if (s === undefined) {
+        try {
+          const stored = localStorage.getItem('bt-map-seed');
+          s = stored !== null ? Number(stored) : Math.floor(Math.random() * 0xffffffff);
+        } catch {
+          s = Math.floor(Math.random() * 0xffffffff);
+        }
+        if (!Number.isFinite(s)) s = Math.floor(Math.random() * 0xffffffff);
+      }
+      try {
+        localStorage.setItem('bt-map-seed', String(s));
+      } catch {
+        // private mode / storage blocked — session-only map is fine
+      }
       const map = generateMap(s);
       set((draft) => {
         draft.map = map;

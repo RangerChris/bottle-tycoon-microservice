@@ -28,17 +28,9 @@ export function createLayers(): WorldLayers {
 }
 
 // Full redraw (called once on map init; later sessions add partial redraws).
+// Buildings are NOT drawn here — syncBuildings owns building sprites.
 export function renderMap(map: WorldMap, layers: WorldLayers): void {
   drawWorldTiles(map, { terrain: layers.terrain, roads: layers.roads });
-  layers.buildings.removeChildren();
-  for (const tile of map.tiles) {
-    if (tile.buildingId === 'hq') layers.buildings.addChild(buildingContainer('hq', ...coordsOf(map, 'hq')));
-    else if (tile.buildingId === 'plant') layers.buildings.addChild(buildingContainer('plant', ...coordsOf(map, 'plant')));
-  }
-}
-
-function coordsOf(map: WorldMap, id: 'hq' | 'plant'): [number, number] {
-  return id === 'hq' ? [map.hq.x, map.hq.y] : [map.plant.x, map.plant.y];
 }
 
 // Adds (or re-adds) a single building container at its tile.

@@ -1,6 +1,8 @@
 ﻿import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import GameCanvas from './components/world/GameCanvas'
+import BuildToolbar from './components/world/BuildToolbar'
+import EntityInspector from './components/world/EntityInspector'
 import RecyclersSection from './components/RecyclersSection'
 import TrucksSection from './components/TrucksSection'
 import EarningsChart from './components/EarningsChart'
@@ -8,6 +10,7 @@ import ActivityLog from './components/ActivityLog'
 import HelpModal from './components/HelpModal'
 import useGameStore from './store/useGameStore'
 import useGameLoop from './hooks/useGameLoop'
+import { initWorldBridge } from './store/worldBridge'
 
 export default function App() {
   const [DebugPanel, setDebugPanel] = useState<any>(null)
@@ -28,13 +31,18 @@ export default function App() {
     })()
   }, [init])
 
+  // Economy → world visuals sync (placed recyclers appear on the map).
+  useEffect(() => initWorldBridge(), [])
+
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-900 to-gray-800 text-gray-100">
       <div className="max-w-7xl mx-auto p-6">
         <Header />
 
-        <section className="mb-6">
+        <section className="relative mb-6">
           <GameCanvas />
+          <BuildToolbar />
+          <EntityInspector />
         </section>
 
         <main className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
